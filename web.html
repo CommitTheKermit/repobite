@@ -117,6 +117,7 @@ async function refresh() {
     data.summary.cross.forEach((row, i) => {const tr = element('tr','');tr.append(element('th',`Lv.${i+1}`));row.forEach(n=>tr.append(element('td',n)));$('cross').append(tr);});
   }
   controls();
+  if ($('error').dataset.source === 'poll') $('error').hidden = true;
 }
 async function run(action) {
   if(submitting || state?.busy) throw Error('실행 중인 작업이 끝난 뒤 다시 시도하세요.');
@@ -128,7 +129,14 @@ async function run(action) {
     await refresh(); return {started:true};
   } finally { submitting = false; controls(); }
 }
-function showError(error) {$('error').textContent = error.message || '서버에 연결하지 못했습니다. Mac에서 웹 서버를 실행 중인지 확인하세요.';$('error').hidden=false;}
+function showError(error, source = 'action') {
+  const message = error.message || '';
+  $('error').textContent = /failed to fetch|networkerror|load failed/i.test(message)
+    ? '로컬 서버에 연결하지 못했습니다. http://127.0.0.1:8765에서 연결 상태를 확인한 뒤 다시 실행하세요.'
+    : message || '서버에 연결하지 못했습니다. Mac에서 웹 서버를 실행 중인지 확인하세요.';
+  $('error').dataset.source = source;
+  $('error').hidden = false;
+}
 $('collect-form').addEventListener('submit',event=>{event.preventDefault();run('collect').catch(showError);});
 $('default-repos').addEventListener('click',()=>{if(state && !state.busy && !submitting){$('repos').value=state.default_repos;repoCount();}});
 $('repos').addEventListener('input',repoCount);
@@ -137,7 +145,7 @@ $('grade').addEventListener('click',()=>run('grade').catch(showError));
 document.querySelectorAll('[data-filter]').forEach(button=>button.addEventListener('click',()=>{filter=button.dataset.filter;limit=50;document.querySelectorAll('[data-filter]').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));renderItems();}));
 $('search').addEventListener('input',()=>{limit=50;renderItems();});
 $('load-more').addEventListener('click',()=>{limit+=50;renderItems();});
-async function poll() {try {await refresh();} catch(error) {showError(error);} setTimeout(poll,1500);}
+async function poll() {try {await refresh();} catch(error) {showError(error, 'poll');} setTimeout(poll,1500);}
 if (document.modelContext?.registerTool) {
   const lifecycle = new AbortController();
   try {
