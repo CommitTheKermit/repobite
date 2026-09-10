@@ -15,7 +15,7 @@ import uuid
 
 import radar
 
-MAX_REPOS = 100
+MAX_REPOS = 30
 
 
 class Application:

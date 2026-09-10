@@ -19,7 +19,7 @@
 <label for="repos">추적할 GitHub 레포</label>
 <textarea id="repos" rows="11" required placeholder="owner/repository" aria-describedby="repos-help"></textarea>
 <p id="repos-help" class="help">한 줄에 하나씩 입력하세요.</p>
-<button class="wide" id="default-repos" type="button" disabled>기본 100개 불러오기</button>
+<button class="wide" id="default-repos" type="button" disabled>기본 30개 불러오기</button>
 <label for="since">최근 갱신 기간</label>
 <select id="since"><option value="1d">최근 1일</option><option value="3d">최근 3일</option><option value="7d" selected>최근 7일</option><option value="14d">최근 14일</option></select>
 <button class="primary wide" id="collect" type="submit" disabled>이슈 수집</button>
@@ -94,7 +94,7 @@ function controls() {
 }
 function repoCount() {
   const count = new Set($('repos').value.split('\n').map(line=>line.split('#')[0].trim()).filter(Boolean)).size;
-  $('repos-help').textContent = `현재 ${count}개 / 최대 ${state?.max_repos ?? 100}개. 한 줄에 하나씩 입력하세요.`;
+  $('repos-help').textContent = `현재 ${count}개 / 최대 ${state?.max_repos ?? 30}개. 한 줄에 하나씩 입력하세요.`;
 }
 async function refresh() {
   const response = await fetch('/api/state'); const data = await response.json();
