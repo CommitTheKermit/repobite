@@ -19,7 +19,9 @@ def main():
         root = Path(directory)
         issue = radar.normalize_issue("a/b", ISSUE)
         (root / "issues.jsonl").write_text(json.dumps(issue) + "\n")
-        (root / "grades.jsonl").write_text(json.dumps({**issue, "grade": GOOD}) + "\n")
+        fresh = {"eligible": True, "reason": "확인 완료", "checked_at": "now"}
+        (root / "grades.jsonl").write_text(json.dumps({**issue, "grade": GOOD,
+                                                       "freshness": fresh}) + "\n")
         (root / "repos.txt").write_text("a/b\n")
         server = web.make_server(0, root)
         thread = threading.Thread(target=server.serve_forever, daemon=True)
@@ -59,7 +61,12 @@ def main():
             else:
                 assert ("--all" in command) == expect_full
                 source = Path(command[command.index("--input") + 1])
-                result = {**radar.read_jsonl(source)[0], "grade": GOOD, "model": "gpt-5.6-luna"}
+                if expect_full:
+                    reuse = Path(command[command.index("--reuse") + 1])
+                    assert reuse.exists() and radar.read_jsonl(reuse)[0]["grade"] == GOOD
+                result = {**radar.read_jsonl(source)[0], "grade": GOOD, "model": "gpt-5.6-luna",
+                          "reasoning_effort": radar.REASONING_EFFORT,
+                          "criteria_version": radar.CRITERIA_VERSION, "freshness": fresh}
             output.write_text(json.dumps(result) + "\n")
             process = MagicMock()
             process.__enter__.return_value = process
@@ -73,6 +80,7 @@ def main():
             assert state()["max_repos"] == 30
             assert state()["default_repos"] == "a/b\n"
             assert (state()["grade_count"], state()["deferred_count"]) == (1, 0)
+            assert state()["unresolved_count"] == 1
             assert (state()["grade_limit"], state()["repo_grade_limit"]) == (100, 20)
             original_issues = (root / "issues.jsonl").read_bytes()
             large = [{**issue, "repo": f"owner/repo{repo}", "number": n}
@@ -117,6 +125,7 @@ def main():
                 assert request("/api/run", {"action": "grade"})[0] == 202
                 wait_done()
                 assert state()["summary"]["target"] == 1
+                assert state()["unresolved_count"] == 0
                 expect_full = True
                 assert request("/api/run", {"action": "grade_all"})[0] == 202
                 wait_done()

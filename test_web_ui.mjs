@@ -12,7 +12,7 @@ const document = {
   getElementById(id) { if (!nodes.has(id)) nodes.set(id,node()); return nodes.get(id); },
   createElement:node, querySelectorAll:()=>[],
 };
-const state = {repos:'a/b',max_repos:30,count:0,grade_count:0,deferred_count:0,
+const state = {repos:'a/b',max_repos:30,count:0,grade_count:0,deferred_count:0,unresolved_count:0,
   grade_limit:100,repo_grade_limit:20,items:[],logs:[],summary:{failed:0,valid:0,cross:[]}};
 const actions = [];
 const context = vm.createContext({document,setTimeout(){},
@@ -32,7 +32,7 @@ vm.runInContext('showError(new Error("실행 요청 실패"))',context);
 await vm.runInContext('refresh()',context);
 assert.equal(nodes.get('error').hidden,false); // 상태 조회 성공이 실행 요청 실패를 숨기지 않는다.
 assert.equal(nodes.get('error').textContent,'실행 요청 실패');
-state.count=180; state.grade_count=100; state.deferred_count=80;
+state.count=180; state.grade_count=100; state.deferred_count=80; state.unresolved_count=180;
 await vm.runInContext('refresh()',context);
 assert.match(nodes.get('grade').textContent,/100건/);
 assert.match(nodes.get('grade-all').textContent,/180건.*상한 없음/);

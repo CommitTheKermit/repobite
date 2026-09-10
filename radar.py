@@ -13,9 +13,13 @@ import sys
 import tempfile
 from urllib.parse import urlencode
 
+import freshness
+
 ROOT = Path(__file__).resolve().parent
 GRADE_LIMIT = 100
 REPO_GRADE_LIMIT = 20
+REASONING_EFFORT = "low"
+CRITERIA_VERSION = 1
 SCHEMA = json.loads((ROOT / "schema.json").read_text(encoding="utf-8"))
 READINESS = SCHEMA["properties"]["readiness"]["enum"]
 CRITERIA = """오픈소스 초보자의 기여 난이도와 준비도를 판정한다.
@@ -263,6 +267,24 @@ def select_for_grading(issues):
     return selected
 
 
+def reusable_grades(rows, issues, model):
+    current = {issue_key(issue): issue for issue in issues}
+    reusable = {}
+    for row in rows:
+        try:
+            key = issue_key(row)
+            issue = current[key]
+            validate_grade(row.get("grade"))
+        except (KeyError, TypeError, ValueError):
+            continue
+        if (row.get("title") == issue["title"] and row.get("body") == issue["body"]
+                and row.get("model") == model
+                and row.get("reasoning_effort") == REASONING_EFFORT
+                and row.get("criteria_version") == CRITERIA_VERSION):
+            reusable[key] = {**row, **issue}
+    return reusable
+
+
 def grade(args):
     if args.input.resolve() == args.output.resolve():
         raise ValueError("입력과 출력 경로가 같을 수 없습니다")
@@ -271,15 +293,22 @@ def grade(args):
         if any(not isinstance(issue.get(key), str) for key in ("title", "body")):
             raise ValueError("이슈 title/body는 문자열이어야 합니다")
     collected = len(issues)
+    reuse_path = getattr(args, "reuse", None) or args.output
+    cached_rows = read_jsonl(reuse_path) if reuse_path.exists() else []
+    reused = reusable_grades(cached_rows, issues, args.model)
+    unresolved = [issue for issue in issues if issue_key(issue) not in reused]
     if getattr(args, "all_issues", False):
-        print(f"전체 판정 대상 {collected}건 (건수 상한 없음)", file=sys.stderr)
+        selected = unresolved
+        print(f"전체 새 판정 {len(selected)}건, 재사용 {len(reused)}건 (건수 상한 없음)", file=sys.stderr)
     else:
-        issues = select_for_grading(issues)
-        print(f"판정 대상 {len(issues)}/{collected}건, 상한으로 미선택 {collected - len(issues)}건 "
+        selected = select_for_grading(unresolved)
+        print(f"새 판정 {len(selected)}건, 재사용 {len(reused)}건, "
+              f"상한으로 미선택 {len(unresolved) - len(selected)}건 "
               f"(실행당 {GRADE_LIMIT}건·레포당 {REPO_GRADE_LIMIT}건)", file=sys.stderr)
 
     def judge(issue):
-        metadata = {"model": args.model, "reasoning_effort": "low",
+        metadata = {"model": args.model, "reasoning_effort": REASONING_EFFORT,
+                    "criteria_version": CRITERIA_VERSION,
                     "graded_at": datetime.now(timezone.utc).isoformat(timespec="seconds")}
         try:
             return {**issue, **metadata, "grade": grade_issue(issue, args.model)}
@@ -287,13 +316,19 @@ def grade(args):
             # 실패도 행으로 남겨 report에서 판정 누락을 숨기지 않는다.
             return {**issue, **metadata, "grade": None, "error": type(error).__name__}
 
+    results = dict(reused)
     failed = 0
-    with atomic_output(args.output) as stream, ThreadPoolExecutor(max_workers=16) as pool:
-        for index, row in enumerate(pool.map(judge, issues, buffersize=16), 1):
-            write_row(stream, row)
+    with ThreadPoolExecutor(max_workers=16) as pool:
+        for index, row in enumerate(pool.map(judge, selected, buffersize=16), 1):
+            results[issue_key(row)] = row
             failed += row["grade"] is None
-            print(f"판정 {index}/{len(issues)}: {row['repo']}#{row['number']} "
+            print(f"판정 {index}/{len(selected)}: {row['repo']}#{row['number']} "
                   f"{'실패 ' + row['error'] if row['grade'] is None else '완료'}", file=sys.stderr)
+    ordered = [results[issue_key(issue)] for issue in issues if issue_key(issue) in results]
+    ordered = freshness.apply_freshness(ordered)
+    with atomic_output(args.output) as stream:
+        for row in ordered:
+            write_row(stream, row)
     return int(failed > 0)
 
 
@@ -306,15 +341,17 @@ def aggregate(rows, samples=()):
         validate_grade(row.get("grade"))
         valid.append(row)
     eligible = [row for row in valid if not row["grade"]["exclude"]]
-    target = [row for row in eligible if row["grade"]["difficulty"] == 1
-              and row["grade"]["readiness"] == "ready"]
+    raw_target = [row for row in eligible if row["grade"]["difficulty"] == 1
+                  and row["grade"]["readiness"] == "ready"]
+    target = [row for row in raw_target if (row.get("freshness") or {}).get("eligible") is True]
     human = {issue_key(row): row for row in unique_issues(samples)}
     matched = [row for row in valid if issue_key(row) in human]
     confusion = Counter((human[issue_key(row)]["verdict"] == "부적합",
                          row["grade"]["difficulty"] == 3 or row["grade"]["readiness"] == "undecided")
                         for row in matched)
     return {"total": len(rows), "valid": len(valid), "failed": len(rows) - len(valid),
-            "excluded": len(valid) - len(eligible), "eligible": len(eligible), "target": len(target),
+            "excluded": len(valid) - len(eligible), "eligible": len(eligible),
+            "raw_target": len(raw_target), "target": len(target),
             "cross": Counter((row["grade"]["difficulty"], row["grade"]["readiness"]) for row in eligible),
             "repos": Counter(row["repo"] for row in rows),
             "repo_eligible": Counter(row["repo"] for row in eligible),
@@ -330,7 +367,8 @@ def render_report(stats):
     s = stats
     lines = ["# oss-radar 리포트", "",
              f"입력 {s['total']}건 / 판정 성공 {s['valid']}건 / 실패 {s['failed']}건 / AI 제외 {s['excluded']}건", "",
-             f"**Lv.1 × ready: {ratio(s['target'], s['valid'])}** (분모: 판정 성공 전체, AI 제외 포함)",
+             f"**최신 상태 확인 추천: {ratio(s['target'], s['valid'])}** (분모: 판정 성공 전체, AI 제외 포함)",
+             f"Lv.1 × ready 원시 후보: {s['raw_target']}건",
              f"AI 제외 후 비율: {ratio(s['target'], s['eligible'])}",
              "대상은 exclude=false인 Lv.1 × ready만 포함. 수집 제외는 입력에 포함되지 않음.",
              "실패가 있으면 성공한 일부에 대한 비율이며 전체 실측은 미완료.", "",
@@ -381,6 +419,7 @@ def main():
     grade_parser.add_argument("--input", type=Path, default=Path("issues.jsonl"))
     grade_parser.add_argument("--output", type=Path, default=Path("grades.jsonl"))
     grade_parser.add_argument("--model", default="gpt-5.6-luna", help="판정 모델 (기본: gpt-5.6-luna, 추론 low)")
+    grade_parser.add_argument("--reuse", type=Path, help="정확히 일치하는 성공 판정을 재사용할 JSONL (기본: 기존 출력)")
     grade_parser.add_argument("--all", dest="all_issues", action="store_true", help="100건·레포당 20건 상한 없이 전체 판정")
     grade_parser.set_defaults(run=grade)
     report_parser = commands.add_parser("report", help="교차표, 비율, 레포 집중도, 사람 판정 비교")

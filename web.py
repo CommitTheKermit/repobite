@@ -47,7 +47,9 @@ class Application:
             sample_path = self.root / "fixtures/sample30.json"
             samples = json.loads(sample_path.read_text()) if sample_path.exists() else []
             stats = radar.aggregate(rows, samples)
-            grade_count = len(radar.select_for_grading(issues))
+            reusable = radar.reusable_grades(rows, issues, "gpt-5.6-luna")
+            unresolved = [issue for issue in issues if radar.issue_key(issue) not in reusable]
+            grade_count = len(radar.select_for_grading(unresolved))
             summary = {key: stats[key] for key in ("valid", "failed", "excluded", "target", "eligible")}
             summary["cross"] = [[stats["cross"][level, state] for state in radar.READINESS]
                                 for level in (1, 2, 3)]
@@ -57,7 +59,8 @@ class Application:
                 row = grades.get(radar.issue_key(issue), {})
                 items.append({"repo": issue["repo"], "number": issue["number"],
                               "title": issue["title"], "grade": row.get("grade"),
-                              "error": row.get("error"), "model": row.get("model")})
+                              "error": row.get("error"), "model": row.get("model"),
+                              "freshness": row.get("freshness")})
             repos = source.parent / "repos.txt"
             if not repos.exists():
                 repos = self.root / "repos.txt"
@@ -66,7 +69,8 @@ class Application:
                     "default_repos": (self.root / "repos.txt").read_text(), "max_repos": MAX_REPOS,
                     "source": "웹 작업 결과" if source.parent != self.root else "기존 CLI 데이터",
                     "count": len(issues), "items": items, "summary": summary,
-                    "grade_count": grade_count, "deferred_count": len(issues) - grade_count,
+                    "grade_count": grade_count, "deferred_count": len(unresolved) - grade_count,
+                    "unresolved_count": len(unresolved),
                     "grade_limit": radar.GRADE_LIMIT, "repo_grade_limit": radar.REPO_GRADE_LIMIT,
                     "report": radar.render_report(stats)}
 
@@ -111,13 +115,17 @@ class Application:
                 work = Path(directory)
                 command = [sys.executable, str(radar.ROOT / "radar.py")]
                 if is_grading:
-                    source, _ = self.paths()
+                    source, previous = self.paths()
                     (work / "issues.jsonl").write_bytes(source.read_bytes())
+                    if previous.exists():
+                        (work / "reuse.jsonl").write_bytes(previous.read_bytes())
                     saved_repos = source.parent / "repos.txt"
                     if saved_repos.exists():
                         (work / "repos.txt").write_bytes(saved_repos.read_bytes())
                     command += ["grade", "--input", str(work / "issues.jsonl"),
                                 "--output", str(work / "grades.jsonl"), "--model", "gpt-5.6-luna"]
+                    if (work / "reuse.jsonl").exists():
+                        command += ["--reuse", str(work / "reuse.jsonl")]
                     if action == "grade_all":
                         command.append("--all")
                 else:

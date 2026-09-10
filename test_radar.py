@@ -111,11 +111,18 @@ def test_schema_and_grading():
                 raise ValueError("invalid model response")
             return GOOD
 
-        with patch.object(radar, "grade_issue", side_effect=fake_grade):
+        with (patch.object(radar, "grade_issue", side_effect=fake_grade),
+              patch.object(radar.freshness, "apply_freshness", side_effect=lambda rows: rows)):
             assert radar.grade(args) == 1
         rows = radar.read_jsonl(target)
         assert rows[0]["grade"] == GOOD and rows[1]["grade"] is None
+        assert rows[0]["criteria_version"] == radar.CRITERIA_VERSION
         assert radar.aggregate(rows)["failed"] == 1
+        with (patch.object(radar, "grade_issue", return_value=GOOD) as model,
+              patch.object(radar.freshness, "apply_freshness", side_effect=lambda rows: rows)):
+            assert radar.grade(args) == 0
+        assert model.call_count == 1
+        assert len(radar.read_jsonl(target)) == 2
         before = target.read_bytes()
         try:
             with radar.atomic_output(target) as stream:
@@ -154,7 +161,8 @@ def test_grading_parallelism():
         source.write_text("".join(json.dumps({**issue, "repo": "a/b" if n <= 16 else "c/d", "number": n}) + "\n"
                                   for n in range(1, 33)))
         args = argparse.Namespace(input=source, output=target, model="gpt-5.6-luna")
-        with patch.object(radar, "grade_issue", side_effect=fake_grade):
+        with (patch.object(radar, "grade_issue", side_effect=fake_grade),
+              patch.object(radar.freshness, "apply_freshness", side_effect=lambda rows: rows)):
             assert radar.grade(args) == 0
         assert peak == 16
         assert sorted(row["number"] for row in radar.read_jsonl(target)) == list(range(1, 33))
@@ -183,22 +191,39 @@ def test_grading_limits():
         source.write_text("".join(json.dumps(row) + "\n" for row in issues))
         original = source.read_bytes()
         args = argparse.Namespace(input=source, output=target, model="gpt-5.6-luna")
-        with patch.object(radar, "grade_issue", side_effect=RuntimeError("failure")) as model:
+        with (patch.object(radar, "grade_issue", side_effect=RuntimeError("failure")) as model,
+              patch.object(radar.freshness, "apply_freshness", side_effect=lambda rows: rows)):
             assert radar.grade(args) == 1
         assert model.call_count == 100  # 실패도 상한에 포함하며 다른 이슈로 보충하지 않는다.
         assert len(radar.read_jsonl(target)) == 100
         assert source.read_bytes() == original
         args.all_issues = True
-        with patch.object(radar, "grade_issue", return_value=GOOD) as model:
+        with (patch.object(radar, "grade_issue", return_value=GOOD) as model,
+              patch.object(radar.freshness, "apply_freshness", side_effect=lambda rows: rows)):
             assert radar.grade(args) == 0
         assert model.call_count == 180
         assert radar.read_jsonl(target)[-1]["number"] == 30
         assert len(radar.read_jsonl(target)) == 180
         assert source.read_bytes() == original
+        args.all_issues = False
+        with (patch.object(radar, "grade_issue", return_value=GOOD) as model,
+              patch.object(radar.freshness, "apply_freshness", side_effect=lambda rows: rows)):
+            assert radar.grade(args) == 0
+        assert model.call_count == 0
+        assert len(radar.read_jsonl(target)) == 180
+        changed = [{**row, "body": "changed"} if row["number"] == 1 and row["repo"] == "owner/repo0" else row
+                   for row in issues]
+        source.write_text("".join(json.dumps(row) + "\n" for row in changed))
+        with (patch.object(radar, "grade_issue", return_value=GOOD) as model,
+              patch.object(radar.freshness, "apply_freshness", side_effect=lambda rows: rows)):
+            assert radar.grade(args) == 0
+        assert model.call_count == 1
+        assert len(radar.read_jsonl(target)) == 180
 
 
 def test_report():
-    rows = [{"repo": "a/b", "number": 1, "grade": GOOD},
+    rows = [{"repo": "a/b", "number": 1, "grade": GOOD,
+             "freshness": {"eligible": True, "reason": "확인 완료", "checked_at": "now"}},
             {"repo": "a/b", "number": 2, "grade": {**GOOD, "difficulty": 3}},
             {"repo": "c/d", "number": 3, "grade": {**GOOD, "readiness": "undecided"}},
             {"repo": "c/d", "number": 4, "grade": {**GOOD, "exclude": True, "exclude_reason": "원인 미상"}},
