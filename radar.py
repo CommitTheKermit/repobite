@@ -258,8 +258,8 @@ def grade(args):
             return {**issue, **metadata, "grade": None, "error": type(error).__name__}
 
     failed = 0
-    with atomic_output(args.output) as stream, ThreadPoolExecutor(max_workers=4) as pool:
-        for index, row in enumerate(pool.map(judge, issues, buffersize=4), 1):
+    with atomic_output(args.output) as stream, ThreadPoolExecutor(max_workers=16) as pool:
+        for index, row in enumerate(pool.map(judge, issues, buffersize=16), 1):
             write_row(stream, row)
             failed += row["grade"] is None
             print(f"판정 {index}/{len(issues)}: {row['repo']}#{row['number']} "

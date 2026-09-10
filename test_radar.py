@@ -9,6 +9,7 @@ import json
 from pathlib import Path
 import subprocess
 import tempfile
+import threading
 from unittest.mock import patch
 
 import radar
@@ -130,6 +131,34 @@ def test_schema_and_grading():
         rejects(radar.read_jsonl, source)
 
 
+def test_grading_parallelism():
+    barrier = threading.Barrier(16, timeout=5)
+    lock = threading.Lock()
+    active = peak = 0
+
+    def fake_grade(row, model):
+        nonlocal active, peak
+        with lock:
+            active += 1
+            peak = max(peak, active)
+        try:
+            barrier.wait()
+            return GOOD
+        finally:
+            with lock:
+                active -= 1
+
+    with tempfile.TemporaryDirectory() as directory:
+        source, target = Path(directory) / "issues.jsonl", Path(directory) / "grades.jsonl"
+        issue = radar.normalize_issue("a/b", ISSUE)
+        source.write_text("".join(json.dumps({**issue, "number": n}) + "\n" for n in range(1, 33)))
+        args = argparse.Namespace(input=source, output=target, model="gpt-5.6-luna")
+        with patch.object(radar, "grade_issue", side_effect=fake_grade):
+            assert radar.grade(args) == 0
+        assert peak == 16
+        assert [row["number"] for row in radar.read_jsonl(target)] == list(range(1, 33))
+
+
 def test_report():
     rows = [{"repo": "a/b", "number": 1, "grade": GOOD},
             {"repo": "a/b", "number": 2, "grade": {**GOOD, "difficulty": 3}},
@@ -159,5 +188,6 @@ if __name__ == "__main__":
     with redirect_stderr(io.StringIO()):
         test_filters_and_collection()
         test_schema_and_grading()
+        test_grading_parallelism()
         test_report()
-    print("통과: 제외 필터·페이지 수집·스키마·판정 실패 보존·원자적 저장·리포트 집계")
+    print("통과: 제외 필터·페이지 수집·스키마·16개 동시 판정·판정 실패 보존·원자적 저장·리포트 집계")

@@ -60,7 +60,7 @@ python3 radar.py report
 
 - `collect`: `gh api repos/{repo}/issues`를 페이지 끝까지 읽고 PR, 담당자가 있는 이슈, 봇 작성 이슈를 제외한다. 문자열/라벨 사전 필터는 없다.
 - `--since 7d`: 최근 7일 **갱신** 기준이다. 생성 시각 필터가 아니다. `24h`, `1w`도 지원한다.
-- `grade`: 이슈당 `codex exec` 1회, 최대 4개 동시 호출. 기본 모델은 `gpt-5.6-luna`, 추론은 `low`다. `--model`로 변경할 수 있다.
+- `grade`: 이슈당 `codex exec` 1회, 최대 16개 동시 호출. 기본 모델은 `gpt-5.6-luna`, 추론은 `low`다. `--model`로 변경할 수 있다.
 - `report`: Markdown 교차표, Lv.1 × ready 비율, 레포 분포와 상위 3개 집중도, 사람 판정과의 이진 비교를 stdout에 출력한다.
 
 입출력 경로는 `collect --repos/--output`, `grade --input/--output`, `report --input/--sample`로 바꾼다.
