@@ -15,6 +15,8 @@ import uuid
 
 import radar
 
+MAX_REPOS = 100
+
 
 class Application:
     def __init__(self, root=radar.ROOT):
@@ -60,6 +62,7 @@ class Application:
                 repos = self.root / "repos.txt"
             return {"busy": self.busy, "message": self.message, "logs": list(self.logs),
                     "repos": repos.read_text() if repos.exists() else "",
+                    "default_repos": (self.root / "repos.txt").read_text(), "max_repos": MAX_REPOS,
                     "source": "웹 작업 결과" if source.parent != self.root else "기존 CLI 데이터",
                     "count": len(issues), "items": items, "summary": summary,
                     "report": radar.render_report(stats)}
@@ -75,8 +78,8 @@ class Application:
                 raise ValueError("레포 목록을 입력하세요.")
             names = list(dict.fromkeys(line.split("#", 1)[0].strip() for line in text.splitlines()))
             names = [name for name in names if name]
-            if not 1 <= len(names) <= 20:
-                raise ValueError("레포를 1개 이상 20개 이하로 입력하세요.")
+            if not 1 <= len(names) <= MAX_REPOS:
+                raise ValueError(f"레포를 1개 이상 {MAX_REPOS}개 이하로 입력하세요.")
             for name in names:
                 radar.issue_key({"repo": name, "number": 1})
             repos = "\n".join(names) + "\n"
@@ -208,13 +211,13 @@ class Handler(BaseHTTPRequestHandler):
             return
         try:
             length = int(self.headers.get("Content-Length", "0"))
-            if not 0 < length <= 10000:
+            if not 0 < length <= 32768:
                 raise ValueError("입력 크기가 잘못되었습니다.")
             payload = json.loads(self.rfile.read(length))
             self.server.app.start(payload)
             self.reply(202, {"started": True})
         except (ValueError, TypeError, OSError):
-            self.reply(400, {"error": "입력을 확인하세요. owner/repo 형식으로 최대 20개를 입력하고, 판정 전에는 수집하세요."})
+            self.reply(400, {"error": f"입력을 확인하세요. owner/repo 형식으로 최대 {MAX_REPOS}개를 입력하고, 판정 전에는 수집하세요."})
         except RuntimeError as error:
             self.reply(409, {"error": str(error)})
 

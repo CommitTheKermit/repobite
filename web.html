@@ -18,7 +18,8 @@
 <form id="collect-form">
 <label for="repos">추적할 GitHub 레포</label>
 <textarea id="repos" rows="11" required placeholder="owner/repository" aria-describedby="repos-help"></textarea>
-<p id="repos-help" class="help">한 줄에 하나씩, 최대 20개</p>
+<p id="repos-help" class="help">한 줄에 하나씩 입력하세요.</p>
+<button class="wide" id="default-repos" type="button" disabled>기본 100개 불러오기</button>
 <label for="since">최근 갱신 기간</label>
 <select id="since"><option value="1d">최근 1일</option><option value="3d">최근 3일</option><option value="7d" selected>최근 7일</option><option value="14d">최근 14일</option></select>
 <button class="primary wide" id="collect" type="submit" disabled>이슈 수집</button>
@@ -88,14 +89,19 @@ function renderItems() {
 }
 function controls() {
   const busy = submitting || !state || state.busy;
-  for (const id of ['collect','sample','repos','since']) $(id).disabled = busy;
+  for (const id of ['collect','sample','repos','since','default-repos']) $(id).disabled = busy;
   $('grade').disabled = busy || !state?.count;
+}
+function repoCount() {
+  const count = new Set($('repos').value.split('\n').map(line=>line.split('#')[0].trim()).filter(Boolean)).size;
+  $('repos-help').textContent = `현재 ${count}개 / 최대 ${state?.max_repos ?? 100}개. 한 줄에 하나씩 입력하세요.`;
 }
 async function refresh() {
   const response = await fetch('/api/state'); const data = await response.json();
   if (!response.ok) throw Error(data.error);
   if (!state) $('repos').value = data.repos;
   state = data;
+  repoCount();
   $('status').textContent = data.message; $('source').textContent = `${data.source} / 수집 ${data.count}건 / 판정 실패 ${data.summary.failed}건`;
   $('grade-count').textContent = data.count;
   $('target').textContent = data.summary.target;
@@ -122,6 +128,8 @@ async function run(action) {
 }
 function showError(error) {$('error').textContent = error.message || '서버에 연결하지 못했습니다. Mac에서 웹 서버를 실행 중인지 확인하세요.';$('error').hidden=false;}
 $('collect-form').addEventListener('submit',event=>{event.preventDefault();run('collect').catch(showError);});
+$('default-repos').addEventListener('click',()=>{if(state && !state.busy && !submitting){$('repos').value=state.default_repos;repoCount();}});
+$('repos').addEventListener('input',repoCount);
 $('sample').addEventListener('click',()=>run('sample').catch(showError));
 $('grade').addEventListener('click',()=>run('grade').catch(showError));
 document.querySelectorAll('[data-filter]').forEach(button=>button.addEventListener('click',()=>{filter=button.dataset.filter;limit=50;document.querySelectorAll('[data-filter]').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));renderItems();}));

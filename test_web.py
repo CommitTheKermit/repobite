@@ -67,6 +67,8 @@ def main():
         try:
             assert request("/")[0] == 200
             assert state()["summary"]["target"] == 1
+            assert state()["max_repos"] == 100
+            assert state()["default_repos"] == "a/b\n"
             assert request("/.env")[0] == request("/../radar.py")[0] == 404
             assert request("/api/state", headers={"Host": "attacker.example"})[0] == 403
             for headers in ({"Origin": "https://attacker.example"}, {"Origin": ""},
@@ -79,6 +81,19 @@ def main():
                 assert request("/api/run", {"action": "grade"})[0] == 202
                 assert request("/api/run", {"action": "grade"})[0] == 409
             server.app.busy = False
+            hundred = (radar.ROOT / "repos.txt").read_text()
+            names = [name for line in hundred.splitlines() if (name := line.split("#", 1)[0].strip())]
+            assert len(names) == len(set(name.lower() for name in names)) == 100
+            with patch.object(web.Application, "run") as worker:
+                assert request("/api/run", {"action": "collect", "repos": hundred, "since": "7d"})[0] == 202
+                deadline = time.monotonic() + 5
+                while not worker.called:
+                    assert time.monotonic() < deadline
+                    time.sleep(.01)
+                assert len(worker.call_args.args[1].splitlines()) == 100
+            server.app.busy = False
+            assert request("/api/run", {"action": "collect", "repos": hundred + "\nowner/extra", "since": "7d"})[0] == 400
+            assert not state()["busy"]
             original = (root / "grades.jsonl").read_bytes()
             with patch.object(web.subprocess, "Popen", side_effect=fake_process):
                 assert request("/api/run", {"action": "collect", "repos": "a/b", "since": "7d"})[0] == 202
@@ -91,6 +106,9 @@ def main():
                 assert state()["summary"]["target"] == 1
             assert (root / "grades.jsonl").read_bytes() == original
             assert web.Application(root).snapshot()["items"] == state()["items"]
+            (root / "repos.txt").write_text("new/default\n")
+            assert state()["repos"] == "a/b\n"
+            assert state()["default_repos"] == "new/default\n"
             pointer = (server.app.data / "current").resolve()
             with patch.object(web.subprocess, "Popen", side_effect=FileNotFoundError):
                 assert request("/api/run", {"action": "collect", "repos": "a/b", "since": "7d"})[0] == 202
@@ -111,7 +129,7 @@ def main():
                 server.app.stop()
                 kill.assert_called_once_with(12345, web.signal.SIGTERM)
             assert request("/api/run", {"action": "grade"})[0] == 409
-            print("통과: HTTP 실행·입력 검증·교차 출처 차단·중복 실행 방지·수집/판정 연결·실패 보존·재시작 복원")
+            print("통과: HTTP 실행·기본 100개·101개 거절·목록 복원·입력 검증·교차 출처 차단·중복 실행 방지·수집/판정 연결·실패 보존·재시작 복원")
         finally:
             server.shutdown()
             server.server_close()

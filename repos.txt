@@ -1,11 +1,121 @@
-# 구현 지시서 실측 9개 + 기획서의 기여 사례 레포
-microsoft/vscode
-home-assistant/core
-golang/go
-rust-lang/rust
-pytorch/pytorch
-kubernetes/kubernetes
-nodejs/node
-vercel/next.js
-facebook/react
-Q00/ouroboros
+# 2026-09-10 선정: 10개 분야 × 10개, 근거는 docs/레포-선정.md
+
+# AI 에이전트·MCP
+NousResearch/hermes-agent
+THU-MAIC/OpenMAIC
+volcengine/OpenViking
+openai/codex
+can1357/oh-my-pi
+CodebuffAI/freebuff
+pingdotgg/t3code
+apify/apify-mcp-server
+github/github-mcp-server
+browser-use/browser-use
+
+# 모델 학습·로컬 추론
+unslothai/unsloth
+ml-explore/mlx
+ggml-org/llama.cpp
+ollama/ollama
+mlc-ai/web-llm
+marin-community/marin
+jingyaogong/minimind
+google-research/timesfm
+jundot/omlx
+cactus-compute/needle
+
+# 프런트엔드·UI
+shadcn-ui/ui
+TanStack/router
+sveltejs/svelte
+withastro/astro
+solidjs/solid
+unovue/reka-ui
+unovue/shadcn-vue
+nuxt/ui
+vbenjs/vue-vben-admin
+onlook-dev/onlook
+
+# 백엔드·API·워크플로
+honojs/hono
+elysiajs/elysia
+better-auth/better-auth
+drizzle-team/drizzle-orm
+encoredev/encore
+pocketbase/pocketbase
+triggerdotdev/trigger.dev
+restatedev/restate
+kestra-io/kestra
+nitrojs/nitro
+
+# 데이터·검색·분석
+pola-rs/polars
+duckdb/duckdb
+dragonflydb/dragonfly
+qdrant/qdrant
+lancedb/lancedb
+meilisearch/meilisearch
+infiniflow/ragflow
+nautechsystems/nautilus_trader
+asciimoo/hister
+semantica-agi/semantica
+
+# 개발 도구·터미널
+astral-sh/uv
+astral-sh/ruff
+oxc-project/oxc
+biomejs/biome
+zed-industries/zed
+gitbutlerapp/gitbutler
+ghostty-org/ghostty
+sinelaw/fresh
+lightpanda-io/browser
+neurosnap/zmx
+
+# 인프라·운영·보안
+henrygd/beszel
+1Panel-dev/1Panel
+cachix/devenv
+coollabsio/coolify
+Dokploy/dokploy
+Tencent/AI-Infra-Guard
+superradcompany/microsandbox
+agent-substrate/substrate
+llm-d/llm-d
+gitleaks/gitleaks
+
+# 셀프호스팅·생산성
+glanceapp/glance
+plankanban/planka
+go-vikunja/vikunja
+AppFlowy-IO/AppFlowy
+bookorbit/bookorbit
+toeverything/AFFiNE
+karakeep-app/karakeep
+twentyhq/twenty
+actualbudget/actual
+gtsteffaniak/filebrowser
+
+# 모바일·데스크톱
+localsend/localsend
+ImranR98/Obtainium
+saber-notes/saber
+Anxcye/anx-reader
+TNT-Likely/BeeCount
+nikitabobko/AeroSpace
+TheBoredTeam/boring.notch
+AprilNEA/OpenLogi
+OpenWhispr/openwhispr
+gkd-kit/gkd
+
+# 미디어·시각화·창작
+debpalash/VoiceStudio
+Stremio/stremio-web
+LizardByte/Sunshine
+moonlight-stream/moonlight-qt
+3b1b/manim
+immich-app/immich
+heygen-com/hyperframes
+tt-a1i/archify
+maotoumao/MusicFree
+VERT-sh/VERT

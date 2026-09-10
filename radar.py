@@ -188,7 +188,8 @@ def collect(args):
         for repo in repos:
             issue_key({"repo": repo, "number": 1})
         print(f"갱신 기준 since={since}", file=sys.stderr)
-        for repo in repos:
+        for index, repo in enumerate(repos, 1):
+            print(f"레포 수집 {index}/{len(repos)}: {repo}", file=sys.stderr)
             query = urlencode({"state": "open", "since": since, "per_page": 100})
             pages = gh_json(f"repos/{repo}/issues?{query}", "--paginate", "--slurp")
             for page in pages:
