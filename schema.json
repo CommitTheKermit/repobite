@@ -1,0 +1,12 @@
+{
+  "type": "object",
+  "properties": {
+    "difficulty": {"type": "integer", "enum": [1, 2, 3]},
+    "readiness": {"type": "string", "enum": ["ready", "needs_info", "undecided"]},
+    "reason": {"type": "string"},
+    "exclude": {"type": "boolean"},
+    "exclude_reason": {"type": "string"}
+  },
+  "required": ["difficulty", "readiness", "reason", "exclude", "exclude_reason"],
+  "additionalProperties": false
+}

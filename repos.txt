@@ -1,0 +1,11 @@
+# 구현 지시서 실측 9개 + 기획서의 기여 사례 레포
+microsoft/vscode
+home-assistant/core
+golang/go
+rust-lang/rust
+pytorch/pytorch
+kubernetes/kubernetes
+nodejs/node
+vercel/next.js
+facebook/react
+Q00/ouroboros

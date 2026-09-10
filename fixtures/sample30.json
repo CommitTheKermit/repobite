@@ -1,0 +1,182 @@
+[
+  {
+    "repo": "jaeyeom/experimental",
+    "number": 332,
+    "verdict": "부적합",
+    "reason": "설계 판단 필요"
+  },
+  {
+    "repo": "THU-MAIC/OpenMAIC",
+    "number": 1438,
+    "verdict": "적합",
+    "reason": "Dockerfile mkdir/chown 누락, 원인 추적 완결"
+  },
+  {
+    "repo": "alebertolli/idos",
+    "number": 79,
+    "verdict": "부적합",
+    "reason": "봇 생성, 로그 404"
+  },
+  {
+    "repo": "jaeyeom/experimental",
+    "number": 331,
+    "verdict": "조건부",
+    "reason": "dedupe 상태파일, 프로젝트 맥락 필요"
+  },
+  {
+    "repo": "yc-software/qm",
+    "number": 1070,
+    "verdict": "조건부",
+    "reason": "webUrl 추가, 위치 명시됨"
+  },
+  {
+    "repo": "anaskasmi/local-pm",
+    "number": 3,
+    "verdict": "적합",
+    "reason": "파일경로+근본원인+해결 API 명시"
+  },
+  {
+    "repo": "ijoolaie/AI-Employee",
+    "number": 422,
+    "verdict": "조건부",
+    "reason": "partial unique index, DB 지식 필요"
+  },
+  {
+    "repo": "simonives/redwrench",
+    "number": 58,
+    "verdict": "부적합",
+    "reason": "direction만"
+  },
+  {
+    "repo": "simonives/redwrench",
+    "number": 54,
+    "verdict": "부적합",
+    "reason": "direction만"
+  },
+  {
+    "repo": "D0n9X1n/SonicTerm",
+    "number": 1316,
+    "verdict": "부적합",
+    "reason": "vcpkg 캐시 ABI, CI 인프라"
+  },
+  {
+    "repo": "justrach/codegraff",
+    "number": 829,
+    "verdict": "조건부",
+    "reason": "원인 미확정"
+  },
+  {
+    "repo": "NousResearch/hermes-agent",
+    "number": 107121,
+    "verdict": "적합",
+    "reason": "shebang 경로, 재현·원인·수정 명확"
+  },
+  {
+    "repo": "wboayue/rust-ibapi",
+    "number": 806,
+    "verdict": "적합",
+    "reason": "상수 추가 + 선례 이슈 2건 제시"
+  },
+  {
+    "repo": "simonives/redwrench",
+    "number": 48,
+    "verdict": "부적합",
+    "reason": "direction만"
+  },
+  {
+    "repo": "simonives/redwrench",
+    "number": 45,
+    "verdict": "부적합",
+    "reason": "direction만"
+  },
+  {
+    "repo": "simonives/redwrench",
+    "number": 44,
+    "verdict": "부적합",
+    "reason": "direction만"
+  },
+  {
+    "repo": "simonives/redwrench",
+    "number": 43,
+    "verdict": "부적합",
+    "reason": "direction만"
+  },
+  {
+    "repo": "simonives/redwrench",
+    "number": 42,
+    "verdict": "부적합",
+    "reason": "direction만"
+  },
+  {
+    "repo": "arianit/wiki-translate-harness",
+    "number": 3,
+    "verdict": "조건부",
+    "reason": "로깅 레벨, 파일:라인 명시"
+  },
+  {
+    "repo": "simonives/redwrench",
+    "number": 41,
+    "verdict": "부적합",
+    "reason": "direction만"
+  },
+  {
+    "repo": "simonives/redwrench",
+    "number": 40,
+    "verdict": "부적합",
+    "reason": "정책 설계 판단"
+  },
+  {
+    "repo": "simonives/redwrench",
+    "number": 39,
+    "verdict": "부적합",
+    "reason": "정책 설계 판단"
+  },
+  {
+    "repo": "simonives/redwrench",
+    "number": 38,
+    "verdict": "부적합",
+    "reason": "정책 설계 판단"
+  },
+  {
+    "repo": "1jehuang/jcode",
+    "number": 1214,
+    "verdict": "부적합",
+    "reason": "3계층 원인, 복잡"
+  },
+  {
+    "repo": "bloknayrb/tandem",
+    "number": 1937,
+    "verdict": "부적합",
+    "reason": "이전 가설 반증됨, 원인 미확정"
+  },
+  {
+    "repo": "GeorgieTech/savant-host-s2-smart-home-processor-BETA1",
+    "number": 14,
+    "verdict": "조건부",
+    "reason": "Range resume 구현량 있음"
+  },
+  {
+    "repo": "1jehuang/jcode",
+    "number": 1212,
+    "verdict": "조건부",
+    "reason": "포크에 수정 커밋 있음, Rust"
+  },
+  {
+    "repo": "1jehuang/jcode",
+    "number": 1210,
+    "verdict": "조건부",
+    "reason": "root cause 명확, Rust"
+  },
+  {
+    "repo": "1jehuang/jcode",
+    "number": 1209,
+    "verdict": "조건부",
+    "reason": "포크에 수정 커밋 있음, Rust"
+  },
+  {
+    "repo": "massimoaria/bibliometrix",
+    "number": 666,
+    "verdict": "적합",
+    "reason": "본문에 diff 그대로, 한 줄 수정"
+  }
+]
