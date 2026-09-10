@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="내 Mac에서 GitHub 이슈를 수집하고 기여 난이도와 준비도를 판정합니다.">
+<title>oss-radar | 기여할 이슈 찾기</title>
+<style>
+:root{--ink:#182b48;--muted:#52637a;--blue:#234fc7;--paper:#f1f5fb;--line:#d5deeb;--green:#176947;--white:#fff;font-family:"Avenir Next","Apple SD Gothic Neo",sans-serif;color:var(--ink);background:var(--paper);font-size:16px}
+*{box-sizing:border-box}body{margin:0}button,textarea,select,input{font:inherit}button,a,input,select,textarea{outline-offset:4px}:focus-visible{outline:3px solid #d67419}button{cursor:pointer}button:disabled{cursor:wait;opacity:.5}header{display:flex;align-items:center;justify-content:space-between;padding:23px 4vw;border-bottom:1px solid var(--line);background:var(--white)}header strong{font-size:1.4rem;letter-spacing:-.05em}header span{font-size:.9rem;color:var(--muted)}main{max-width:1450px;margin:auto;display:grid;grid-template-columns:300px minmax(0,1fr);gap:38px;padding:32px 4vw}aside{align-self:start}h1{font-size:1.65rem;letter-spacing:-.04em;margin:0 0 24px}h2{font-size:1.15rem;margin:0}p{line-height:1.6}.help{font-size:.9rem;color:var(--muted);margin:8px 0 20px}label{display:block;font-weight:600;font-size:.95rem;margin-bottom:9px}textarea,select,input{border:1px solid #9aaac0;border-radius:7px;background:var(--white);color:var(--ink);padding:11px;width:100%}textarea{line-height:1.65;resize:vertical;font-size:.9rem}select{margin-bottom:20px}button{border:1px solid var(--line);border-radius:7px;padding:12px 16px;background:var(--white);color:var(--ink);font-weight:600}.primary{background:var(--blue);border-color:var(--blue);color:white}.wide{width:100%;margin:0 0 10px}.divider{margin:24px 0;border:0;border-top:1px solid var(--line)}.workspace{min-width:0}.status{padding:18px 22px;border-left:4px solid var(--blue);background:#e3ecfc;margin-bottom:25px}.status p{margin:0}.status small{display:block;margin-top:6px;color:var(--muted);font-size:.875rem}.summary{display:flex;gap:36px;padding:0 0 24px;margin-bottom:24px;border-bottom:1px solid var(--line);flex-wrap:wrap}.metric b{display:block;font-size:2rem;letter-spacing:-.04em}.metric span{font-size:.9rem;color:var(--muted)}.metric:first-child b{color:var(--green)}.toolbar{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin:22px 0 16px}.filters{display:flex;gap:6px;flex-wrap:wrap}.filters button{font-size:.875rem;padding:8px 12px;border-radius:20px}.filters button[aria-pressed=true]{color:#fff;background:var(--ink);border-color:var(--ink)}#search{max-width:100%;margin:0 0 16px}.issue{padding:21px 24px;background:var(--white);border:1px solid var(--line);border-radius:9px;margin-bottom:12px}.issue.candidate{border-left:4px solid var(--green)}.issue-top{display:flex;justify-content:space-between;gap:12px;align-items:start}.repo{font-size:.875rem;color:var(--muted);overflow-wrap:anywhere}.issue h3{font-size:1.075rem;line-height:1.5;margin:8px 0 10px;font-weight:600}.issue a{color:var(--ink);text-decoration:none}.issue a:hover{text-decoration:underline}.issue p{font-size:.95rem;margin:10px 0 0;max-width:80ch}.badges{display:flex;gap:6px;flex-wrap:wrap;flex-shrink:0}.badge{font-size:.8rem;font-weight:600;padding:4px 8px;border-radius:5px;background:#edf1f7;white-space:nowrap}.good{color:var(--green);background:#e1f2e9}.excluded{color:#924519;background:#fff0df}.empty{padding:36px 20px;text-align:center;color:var(--muted);border:1px dashed #9aaac0;border-radius:9px;line-height:1.7}details{margin-top:20px}summary{cursor:pointer;font-weight:600;padding:12px 0}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:.875rem;line-height:1.65;background:#e8edf5;padding:18px;border-radius:7px;max-height:420px;overflow:auto}table{width:100%;border-collapse:collapse;font-size:.95rem;background:var(--white)}th,td{padding:12px;text-align:center;border-bottom:1px solid var(--line)}th:first-child,td:first-child{text-align:left}.table-wrap{overflow:auto}.error{color:#9d2b20;margin:10px 0;line-height:1.6}#load-more{display:block;margin:20px auto}.footnote{font-size:.875rem;color:var(--muted)}[hidden]{display:none!important}
+@media(max-width:850px){main{grid-template-columns:1fr;padding:24px;gap:30px}aside{border-bottom:1px solid var(--line);padding-bottom:18px}textarea{height:130px}.issue-top{flex-direction:column}.summary{gap:24px}header{padding:20px 24px}}@media(prefers-reduced-motion:no-preference){button{transition:background .15s}}
+</style>
+</head>
+<body>
+<header><strong>oss-radar</strong><span>내 Mac의 기여 탐색 도구</span></header>
+<main>
+<aside>
+<h1>기여할 이슈 찾기</h1>
+<form id="collect-form">
+<label for="repos">추적할 GitHub 레포</label>
+<textarea id="repos" rows="11" required placeholder="owner/repository" aria-describedby="repos-help"></textarea>
+<p id="repos-help" class="help">한 줄에 하나씩, 최대 20개</p>
+<label for="since">최근 갱신 기간</label>
+<select id="since"><option value="1d">최근 1일</option><option value="3d">최근 3일</option><option value="7d" selected>최근 7일</option><option value="14d">최근 14일</option></select>
+<button class="primary wide" id="collect" type="submit" disabled>이슈 수집</button>
+</form>
+<button class="wide" id="sample" disabled>고정 표본 30건 수집</button>
+<p class="help">PR·담당자 있는 이슈·봇은 제외합니다. 수집을 마친 뒤 판정을 실행하세요.</p>
+<hr class="divider">
+<button class="primary wide" id="grade" disabled>수집한 이슈 판정</button>
+<p class="help">저비용 Luna로 본문을 읽습니다.<br>판정할 이슈 <strong id="grade-count">0</strong>건</p>
+<p class="footnote">새 수집은 웹의 이전 결과를 교체합니다. 기존 CLI 표본 파일은 유지됩니다.</p>
+</aside>
+<section class="workspace" aria-label="수집과 판정 결과">
+<div class="status" role="status" aria-live="polite"><p id="status">기존 결과를 불러오고 있습니다.</p><small id="source"></small></div>
+<p id="error" class="error" role="alert" hidden></p>
+<div class="summary">
+<div class="metric"><b id="target">-</b><span>바로 기여할 후보</span></div>
+<div class="metric"><b id="rate">-</b><span>판정 성공 중 후보 비율</span></div>
+<div class="metric"><b id="valid">-</b><span>판정 완료</span></div>
+<div class="metric"><b id="excluded">-</b><span>판정 후 제외</span></div>
+</div>
+<h2>이슈와 판정 근거</h2>
+<div class="toolbar"><div class="filters" aria-label="결과 필터">
+<button data-filter="candidate" aria-pressed="true">추천 후보</button>
+<button data-filter="all" aria-pressed="false">전체</button>
+<button data-filter="excluded" aria-pressed="false">제외</button>
+<button data-filter="pending" aria-pressed="false">미판정·실패</button>
+</div><span class="footnote" id="visible-count"></span></div>
+<label for="search" class="footnote">레포 또는 이슈 제목 검색</label><input id="search" type="search" placeholder="예: bibliometrix">
+<div id="issues"><p class="empty">결과를 불러오는 중입니다.</p></div>
+<button id="load-more" hidden>50건 더 보기</button>
+<details><summary>난이도와 준비도 교차표</summary><p class="help">AI 제외 후 집계입니다. 추천 후보는 Lv.1이면서 바로 착수할 수 있는 이슈입니다.</p><div class="table-wrap"><table><thead><tr><th>난이도</th><th>바로 착수</th><th>보완 필요</th><th>미정</th></tr></thead><tbody id="cross"></tbody></table></div></details>
+<details><summary>레포 분포와 사람 판정 비교</summary><pre id="report"></pre></details>
+<details id="logs-panel"><summary>실행 내역</summary><pre id="logs">아직 실행한 작업이 없습니다.</pre></details>
+</section>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+let state, filter = 'candidate', limit = 50, submitting = false, signature = '';
+const ready = {ready:'바로 착수',needs_info:'보완 필요',undecided:'미정'};
+const candidate = item => item.grade && !item.grade.exclude && item.grade.difficulty === 1 && item.grade.readiness === 'ready';
+function element(tag, text, cls) { const node = document.createElement(tag); node.textContent = text; if(cls) node.className = cls; return node; }
+function renderItems() {
+  if (!state) return;
+  const query = $('search').value.toLowerCase();
+  const items = state.items.filter(item => (filter === 'all' || filter === 'candidate' && candidate(item) || filter === 'excluded' && item.grade?.exclude || filter === 'pending' && !item.grade) && `${item.repo} ${item.title}`.toLowerCase().includes(query));
+  $('visible-count').textContent = `${items.length}건`;
+  $('issues').replaceChildren();
+  if (!items.length) $('issues').append(element('p', state.count ? '이 조건에 맞는 이슈가 없습니다. 전체 결과나 미판정 항목을 확인하세요.' : '레포와 기간을 선택해 이슈를 수집하세요. 고정 표본으로 시작할 수도 있습니다.', 'empty'));
+  for (const item of items.slice(0, limit)) {
+    const article = element('article', '', 'issue' + (candidate(item) ? ' candidate' : ''));
+    const top = element('div', '', 'issue-top'); top.append(element('span', `${item.repo} #${item.number}`, 'repo'));
+    const badges = element('div','','badges');
+    if (item.grade) {
+      badges.append(element('span', `Lv.${item.grade.difficulty}`, 'badge'));
+      badges.append(element('span', ready[item.grade.readiness], 'badge' + (candidate(item) ? ' good' : '')));
+      if(item.grade.exclude) badges.append(element('span','제외','badge excluded'));
+    } else badges.append(element('span',item.error ? '판정 실패' : '미판정','badge'));
+    top.append(badges); article.append(top);
+    const h = element('h3',''); const link = element('a',item.title);
+    link.href = `https://github.com/${item.repo.split('/').map(encodeURIComponent).join('/')}/issues/${item.number}`;
+    link.target = '_blank'; link.rel = 'noopener noreferrer'; h.append(link); article.append(h);
+    article.append(element('p',item.grade ? item.grade.reason : item.error ? '판정하지 못했습니다. 실행 내역과 Codex 로그인 상태를 확인한 뒤 다시 판정하세요.' : '수집한 이슈 판정을 실행하면 난이도와 준비도를 확인할 수 있습니다.'));
+    if(item.grade?.exclude) article.append(element('p',`제외 사유: ${item.grade.exclude_reason}`,'footnote'));
+    $('issues').append(article);
+  }
+  $('load-more').hidden = items.length <= limit;
+}
+function controls() {
+  const busy = submitting || !state || state.busy;
+  for (const id of ['collect','sample','repos','since']) $(id).disabled = busy;
+  $('grade').disabled = busy || !state?.count;
+}
+async function refresh() {
+  const response = await fetch('/api/state'); const data = await response.json();
+  if (!response.ok) throw Error(data.error);
+  if (!state) $('repos').value = data.repos;
+  state = data;
+  $('status').textContent = data.message; $('source').textContent = `${data.source} / 수집 ${data.count}건 / 판정 실패 ${data.summary.failed}건`;
+  $('grade-count').textContent = data.count;
+  $('target').textContent = data.summary.target;
+  $('rate').textContent = data.summary.valid ? `${(100 * data.summary.target/data.summary.valid).toFixed(1)}%` : '-';
+  $('valid').textContent = `${data.summary.valid}/${data.count}`; $('excluded').textContent = data.summary.excluded;
+  $('logs').textContent = data.logs.join('\n') || '아직 실행한 작업이 없습니다.';
+  $('report').textContent = data.report;
+  const next = JSON.stringify(data.items);
+  if(next !== signature) {
+    signature = next; renderItems(); $('cross').replaceChildren();
+    data.summary.cross.forEach((row, i) => {const tr = element('tr','');tr.append(element('th',`Lv.${i+1}`));row.forEach(n=>tr.append(element('td',n)));$('cross').append(tr);});
+  }
+  controls();
+}
+async function run(action) {
+  if(submitting || state?.busy) throw Error('실행 중인 작업이 끝난 뒤 다시 시도하세요.');
+  submitting = true; controls(); $('error').hidden = true;
+  try {
+    const response = await fetch('/api/run',{method:'POST',headers:{'Content-Type':'application/json','X-Radar-Request':'1'},body:JSON.stringify({action,repos:$('repos').value,since:$('since').value})});
+    const data = await response.json(); if(!response.ok) throw Error(data.error);
+    $('logs-panel').open = true;
+    await refresh(); return {started:true};
+  } finally { submitting = false; controls(); }
+}
+function showError(error) {$('error').textContent = error.message || '서버에 연결하지 못했습니다. Mac에서 웹 서버를 실행 중인지 확인하세요.';$('error').hidden=false;}
+$('collect-form').addEventListener('submit',event=>{event.preventDefault();run('collect').catch(showError);});
+$('sample').addEventListener('click',()=>run('sample').catch(showError));
+$('grade').addEventListener('click',()=>run('grade').catch(showError));
+document.querySelectorAll('[data-filter]').forEach(button=>button.addEventListener('click',()=>{filter=button.dataset.filter;limit=50;document.querySelectorAll('[data-filter]').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));renderItems();}));
+$('search').addEventListener('input',()=>{limit=50;renderItems();});
+$('load-more').addEventListener('click',()=>{limit+=50;renderItems();});
+async function poll() {try {await refresh();} catch(error) {showError(error);} setTimeout(poll,1500);}
+if (document.modelContext?.registerTool) {
+  const lifecycle = new AbortController();
+  try {
+    Promise.resolve(document.modelContext.registerTool({
+      name:'start_issue_grading', title:'수집한 이슈 판정 시작',
+      description:'현재 화면에 수집된 이슈의 Luna 판정을 시작합니다. 완료 결과는 화면에서 확인합니다.',
+      inputSchema:{type:'object',properties:{},additionalProperties:false},
+      annotations:{readOnlyHint:false,untrustedContentHint:false},
+      execute:async input=>{if(!input || typeof input!=='object' || Array.isArray(input) || Object.keys(input).length) throw Error('빈 객체를 입력하세요.'); return run('grade');}
+    },{signal:lifecycle.signal})).catch(()=>{});
+  } catch (_) { /* WebMCP 미지원 브라우저에서는 화면 버튼을 사용한다. */ }
+  window.addEventListener('pagehide',()=>lifecycle.abort(),{once:true});
+}
+poll();
+</script>
+</body>
+</html>
