@@ -48,6 +48,8 @@ def main():
                 assert time.monotonic() < deadline, "작업이 종료되지 않았습니다"
                 time.sleep(.01)
 
+        expect_full = False
+
         def fake_process(command, **kwargs):
             assert command[0] == web.sys.executable
             assert not kwargs.get("shell")
@@ -55,6 +57,7 @@ def main():
             if command[2] == "collect":
                 result = {**issue, "number": 2, "title": "<script>untrusted</script>"}
             else:
+                assert ("--all" in command) == expect_full
                 source = Path(command[command.index("--input") + 1])
                 result = {**radar.read_jsonl(source)[0], "grade": GOOD, "model": "gpt-5.6-luna"}
             output.write_text(json.dumps(result) + "\n")
@@ -88,6 +91,7 @@ def main():
             with patch.object(web.Application, "run"):
                 assert request("/api/run", {"action": "grade"})[0] == 202
                 assert request("/api/run", {"action": "grade"})[0] == 409
+                assert request("/api/run", {"action": "grade_all"})[0] == 409
             server.app.busy = False
             defaults = (radar.ROOT / "repos.txt").read_text()
             names = [name for line in defaults.splitlines() if (name := line.split("#", 1)[0].strip())]
@@ -113,6 +117,11 @@ def main():
                 assert request("/api/run", {"action": "grade"})[0] == 202
                 wait_done()
                 assert state()["summary"]["target"] == 1
+                expect_full = True
+                assert request("/api/run", {"action": "grade_all"})[0] == 202
+                wait_done()
+                assert state()["summary"]["target"] == 1
+                expect_full = False
             assert (root / "grades.jsonl").read_bytes() == original
             assert web.Application(root).snapshot()["items"] == state()["items"]
             (root / "repos.txt").write_text("new/default\n")

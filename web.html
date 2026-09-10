@@ -27,9 +27,11 @@
 <button class="wide" id="sample" disabled>고정 표본 30건 수집</button>
 <p class="help">PR·담당자 있는 이슈·봇은 제외합니다. 수집을 마친 뒤 판정을 실행하세요.</p>
 <hr class="divider">
-<button class="primary wide" id="grade" disabled>수집한 이슈 판정</button>
+<button class="primary wide" id="grade" disabled>제한 판정</button>
 <p class="help">저비용 Luna로 본문을 읽습니다.<br>판정할 이슈 <strong id="grade-count">0</strong>건</p>
 <p class="help" id="grade-limits">실행당 최대 100건·레포당 최대 20건. 레포를 번갈아 선택하며 최근 생성 이슈부터 판정합니다.</p>
+<button class="wide" id="grade-all" disabled>전체 판정</button>
+<p class="help">전체 판정은 건수 상한 없이 수집한 이슈를 모두 판정합니다. 이미 판정한 이슈도 다시 호출합니다.</p>
 <p class="footnote">새 수집은 웹의 이전 결과를 교체합니다. 기존 CLI 표본 파일은 유지됩니다.</p>
 </aside>
 <section class="workspace" aria-label="수집과 판정 결과">
@@ -92,6 +94,7 @@ function controls() {
   const busy = submitting || !state || state.busy;
   for (const id of ['collect','sample','repos','since','default-repos']) $(id).disabled = busy;
   $('grade').disabled = busy || !state?.count;
+  $('grade-all').disabled = busy || !state?.count;
 }
 function repoCount() {
   const count = new Set($('repos').value.split('\n').map(line=>line.split('#')[0].trim()).filter(Boolean)).size;
@@ -105,6 +108,8 @@ async function refresh() {
   repoCount();
   $('status').textContent = data.message; $('source').textContent = `${data.source} / 수집 ${data.count}건 / 판정 실패 ${data.summary.failed}건`;
   $('grade-count').textContent = data.grade_count;
+  $('grade').textContent = `제한 ${data.grade_count}건 판정`;
+  $('grade-all').textContent = `전체 ${data.count}건 판정 (상한 없음)`;
   $('grade-limits').textContent = `실행당 최대 ${data.grade_limit}건·레포당 최대 ${data.repo_grade_limit}건. 레포를 번갈아 선택하며 최근 생성 이슈부터 판정합니다. 이번 실행에서 미선택 ${data.deferred_count}건. 다시 실행하면 같은 이슈도 재판정합니다.`;
   $('target').textContent = data.summary.target;
   $('rate').textContent = data.summary.valid ? `${(100 * data.summary.target/data.summary.valid).toFixed(1)}%` : '-';
@@ -142,6 +147,7 @@ $('default-repos').addEventListener('click',()=>{if(state && !state.busy && !sub
 $('repos').addEventListener('input',repoCount);
 $('sample').addEventListener('click',()=>run('sample').catch(showError));
 $('grade').addEventListener('click',()=>run('grade').catch(showError));
+$('grade-all').addEventListener('click',()=>run('grade_all').catch(showError));
 document.querySelectorAll('[data-filter]').forEach(button=>button.addEventListener('click',()=>{filter=button.dataset.filter;limit=50;document.querySelectorAll('[data-filter]').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));renderItems();}));
 $('search').addEventListener('input',()=>{limit=50;renderItems();});
 $('load-more').addEventListener('click',()=>{limit+=50;renderItems();});

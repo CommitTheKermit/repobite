@@ -188,6 +188,13 @@ def test_grading_limits():
         assert model.call_count == 100  # 실패도 상한에 포함하며 다른 이슈로 보충하지 않는다.
         assert len(radar.read_jsonl(target)) == 100
         assert source.read_bytes() == original
+        args.all_issues = True
+        with patch.object(radar, "grade_issue", return_value=GOOD) as model:
+            assert radar.grade(args) == 0
+        assert model.call_count == 180
+        assert radar.read_jsonl(target)[-1]["number"] == 30
+        assert len(radar.read_jsonl(target)) == 180
+        assert source.read_bytes() == original
 
 
 def test_report():

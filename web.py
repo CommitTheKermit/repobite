@@ -71,9 +71,10 @@ class Application:
                     "report": radar.render_report(stats)}
 
     def start(self, payload):
-        if not isinstance(payload, dict) or payload.get("action") not in ("collect", "sample", "grade"):
+        if not isinstance(payload, dict) or payload.get("action") not in ("collect", "sample", "grade", "grade_all"):
             raise ValueError("수집 또는 판정 작업을 선택하세요.")
         action = payload["action"]
+        is_grading = action in ("grade", "grade_all")
         repos, since = "", "7d"
         if action == "collect":
             text = payload.get("repos")
@@ -93,21 +94,23 @@ class Application:
             if self.busy or self.stopping:
                 raise RuntimeError("실행 중인 작업이 끝난 뒤 다시 시도하세요.")
             source, _ = self.paths()
-            if action == "grade" and (not source.exists() or not radar.read_jsonl(source)):
+            if is_grading and (not source.exists() or not radar.read_jsonl(source)):
                 raise ValueError("먼저 이슈를 수집하세요.")
             self.busy = True
-            self.message = "판정 중입니다." if action == "grade" else "이슈를 수집하고 있습니다."
+            self.message = ("전체 판정 중입니다." if action == "grade_all" else "판정 중입니다." if is_grading
+                            else "이슈를 수집하고 있습니다.")
             self.logs.clear()
         threading.Thread(target=self.run, args=(action, repos, since), daemon=True).start()
 
     def run(self, action, repos, since):
         # ponytail: Mac 한 사용자당 작업 하나. 다중 사용자 서비스가 되면 작업 큐로 전환.
+        is_grading = action in ("grade", "grade_all")
         try:
             self.data.mkdir(exist_ok=True)
             with tempfile.TemporaryDirectory(dir=self.data) as directory:
                 work = Path(directory)
                 command = [sys.executable, str(radar.ROOT / "radar.py")]
-                if action == "grade":
+                if is_grading:
                     source, _ = self.paths()
                     (work / "issues.jsonl").write_bytes(source.read_bytes())
                     saved_repos = source.parent / "repos.txt"
@@ -115,6 +118,8 @@ class Application:
                         (work / "repos.txt").write_bytes(saved_repos.read_bytes())
                     command += ["grade", "--input", str(work / "issues.jsonl"),
                                 "--output", str(work / "grades.jsonl"), "--model", "gpt-5.6-luna"]
+                    if action == "grade_all":
+                        command.append("--all")
                 else:
                     command += ["collect", "--output", str(work / "issues.jsonl")]
                     if action == "sample":
@@ -133,9 +138,9 @@ class Application:
                             self.logs.append(line.rstrip()[:500])
                     code = process.wait()
                 with self.lock:
-                    if action != "grade" and code:
+                    if not is_grading and code:
                         self.message = "수집에 실패했습니다. 이전 결과를 유지합니다. 실행 내역과 gh 로그인을 확인하세요."
-                    elif action == "grade" and not (work / "grades.jsonl").exists():
+                    elif is_grading and not (work / "grades.jsonl").exists():
                         self.message = "판정을 시작하지 못했습니다. 이전 결과를 유지합니다. 실행 내역을 확인하세요."
                     else:
                         saved = self.data / f"run-{uuid.uuid4().hex}"
@@ -145,7 +150,7 @@ class Application:
                         pointer.symlink_to(saved.name, target_is_directory=True)
                         pointer.replace(self.data / "current")
                         self.message = ("일부 판정이 실패했습니다. 결과의 실패 항목과 Codex 로그인을 확인하세요."
-                                        if code else "판정이 완료됐습니다." if action == "grade"
+                                        if code else "판정이 완료됐습니다." if is_grading
                                         else "수집이 완료됐습니다. 건수를 확인하고 판정을 시작하세요.")
         except (OSError, ValueError, subprocess.SubprocessError):
             with self.lock:

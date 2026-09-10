@@ -271,9 +271,12 @@ def grade(args):
         if any(not isinstance(issue.get(key), str) for key in ("title", "body")):
             raise ValueError("이슈 title/body는 문자열이어야 합니다")
     collected = len(issues)
-    issues = select_for_grading(issues)
-    print(f"판정 대상 {len(issues)}/{collected}건, 상한으로 미선택 {collected - len(issues)}건 "
-          f"(실행당 {GRADE_LIMIT}건·레포당 {REPO_GRADE_LIMIT}건)", file=sys.stderr)
+    if getattr(args, "all_issues", False):
+        print(f"전체 판정 대상 {collected}건 (건수 상한 없음)", file=sys.stderr)
+    else:
+        issues = select_for_grading(issues)
+        print(f"판정 대상 {len(issues)}/{collected}건, 상한으로 미선택 {collected - len(issues)}건 "
+              f"(실행당 {GRADE_LIMIT}건·레포당 {REPO_GRADE_LIMIT}건)", file=sys.stderr)
 
     def judge(issue):
         metadata = {"model": args.model, "reasoning_effort": "low",
@@ -374,10 +377,11 @@ def main():
     source.add_argument("--sample", type=Path, help="과거 표본 repo/number 직접 조회 (닫힌 이슈 포함)")
     collect_parser.add_argument("--output", type=Path, default=Path("issues.jsonl"))
     collect_parser.set_defaults(run=collect)
-    grade_parser = commands.add_parser("grade", help="이슈마다 codex exec 호출, 동시 4건")
+    grade_parser = commands.add_parser("grade", help="이슈마다 codex exec 호출, 동시 16건")
     grade_parser.add_argument("--input", type=Path, default=Path("issues.jsonl"))
     grade_parser.add_argument("--output", type=Path, default=Path("grades.jsonl"))
     grade_parser.add_argument("--model", default="gpt-5.6-luna", help="판정 모델 (기본: gpt-5.6-luna, 추론 low)")
+    grade_parser.add_argument("--all", dest="all_issues", action="store_true", help="100건·레포당 20건 상한 없이 전체 판정")
     grade_parser.set_defaults(run=grade)
     report_parser = commands.add_parser("report", help="교차표, 비율, 레포 집중도, 사람 판정 비교")
     report_parser.add_argument("--input", type=Path, default=Path("grades.jsonl"))
