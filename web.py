@@ -47,7 +47,7 @@ class Application:
             sample_path = self.root / "fixtures/sample30.json"
             samples = json.loads(sample_path.read_text()) if sample_path.exists() else []
             stats = radar.aggregate(rows, samples)
-            reusable = radar.reusable_grades(rows, issues, "gpt-5.6-luna")
+            reusable = radar.reusable_grades(rows, issues, radar.MODEL)
             unresolved = [issue for issue in issues if radar.issue_key(issue) not in reusable]
             grade_count = len(radar.select_for_grading(unresolved))
             summary = {key: stats[key] for key in ("valid", "failed", "excluded", "target", "eligible")}
@@ -123,7 +123,7 @@ class Application:
                     if saved_repos.exists():
                         (work / "repos.txt").write_bytes(saved_repos.read_bytes())
                     command += ["grade", "--input", str(work / "issues.jsonl"),
-                                "--output", str(work / "grades.jsonl"), "--model", "gpt-5.6-luna"]
+                                "--output", str(work / "grades.jsonl"), "--model", radar.MODEL]
                     if (work / "reuse.jsonl").exists():
                         command += ["--reuse", str(work / "reuse.jsonl")]
                     if action == "grade_all":
@@ -157,12 +157,12 @@ class Application:
                         pointer.unlink(missing_ok=True)
                         pointer.symlink_to(saved.name, target_is_directory=True)
                         pointer.replace(self.data / "current")
-                        self.message = ("일부 판정이 실패했습니다. 결과의 실패 항목과 Codex 로그인을 확인하세요."
+                        self.message = ("일부 판정이 실패했습니다. 결과와 Vertex AI 인증을 확인하세요."
                                         if code else "판정이 완료됐습니다." if is_grading
                                         else "수집이 완료됐습니다. 건수를 확인하고 판정을 시작하세요.")
         except (OSError, ValueError, subprocess.SubprocessError):
             with self.lock:
-                self.message = "작업을 실행하지 못했습니다. gh·codex 설치와 저장 폴더 권한을 확인하세요."
+                self.message = "작업을 실행하지 못했습니다. gh와 GCP 인증, 저장 폴더 권한을 확인하세요."
         finally:
             with self.lock:
                 self.busy = False

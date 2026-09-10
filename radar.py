@@ -14,11 +14,13 @@ import tempfile
 from urllib.parse import urlencode
 
 import freshness
+import vertex
 
 ROOT = Path(__file__).resolve().parent
 GRADE_LIMIT = 100
 REPO_GRADE_LIMIT = 20
-REASONING_EFFORT = "low"
+MODEL = vertex.DEFAULT_MODEL
+REASONING_EFFORT = "minimal"
 CRITERIA_VERSION = 1
 SCHEMA = json.loads((ROOT / "schema.json").read_text(encoding="utf-8"))
 READINESS = SCHEMA["properties"]["readiness"]["enum"]
@@ -225,25 +227,10 @@ def validate_grade(grade):
     return grade
 
 
-def grade_issue(issue, model="gpt-5.6-luna"):
+def grade_issue(issue, model=MODEL):
     payload = {key: issue[key] for key in ("repo", "number", "title", "body")}
     prompt = CRITERIA + "\n" + json.dumps(payload, ensure_ascii=False)
-    with tempfile.TemporaryDirectory(prefix="oss-radar-") as directory:
-        output = Path(directory) / "grade.json"
-        command = ["codex", "exec", "-m", model, "-c", 'model_reasoning_effort="low"',
-                   "--ignore-user-config", "--ephemeral", "-s", "read-only",
-                   "--skip-git-repo-check", "-C", directory,
-                   "-c", "project_doc_max_bytes=0", "-c", "features.shell_tool=false",
-                   "-c", 'web_search="disabled"', "--output-schema", str(ROOT / "schema.json"),
-                   "-o", str(output), "-"]
-        result = subprocess.run(command, input=prompt, capture_output=True, text=True, timeout=300)
-        if result.returncode:
-            raise RuntimeError(f"codex exec 실패 (종료 코드 {result.returncode})")
-        try:
-            grade = json.loads(output.read_text(encoding="utf-8"))
-        except (OSError, ValueError):
-            raise ValueError("codex 판정 파일 누락 또는 잘못된 JSON") from None
-        return validate_grade(grade)
+    return validate_grade(vertex.generate_json(prompt, SCHEMA, model))
 
 
 def select_for_grading(issues):
@@ -415,10 +402,10 @@ def main():
     source.add_argument("--sample", type=Path, help="과거 표본 repo/number 직접 조회 (닫힌 이슈 포함)")
     collect_parser.add_argument("--output", type=Path, default=Path("issues.jsonl"))
     collect_parser.set_defaults(run=collect)
-    grade_parser = commands.add_parser("grade", help="이슈마다 codex exec 호출, 동시 16건")
+    grade_parser = commands.add_parser("grade", help="이슈마다 Vertex AI 호출, 동시 16건")
     grade_parser.add_argument("--input", type=Path, default=Path("issues.jsonl"))
     grade_parser.add_argument("--output", type=Path, default=Path("grades.jsonl"))
-    grade_parser.add_argument("--model", default="gpt-5.6-luna", help="판정 모델 (기본: gpt-5.6-luna, 추론 low)")
+    grade_parser.add_argument("--model", default=MODEL, help=f"Vertex AI 판정 모델 (기본: {MODEL})")
     grade_parser.add_argument("--reuse", type=Path, help="정확히 일치하는 성공 판정을 재사용할 JSONL (기본: 기존 출력)")
     grade_parser.add_argument("--all", dest="all_issues", action="store_true", help="100건·레포당 20건 상한 없이 전체 판정")
     grade_parser.set_defaults(run=grade)

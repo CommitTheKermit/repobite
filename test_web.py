@@ -64,7 +64,7 @@ def main():
                 if expect_full:
                     reuse = Path(command[command.index("--reuse") + 1])
                     assert reuse.exists() and radar.read_jsonl(reuse)[0]["grade"] == GOOD
-                result = {**radar.read_jsonl(source)[0], "grade": GOOD, "model": "gpt-5.6-luna",
+                result = {**radar.read_jsonl(source)[0], "grade": GOOD, "model": radar.MODEL,
                           "reasoning_effort": radar.REASONING_EFFORT,
                           "criteria_version": radar.CRITERIA_VERSION, "freshness": fresh}
             output.write_text(json.dumps(result) + "\n")

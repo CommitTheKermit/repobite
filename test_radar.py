@@ -7,7 +7,6 @@ from datetime import datetime, timezone
 import io
 import json
 from pathlib import Path
-import subprocess
 import tempfile
 import threading
 from unittest.mock import patch
@@ -87,24 +86,18 @@ def test_schema_and_grading():
     rejects(radar.validate_grade, [])
     issue = radar.normalize_issue("a/b", ISSUE)
 
-    def fake_codex(command, **kwargs):
-        assert command[:2] == ["codex", "exec"]
-        assert command[command.index("-m") + 1] == "gpt-5.6-luna"
-        assert command[command.index("-s") + 1] == "read-only"
-        assert "--ephemeral" in command and "--ignore-user-config" in command
-        assert "features.shell_tool=false" in command
-        assert 'web_search="disabled"' in command
-        assert kwargs["timeout"] == 300 and command[-1] == "-"
-        assert "HUMAN_SECRET" not in kwargs["input"]
-        Path(command[command.index("-o") + 1]).write_text(json.dumps(GOOD))
-        return subprocess.CompletedProcess(command, 0)
+    def fake_vertex(prompt, schema, model):
+        assert model == radar.MODEL
+        assert schema == radar.SCHEMA
+        assert "HUMAN_SECRET" not in prompt
+        return GOOD
 
-    with patch.object(radar.subprocess, "run", side_effect=fake_codex):
+    with patch.object(radar.vertex, "generate_json", side_effect=fake_vertex):
         assert radar.grade_issue({**issue, "verdict": "HUMAN_SECRET"}) == GOOD
     with tempfile.TemporaryDirectory() as directory:
         source, target = Path(directory) / "issues.jsonl", Path(directory) / "grades.jsonl"
         source.write_text(json.dumps(issue) + "\n" + json.dumps({**issue, "number": 2}) + "\n")
-        args = argparse.Namespace(input=source, output=target, model="gpt-5.6-luna")
+        args = argparse.Namespace(input=source, output=target, model=radar.MODEL)
 
         def fake_grade(row, model):
             if row["number"] == 2:
@@ -160,7 +153,7 @@ def test_grading_parallelism():
         issue = radar.normalize_issue("a/b", ISSUE)
         source.write_text("".join(json.dumps({**issue, "repo": "a/b" if n <= 16 else "c/d", "number": n}) + "\n"
                                   for n in range(1, 33)))
-        args = argparse.Namespace(input=source, output=target, model="gpt-5.6-luna")
+        args = argparse.Namespace(input=source, output=target, model=radar.MODEL)
         with (patch.object(radar, "grade_issue", side_effect=fake_grade),
               patch.object(radar.freshness, "apply_freshness", side_effect=lambda rows: rows)):
             assert radar.grade(args) == 0
@@ -190,7 +183,7 @@ def test_grading_limits():
         source, target = Path(directory) / "issues.jsonl", Path(directory) / "grades.jsonl"
         source.write_text("".join(json.dumps(row) + "\n" for row in issues))
         original = source.read_bytes()
-        args = argparse.Namespace(input=source, output=target, model="gpt-5.6-luna")
+        args = argparse.Namespace(input=source, output=target, model=radar.MODEL)
         with (patch.object(radar, "grade_issue", side_effect=RuntimeError("failure")) as model,
               patch.object(radar.freshness, "apply_freshness", side_effect=lambda rows: rows)):
             assert radar.grade(args) == 1

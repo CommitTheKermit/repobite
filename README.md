@@ -10,11 +10,11 @@ python3 web.py
 ```
 
 [로컬 웹 화면](http://127.0.0.1:8765)을 연다. 포트가 사용 중이면 `python3 web.py --port 8766`으로 바꾼다.
-이 Mac에 로그인된 `gh`와 `codex`를 그대로 사용한다. 서버를 켠 터미널은 실행 중에 유지한다.
+이 Mac에 로그인된 `gh`와 Google Cloud ADC를 사용한다. 서버를 켠 터미널은 실행 중에 유지한다.
 서버 종료는 `Ctrl+C`이며, 진행 중인 CLI 작업도 종료 신호를 보낸다.
 
 1. 레포 목록과 최근 갱신 기간을 선택하고 **이슈 수집**을 누른다. 이전에 저장한 목록은 **기본 30개 불러오기**로 교체할 수 있다. 기존 표본은 **고정 표본 30건 수집**으로 조회한다.
-2. **제한 N건 판정**은 실행당 새 모델 호출 최대 100건, 레포당 최대 20건을 판정한다. **전체 N건 판정 (상한 없음)**은 아직 판정하지 못한 이슈를 모두 판정한다. 두 버튼 모두 저비용 모델 `gpt-5.6-luna`, 추론 `low`, 최대 16개 동시 실행을 사용한다.
+2. **제한 N건 판정**은 실행당 새 모델 호출 최대 100건, 레포당 최대 20건을 판정한다. **전체 N건 판정 (상한 없음)**은 아직 판정하지 못한 이슈를 모두 판정한다. 두 버튼 모두 Vertex AI의 `gemini-3.1-flash-lite`, 최대 16개 동시 실행을 사용한다.
 3. 추천 후보, 전체, 제외, 미판정·실패 항목을 골라 판정 이유와 GitHub 이슈를 확인한다. 추천 직전에 GitHub에서 열린 상태, 담당자, 연결된 열린 PR을 다시 확인하며 확인 실패도 추천에서 제외한다.
 
 처음에는 기존 `issues.jsonl`과 `grades.jsonl`을 보여준다. 웹 작업은 `.radar-web/` 아래에 따로 저장하고
@@ -29,15 +29,23 @@ Mac 한 사용자, 서버 한 인스턴스, 동시 작업 하나를 위한 도�
 HTTP 구현은 Python의 [ThreadingHTTPServer](https://docs.python.org/3.14/library/http.server.html)를 사용한다.
 
 검증: `python3 test_web.py`, `python3 test_radar.py`. 화면 스크립트의 오류 복구와 버튼 분기는 Node 표준 모듈만 사용하는 `node test_web_ui.mjs`로 검사한다.
-실제 HTTP 요청으로 `bibliometrix#666` 1건 수집과 Luna 판정도 확인했다.
+기존 Luna 실측 결과는 품질 문서에 보존하며, 현재 판정 경로는 Vertex AI를 사용한다.
 WebMCP 지원 브라우저에서는 같은 판정 시작 동작을 `start_issue_grading` 도구로 제공한다.
 이 환경에는 지원 브라우저 검증 컨텍스트가 없어 WebMCP 등록/실행은 미검증이며 일반 버튼은 독립적으로 동작한다.
 
 ## 준비와 실행
 
-Python 3.14, 인증된 `gh`, ChatGPT로 로그인된 `codex`가 필요하다.
-개발 환경에서 Python 3.14.5, gh 2.67.0, codex-cli 0.153.4를 확인했다.
-인증이 없다면 각 CLI에서 `gh auth login`, `codex login`을 실행한다.
+Python 3.14, 인증된 `gh`, Google Cloud CLI의 ADC가 필요하다.
+개발 환경에서 Python 3.14.5와 gh 2.67.0을 확인했다. Vertex AI API를 활성화하고 다음처럼 로컬 인증과 프로젝트를 지정한다.
+
+```sh
+gcloud auth application-default login
+gcloud services enable aiplatform.googleapis.com
+export GOOGLE_CLOUD_PROJECT="$(gcloud config get-value project)"
+export GOOGLE_CLOUD_LOCATION=global
+```
+
+Cloud Run에서는 연결된 서비스 계정의 메타데이터 토큰을 사용하므로 키 파일을 만들지 않는다.
 키나 토큰을 코드에 넣지 않는다. `.env`는 Git에서 제외되며 앱이 자동으로 읽지는 않는다.
 
 ```sh
@@ -60,7 +68,7 @@ python3 radar.py report
 
 - `collect`: `gh api repos/{repo}/issues`를 페이지 끝까지 읽고 PR, 담당자가 있는 이슈, 봇 작성 이슈를 제외한다. 문자열/라벨 사전 필터는 없다.
 - `--since 7d`: 최근 7일 **갱신** 기준이다. 생성 시각 필터가 아니다. `24h`, `1w`도 지원한다.
-- `grade`: 이슈당 `codex exec` 1회, 최대 16개 동시 호출. 기본 모델은 `gpt-5.6-luna`, 추론은 `low`다. `--model`로 변경할 수 있다.
+- `grade`: 이슈당 Vertex AI REST 호출 1회, 최대 16개 동시 호출. 기본 모델은 `gemini-3.1-flash-lite`, 사고 수준은 `minimal`이다. `--model`로 변경할 수 있다.
 - `report`: Markdown 교차표, Lv.1 × ready 비율, 레포 분포와 상위 3개 집중도, 사람 판정과의 이진 비교를 stdout에 출력한다.
 
 기본 판정은 웹·CLI 모두 **실행당 최대 100건, 레포당 최대 20건**이다. 수집 파일에 등장한 레포 순서대로
@@ -82,7 +90,7 @@ python3 radar.py report
 
 ```sh
 python3 radar.py collect --sample fixtures/sample30.json
-python3 radar.py grade --model gpt-5.6-luna
+python3 radar.py grade --model gemini-3.1-flash-lite
 python3 radar.py report
 ```
 
@@ -125,10 +133,8 @@ Lv.1 × ready 후보에는 `freshness` 확인 결과를 추가하고 `eligible=t
 
 ## 판정 실행과 제약
 
-판정은 임시 디렉터리에서 `read-only`, `--ephemeral`로 실행한다.
-사용자 config와 프로젝트 문서 주입을 끄고 shell/web 도구를 비활성화한다.
-프롬프트는 stdin으로 보내며, 이슈 본문의 명령을 따르지 않도록 데이터 경계를 명시한다.
-원시 CLI stderr는 인증 정보 등이 섞일 수 있어 출력하지 않는다.
+판정은 Vertex AI `generateContent` REST API에 JSON 스키마를 함께 보낸다. 온도는 0이고 외부 도구는 사용하지 않는다.
+이슈 본문의 명령을 따르지 않도록 프롬프트에 데이터 경계를 명시한다. 로컬에서는 ADC의 짧은 수명 토큰을, Cloud Run에서는 연결된 서비스 계정의 메타데이터 토큰을 사용한다.
 
 `schema.json`은 Structured Outputs 호환을 위해 모든 필드를 필수로 둔다.
 지시서 예시와 달리 `exclude_reason`도 필수이며, 제외하지 않으면 빈 문자열이다.
@@ -139,8 +145,7 @@ stdlib 검증기는 이 고정 스키마의 필드/타입/enum과 비어 있지 
 
 근거: [GitHub Issues API](https://docs.github.com/en/rest/issues/issues#list-repository-issues),
 [GitHub GraphQL Issue](https://docs.github.com/en/graphql/reference/issues),
-[Codex 비대화형 실행](https://learn.chatgpt.com/docs/non-interactive-mode),
-[설정 옵션](https://learn.chatgpt.com/docs/config-file/config-reference),
-[Structured Outputs 필수 필드](https://developers.openai.com/api/docs/guides/structured-outputs),
-[Luna 모델 안내](https://learn.chatgpt.com/docs/models).
-로컬 옵션은 `gh api --help`, `codex exec --help`로도 확인했다.
+[Vertex AI Gemini 빠른 시작](https://cloud.google.com/vertex-ai/generative-ai/docs/start/quickstart),
+[Vertex AI JSON 스키마 출력](https://cloud.google.com/vertex-ai/generative-ai/docs/reference/rest/v1beta1/GenerationConfig),
+[Google Cloud REST 인증](https://cloud.google.com/docs/authentication/rest),
+[Gemini 3.1 Flash-Lite 모델](https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/gemini/3-1-flash-lite).
