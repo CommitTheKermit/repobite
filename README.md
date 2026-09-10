@@ -45,6 +45,13 @@ export GOOGLE_CLOUD_PROJECT="$(gcloud config get-value project)"
 export GOOGLE_CLOUD_LOCATION=global
 ```
 
+다른 계정의 서비스 계정 JSON을 로컬에서 사용할 때는 저장소 밖의 파일을 지정한다. 프로젝트 ID는 파일에서 자동으로 읽는다.
+
+```sh
+export GOOGLE_APPLICATION_CREDENTIALS="/안전한/경로/service-account.json"
+export GOOGLE_CLOUD_LOCATION=global
+```
+
 Cloud Run에서는 연결된 서비스 계정의 메타데이터 토큰을 사용하므로 키 파일을 만들지 않는다.
 키나 토큰을 코드에 넣지 않는다. `.env`는 Git에서 제외되며 앱이 자동으로 읽지는 않는다.
 

@@ -21,6 +21,16 @@ def project_id(run=subprocess.run):
     value = os.environ.get("GOOGLE_CLOUD_PROJECT")
     if value:
         return _safe_name(value, "GOOGLE_CLOUD_PROJECT")
+    credentials = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
+    if credentials:
+        try:
+            with open(credentials, encoding="utf-8") as file:
+                value = json.load(file).get("project_id")
+        except (OSError, json.JSONDecodeError, AttributeError) as error:
+            raise RuntimeError("서비스 계정 파일을 읽을 수 없습니다") from error
+        if not value:
+            raise RuntimeError("서비스 계정 파일에 project_id가 없습니다")
+        return _safe_name(value, "서비스 계정 project_id")
     result = run(["gcloud", "config", "get-value", "project"], capture_output=True,
                  text=True, timeout=30)
     value = result.stdout.strip()

@@ -4,6 +4,7 @@ from contextlib import contextmanager
 import io
 import json
 import os
+import tempfile
 from unittest.mock import patch
 
 import vertex
@@ -33,6 +34,11 @@ def main():
     assert seen["body"]["generationConfig"]["temperature"] == 0
     assert seen["body"]["generationConfig"]["thinkingConfig"] == {"thinkingLevel": "MINIMAL"}
     assert seen["timeout"] == 300
+    with tempfile.NamedTemporaryFile("w", encoding="utf-8") as file:
+        json.dump({"project_id": "service-account-project"}, file)
+        file.flush()
+        with patch.dict(os.environ, {"GOOGLE_APPLICATION_CREDENTIALS": file.name}, clear=True):
+            assert vertex.project_id() == "service-account-project"
     print("통과: Vertex AI 전역 REST 호출과 JSON 스키마 응답")
 
 
