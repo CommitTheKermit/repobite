@@ -151,12 +151,43 @@ def test_grading_parallelism():
     with tempfile.TemporaryDirectory() as directory:
         source, target = Path(directory) / "issues.jsonl", Path(directory) / "grades.jsonl"
         issue = radar.normalize_issue("a/b", ISSUE)
-        source.write_text("".join(json.dumps({**issue, "number": n}) + "\n" for n in range(1, 33)))
+        source.write_text("".join(json.dumps({**issue, "repo": "a/b" if n <= 16 else "c/d", "number": n}) + "\n"
+                                  for n in range(1, 33)))
         args = argparse.Namespace(input=source, output=target, model="gpt-5.6-luna")
         with patch.object(radar, "grade_issue", side_effect=fake_grade):
             assert radar.grade(args) == 0
         assert peak == 16
-        assert [row["number"] for row in radar.read_jsonl(target)] == list(range(1, 33))
+        assert sorted(row["number"] for row in radar.read_jsonl(target)) == list(range(1, 33))
+
+
+def test_grading_limits():
+    issue = radar.normalize_issue("a/b", ISSUE)
+    issues = [{**issue, "repo": f"owner/repo{repo}", "number": n,
+               "created_at": f"2026-09-{n:02d}T00:00:00Z"}
+              for repo in range(6) for n in range(1, 31)]
+    selected = radar.select_for_grading(issues)
+    assert len(selected) == 100
+    assert [row["repo"] for row in selected[:6]] == [f"owner/repo{n}" for n in range(6)]
+    assert all(row["number"] == 30 for row in selected[:6])
+    assert sorted(Counter(row["repo"] for row in selected).values()) == [16, 16, 17, 17, 17, 17]
+    assert [row["number"] for row in radar.select_for_grading(issues[:30])] == list(range(30, 10, -1))
+    assert len(radar.select_for_grading(issues[:150])) == 100
+    uneven = radar.select_for_grading(issues[:2] + issues[30:60])
+    assert Counter(row["repo"] for row in uneven) == {"owner/repo0": 2, "owner/repo1": 20}
+    assert [row["repo"] for row in uneven[:4]] == ["owner/repo0", "owner/repo1"] * 2
+    assert radar.select_for_grading([]) == []
+    for stamp in (None, "bad", "2026-09-10T00:00:00"):
+        rejects(radar.select_for_grading, [{**issue, "created_at": stamp}])
+    with tempfile.TemporaryDirectory() as directory:
+        source, target = Path(directory) / "issues.jsonl", Path(directory) / "grades.jsonl"
+        source.write_text("".join(json.dumps(row) + "\n" for row in issues))
+        original = source.read_bytes()
+        args = argparse.Namespace(input=source, output=target, model="gpt-5.6-luna")
+        with patch.object(radar, "grade_issue", side_effect=RuntimeError("failure")) as model:
+            assert radar.grade(args) == 1
+        assert model.call_count == 100  # 실패도 상한에 포함하며 다른 이슈로 보충하지 않는다.
+        assert len(radar.read_jsonl(target)) == 100
+        assert source.read_bytes() == original
 
 
 def test_report():
@@ -189,5 +220,6 @@ if __name__ == "__main__":
         test_filters_and_collection()
         test_schema_and_grading()
         test_grading_parallelism()
+        test_grading_limits()
         test_report()
-    print("통과: 제외 필터·페이지 수집·스키마·16개 동시 판정·판정 실패 보존·원자적 저장·리포트 집계")
+    print("통과: 제외 필터·페이지 수집·스키마·16개 동시 판정·100건/20건 상한·레포 순환 선택·판정 실패 보존·원자적 저장·리포트 집계")

@@ -47,6 +47,7 @@ class Application:
             sample_path = self.root / "fixtures/sample30.json"
             samples = json.loads(sample_path.read_text()) if sample_path.exists() else []
             stats = radar.aggregate(rows, samples)
+            grade_count = len(radar.select_for_grading(issues))
             summary = {key: stats[key] for key in ("valid", "failed", "excluded", "target", "eligible")}
             summary["cross"] = [[stats["cross"][level, state] for state in radar.READINESS]
                                 for level in (1, 2, 3)]
@@ -65,6 +66,8 @@ class Application:
                     "default_repos": (self.root / "repos.txt").read_text(), "max_repos": MAX_REPOS,
                     "source": "웹 작업 결과" if source.parent != self.root else "기존 CLI 데이터",
                     "count": len(issues), "items": items, "summary": summary,
+                    "grade_count": grade_count, "deferred_count": len(issues) - grade_count,
+                    "grade_limit": radar.GRADE_LIMIT, "repo_grade_limit": radar.REPO_GRADE_LIMIT,
                     "report": radar.render_report(stats)}
 
     def start(self, payload):

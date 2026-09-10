@@ -29,6 +29,7 @@
 <hr class="divider">
 <button class="primary wide" id="grade" disabled>수집한 이슈 판정</button>
 <p class="help">저비용 Luna로 본문을 읽습니다.<br>판정할 이슈 <strong id="grade-count">0</strong>건</p>
+<p class="help" id="grade-limits">실행당 최대 100건·레포당 최대 20건. 레포를 번갈아 선택하며 최근 생성 이슈부터 판정합니다.</p>
 <p class="footnote">새 수집은 웹의 이전 결과를 교체합니다. 기존 CLI 표본 파일은 유지됩니다.</p>
 </aside>
 <section class="workspace" aria-label="수집과 판정 결과">
@@ -103,7 +104,8 @@ async function refresh() {
   state = data;
   repoCount();
   $('status').textContent = data.message; $('source').textContent = `${data.source} / 수집 ${data.count}건 / 판정 실패 ${data.summary.failed}건`;
-  $('grade-count').textContent = data.count;
+  $('grade-count').textContent = data.grade_count;
+  $('grade-limits').textContent = `실행당 최대 ${data.grade_limit}건·레포당 최대 ${data.repo_grade_limit}건. 레포를 번갈아 선택하며 최근 생성 이슈부터 판정합니다. 이번 실행에서 미선택 ${data.deferred_count}건. 다시 실행하면 같은 이슈도 재판정합니다.`;
   $('target').textContent = data.summary.target;
   $('rate').textContent = data.summary.valid ? `${(100 * data.summary.target/data.summary.valid).toFixed(1)}%` : '-';
   $('valid').textContent = `${data.summary.valid}/${data.count}`; $('excluded').textContent = data.summary.excluded;

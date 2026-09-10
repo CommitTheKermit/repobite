@@ -14,6 +14,8 @@ import tempfile
 from urllib.parse import urlencode
 
 ROOT = Path(__file__).resolve().parent
+GRADE_LIMIT = 100
+REPO_GRADE_LIMIT = 20
 SCHEMA = json.loads((ROOT / "schema.json").read_text(encoding="utf-8"))
 READINESS = SCHEMA["properties"]["readiness"]["enum"]
 CRITERIA = """오픈소스 초보자의 기여 난이도와 준비도를 판정한다.
@@ -240,6 +242,27 @@ def grade_issue(issue, model="gpt-5.6-luna"):
         return validate_grade(grade)
 
 
+def select_for_grading(issues):
+    groups = {}
+    for issue in issues:
+        if not isinstance(issue.get("created_at"), str):
+            raise ValueError("created_at에 생성 시각이 필요합니다")
+        created = datetime.fromisoformat(issue["created_at"])
+        if created.tzinfo is None:
+            raise ValueError("created_at에 시간대가 필요합니다")
+        groups.setdefault(issue_key(issue)[0], []).append((created, issue))
+    queues = [sorted(group, key=lambda entry: entry[0], reverse=True)[:REPO_GRADE_LIMIT]
+              for group in groups.values()]
+    selected = []
+    for index in range(REPO_GRADE_LIMIT):
+        for queue in queues:
+            if index < len(queue):
+                selected.append(queue[index][1])
+                if len(selected) == GRADE_LIMIT:
+                    return selected
+    return selected
+
+
 def grade(args):
     if args.input.resolve() == args.output.resolve():
         raise ValueError("입력과 출력 경로가 같을 수 없습니다")
@@ -247,6 +270,10 @@ def grade(args):
     for issue in issues:
         if any(not isinstance(issue.get(key), str) for key in ("title", "body")):
             raise ValueError("이슈 title/body는 문자열이어야 합니다")
+    collected = len(issues)
+    issues = select_for_grading(issues)
+    print(f"판정 대상 {len(issues)}/{collected}건, 상한으로 미선택 {collected - len(issues)}건 "
+          f"(실행당 {GRADE_LIMIT}건·레포당 {REPO_GRADE_LIMIT}건)", file=sys.stderr)
 
     def judge(issue):
         metadata = {"model": args.model, "reasoning_effort": "low",

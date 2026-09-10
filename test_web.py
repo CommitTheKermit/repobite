@@ -69,6 +69,14 @@ def main():
             assert state()["summary"]["target"] == 1
             assert state()["max_repos"] == 30
             assert state()["default_repos"] == "a/b\n"
+            assert (state()["grade_count"], state()["deferred_count"]) == (1, 0)
+            assert (state()["grade_limit"], state()["repo_grade_limit"]) == (100, 20)
+            original_issues = (root / "issues.jsonl").read_bytes()
+            large = [{**issue, "repo": f"owner/repo{repo}", "number": n}
+                     for repo in range(6) for n in range(1, 31)]
+            (root / "issues.jsonl").write_text("".join(json.dumps(row) + "\n" for row in large))
+            assert (state()["count"], state()["grade_count"], state()["deferred_count"]) == (180, 100, 80)
+            (root / "issues.jsonl").write_bytes(original_issues)
             assert request("/.env")[0] == request("/../radar.py")[0] == 404
             assert request("/api/state", headers={"Host": "attacker.example"})[0] == 403
             for headers in ({"Origin": "https://attacker.example"}, {"Origin": ""},
