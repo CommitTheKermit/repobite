@@ -240,6 +240,56 @@ def test_report():
     assert Counter(row["verdict"] for row in fixture) == {"적합": 5, "조건부": 9, "부적합": 16}
 
 
+def test_candidates_and_batch():
+    def row(repo, number, eligible=True, grade=GOOD):
+        return {"repo": repo, "number": number, "grade": grade,
+                "freshness": {"eligible": eligible}}
+
+    with tempfile.TemporaryDirectory() as directory:
+        source = Path(directory) / "grades.jsonl"
+        target = Path(directory) / "candidates.jsonl"
+        existing = row("a/b", 1)
+        target.write_text(json.dumps(existing) + "\n")
+        rows = ([row("a/b", number) for number in range(1, 8)]
+                + [row("c/d", 1), row("c/d", 2, eligible=False),
+                   row("e/f", 1, grade={**GOOD, "difficulty": 2})])
+        source.write_text("".join(json.dumps(item) + "\n" for item in rows))
+        args = argparse.Namespace(input=source, output=target)
+        assert radar.candidates(args) == 0
+        saved = radar.read_jsonl(target)
+        assert [item["number"] for item in saved if item["repo"] == "a/b"] == [1, 2, 3, 4, 5, 6]
+        assert Counter(item["repo"] for item in saved) == {"a/b": 6, "c/d": 1}
+        assert radar.candidates(args) == 0
+        saved = radar.read_jsonl(target)
+        assert [item["number"] for item in saved if item["repo"] == "a/b"] == list(range(1, 8))
+        assert radar.candidates(args) == 0
+        assert radar.read_jsonl(target) == saved
+        args.output = source
+        rejects(radar.candidates, args)
+
+    args = argparse.Namespace(repos=Path("repos.txt"), since="24h",
+                              issues=Path("issues.jsonl"), grades=Path("grades.jsonl"),
+                              candidates=Path("candidates.jsonl"), model=radar.MODEL)
+    with (patch.object(radar, "collect", return_value=0) as collect,
+          patch.object(radar, "grade", return_value=0) as grade,
+          patch.object(radar, "candidates", return_value=0) as save):
+        assert radar.batch(args) == 0
+        assert collect.call_count == grade.call_count == save.call_count == 1
+    with (patch.object(radar, "collect", return_value=1),
+          patch.object(radar, "grade") as grade,
+          patch.object(radar, "candidates") as save):
+        assert radar.batch(args) == 1
+        grade.assert_not_called()
+        save.assert_not_called()
+    with (patch.object(radar, "collect", return_value=0),
+          patch.object(radar, "grade", return_value=1),
+          patch.object(radar, "candidates") as save):
+        assert radar.batch(args) == 1
+        save.assert_not_called()
+    args.candidates = args.issues
+    rejects(radar.batch, args)
+
+
 if __name__ == "__main__":
     with redirect_stderr(io.StringIO()):
         test_filters_and_collection()
@@ -247,4 +297,5 @@ if __name__ == "__main__":
         test_grading_parallelism()
         test_grading_limits()
         test_report()
-    print("통과: 제외 필터·페이지 수집·스키마·16개 동시 판정·100건/20건 상한·레포 순환 선택·판정 실패 보존·원자적 저장·리포트 집계")
+        test_candidates_and_batch()
+    print("통과: 수집·판정·후보·배치·원자적 저장·리포트 집계")

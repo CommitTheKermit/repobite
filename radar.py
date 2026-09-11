@@ -19,6 +19,7 @@ import vertex
 ROOT = Path(__file__).resolve().parent
 GRADE_LIMIT = 100
 REPO_GRADE_LIMIT = 20
+CANDIDATE_REPO_LIMIT = 5
 MODEL = vertex.DEFAULT_MODEL
 REASONING_EFFORT = "minimal"
 CRITERIA_VERSION = 1
@@ -392,6 +393,45 @@ def report(args):
     return 0
 
 
+def candidates(args):
+    if args.input.resolve() == args.output.resolve():
+        raise ValueError("입력과 출력 경로가 같을 수 없습니다")
+    rows = unique_issues(read_jsonl(args.input))
+    existing = unique_issues(read_jsonl(args.output)) if args.output.exists() else []
+    known = {issue_key(row) for row in existing}
+    counts = Counter()
+    added = []
+    for row in rows:
+        key = issue_key(row)
+        if (key not in known and freshness.is_candidate(row)
+                and (row.get("freshness") or {}).get("eligible") is True
+                and counts[key[0]] < CANDIDATE_REPO_LIMIT):
+            validate_grade(row["grade"])
+            added.append(row)
+            known.add(key)
+            counts[key[0]] += 1
+    with atomic_output(args.output) as stream:
+        for row in existing + added:
+            write_row(stream, row)
+    print(f"새 후보 {len(added)}건 저장, 기존 {len(existing)}건 유지", file=sys.stderr)
+    return 0
+
+
+def batch(args):
+    paths = (args.repos, args.issues, args.grades, args.candidates)
+    if len({path.resolve() for path in paths}) != len(paths):
+        raise ValueError("레포 목록과 배치 입출력 경로는 모두 달라야 합니다")
+    collect_args = argparse.Namespace(repos=args.repos, sample=None, since=args.since,
+                                      output=args.issues)
+    if result := collect(collect_args):
+        return result
+    grade_args = argparse.Namespace(input=args.issues, output=args.grades, reuse=args.grades,
+                                    model=args.model, all_issues=False)
+    if result := grade(grade_args):
+        return result
+    return candidates(argparse.Namespace(input=args.grades, output=args.candidates))
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
@@ -413,6 +453,18 @@ def main():
     report_parser.add_argument("--input", type=Path, default=Path("grades.jsonl"))
     report_parser.add_argument("--sample", type=Path, default=ROOT / "fixtures/sample30.json")
     report_parser.set_defaults(run=report)
+    candidates_parser = commands.add_parser("candidates", help="새 추천 후보를 레포당 최대 5건 기록")
+    candidates_parser.add_argument("--input", type=Path, default=Path("grades.jsonl"))
+    candidates_parser.add_argument("--output", type=Path, default=Path("candidates.jsonl"))
+    candidates_parser.set_defaults(run=candidates)
+    batch_parser = commands.add_parser("batch", help="수집, 제한 판정, 후보 생성을 순서대로 실행")
+    batch_parser.add_argument("--repos", type=Path, default=ROOT / "repos.txt")
+    batch_parser.add_argument("--since", default="24h", help="갱신 기준 상대 기간: 7d, 24h, 1w")
+    batch_parser.add_argument("--issues", type=Path, default=Path("issues.jsonl"))
+    batch_parser.add_argument("--grades", type=Path, default=Path("grades.jsonl"))
+    batch_parser.add_argument("--candidates", type=Path, default=Path("candidates.jsonl"))
+    batch_parser.add_argument("--model", default=MODEL, help=f"Vertex AI 판정 모델 (기본: {MODEL})")
+    batch_parser.set_defaults(run=batch)
     args = parser.parse_args()
     try:
         return args.run(args)

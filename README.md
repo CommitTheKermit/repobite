@@ -59,8 +59,15 @@ Cloud Run에서는 연결된 서비스 계정의 메타데이터 토큰을 사�
 python3 test_radar.py
 python3 radar.py collect --since 7d
 python3 radar.py grade
+python3 radar.py candidates
+python3 radar.py batch
 python3 radar.py report
 ```
+
+`candidates`는 최신 상태 확인까지 통과한 Lv.1 × ready 이슈만 `candidates.jsonl`에 기록한다.
+기존 후보는 유지하고 같은 `repo/number`는 다시 넣지 않으며, 실행마다 레포당 새 후보를 최대 5건 추가한다.
+`batch`는 최근 24시간 이슈 수집, 제한 판정, 후보 생성을 순서대로 실행하고 중간 단계가 실패하면 즉시 종료한다.
+Windows 자동 실행 설정은 [Windows 운영 문서](docs/Windows-운영.md)를 따른다.
 
 `repos.txt`에 추적할 레포를 한 줄에 하나씩 적는다. 빈 줄과 `#` 주석을 허용한다.
 기본은 **10개 분야 × 3개, 총 30개**다. AI 에이전트, 모델 추론, 프런트엔드, 백엔드,
