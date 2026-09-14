@@ -152,120 +152,120 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--color-text)
       <div class="filterbar" aria-label="레포지토리 필터">
         <span class="sort"><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c1 3-2 4-2 7 0 1.7 1.3 3 3 3 2.5 0 4-2.1 3.5-4.5C19 10 20 12.4 20 15a8 8 0 0 1-16 0c0-3.4 2-6.4 5-8-.3 2 0 3.4 1 4"/></svg>추천순</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 9 5 5 5-5"/></svg></span>
         <div class="chips">
-          <span class="chip active" data-category="all">전체 28</span><span class="chip" data-category="ai">AI</span><span class="chip" data-category="framework">프레임워크</span><span class="chip" data-category="data">데이터</span><span class="chip" data-category="dev-tools">개발 도구</span><span class="chip" data-category="infra">인프라</span><span class="chip" data-category="app">앱</span><span class="chip" data-category="media">미디어</span>
+          <span class="chip active" data-filter="all">전체 28</span><span class="chip" data-filter="ai-ml agents-automation">AI</span><span class="chip" data-filter="web-framework ui-design-system backend-api">프레임워크</span><span class="chip" data-filter="database search-knowledge">데이터</span><span class="chip" data-filter="dev-tools ide-terminal testing-quality cicd-release">개발 도구</span><span class="chip" data-filter="infra-cloud observability networking-systems">인프라</span><span class="chip" data-filter="security-identity">보안</span><span class="chip" data-filter="desktop-app mobile productivity">앱</span><span class="chip" data-filter="media-creative games-graphics">미디어</span>
         </div>
       </div>
 
       <section class="feed" aria-label="수집된 레포지토리 샘플">
-        <article class="card" data-category="ai">
+        <article class="card" data-categories="ai-ml agents-automation">
           <div class="preview asset square contain"><img src="https://raw.githubusercontent.com/THU-MAIC/OpenMAIC/main/assets/logo-horizontal.png" alt="OpenMAIC 로고" loading="lazy" decoding="async"><dl class="difficulty-stats" aria-label="이슈 난이도 분포"><div><dt>Lv.1</dt><dd>1</dd></div><div><dt>Lv.2</dt><dd>17</dd></div><div><dt>Lv.3</dt><dd>14</dd></div></dl></div>
           <div class="meta"><img class="repo-avatar" src="https://avatars.githubusercontent.com/u/163809488?v=4&amp;s=128" alt="" loading="lazy" decoding="async"><p class="meta-line"><span class="repo">THU-MAIC/OpenMAIC</span><span class="title">멀티 에이전트 학습 서비스</span></p></div>
         </article>
-        <article class="card" data-category="ai">
+        <article class="card" data-categories="ai-ml search-knowledge">
           <div class="preview asset tall"><img src="https://raw.githubusercontent.com/volcengine/OpenViking/main/docs/images/studio-playground.png" alt="OpenViking Studio 제품 화면" loading="lazy" decoding="async"><dl class="difficulty-stats" aria-label="이슈 난이도 분포"><div><dt>Lv.1</dt><dd>3</dd></div><div><dt>Lv.2</dt><dd>24</dd></div><div><dt>Lv.3</dt><dd>32</dd></div></dl></div>
           <div class="meta"><img class="repo-avatar" src="https://avatars.githubusercontent.com/u/67365215?v=4&amp;s=128" alt="" loading="lazy" decoding="async"><p class="meta-line"><span class="repo">volcengine/OpenViking</span><span class="title">AI 에이전트용 컨텍스트 데이터베이스</span></p></div>
         </article>
-        <article class="card" data-category="dev-tools">
+        <article class="card" data-categories="agents-automation dev-tools">
           <div class="preview fallback square"><img class="fallback-avatar" src="https://avatars.githubusercontent.com/u/9919?v=4&amp;s=512" alt="GitHub 프로필 이미지" loading="lazy" decoding="async"><p><strong>github/github-mcp-server</strong><span>GitHub 공식 MCP 서버</span></p><dl class="difficulty-stats" aria-label="이슈 난이도 분포"><div><dt>Lv.1</dt><dd>3</dd></div><div><dt>Lv.2</dt><dd>5</dd></div><div><dt>Lv.3</dt><dd>11</dd></div></dl></div>
           <div class="meta"><img class="repo-avatar" src="https://avatars.githubusercontent.com/u/9919?v=4&amp;s=128" alt="" loading="lazy" decoding="async"><p class="meta-line"><span class="repo">github/github-mcp-server</span><span class="title">GitHub 공식 MCP 서버</span></p></div>
         </article>
-        <article class="card" data-category="ai">
+        <article class="card" data-categories="ai-ml">
           <div class="preview fallback square"><img class="fallback-avatar" src="https://avatars.githubusercontent.com/u/102832242?v=4&amp;s=512" alt="MLX 프로필 이미지" loading="lazy" decoding="async"><p><strong>ml-explore/mlx</strong><span>Apple Silicon용 배열·머신러닝 프레임워크</span></p><dl class="difficulty-stats" aria-label="이슈 난이도 분포"><div><dt>Lv.1</dt><dd>0</dd></div><div><dt>Lv.2</dt><dd>5</dd></div><div><dt>Lv.3</dt><dd>8</dd></div></dl></div>
           <div class="meta"><img class="repo-avatar" src="https://avatars.githubusercontent.com/u/102832242?v=4&amp;s=128" alt="" loading="lazy" decoding="async"><p class="meta-line"><span class="repo">ml-explore/mlx</span><span class="title">Apple Silicon용 배열·머신러닝 프레임워크</span></p></div>
         </article>
-        <article class="card" data-category="ai">
+        <article class="card" data-categories="ai-ml web-framework">
           <div class="preview fallback square"><img class="fallback-avatar" src="https://avatars.githubusercontent.com/u/106173866?v=4&amp;s=512" alt="MLC AI 프로필 이미지" loading="lazy" decoding="async"><p><strong>mlc-ai/web-llm</strong><span>브라우저 LLM 추론 엔진</span></p><dl class="difficulty-stats" aria-label="이슈 난이도 분포"><div><dt>Lv.1</dt><dd>0</dd></div><div><dt>Lv.2</dt><dd>1</dd></div><div><dt>Lv.3</dt><dd>0</dd></div></dl></div>
           <div class="meta"><img class="repo-avatar" src="https://avatars.githubusercontent.com/u/106173866?v=4&amp;s=128" alt="" loading="lazy" decoding="async"><p class="meta-line"><span class="repo">mlc-ai/web-llm</span><span class="title">브라우저 LLM 추론 엔진</span></p></div>
         </article>
-        <article class="card" data-category="ai">
+        <article class="card" data-categories="ai-ml">
           <div class="preview asset wide"><img src="https://raw.githubusercontent.com/cactus-compute/needle/main/assets/banner.png" alt="Needle 브랜드 배너" loading="lazy" decoding="async"><dl class="difficulty-stats" aria-label="이슈 난이도 분포"><div><dt>Lv.1</dt><dd>1</dd></div><div><dt>Lv.2</dt><dd>0</dd></div><div><dt>Lv.3</dt><dd>3</dd></div></dl></div>
           <div class="meta"><img class="repo-avatar" src="https://avatars.githubusercontent.com/u/196640840?v=4&amp;s=128" alt="" loading="lazy" decoding="async"><p class="meta-line"><span class="repo">cactus-compute/needle</span><span class="title">소형 기기용 파운데이션 모델</span></p></div>
         </article>
-        <article class="card" data-category="framework">
+        <article class="card" data-categories="web-framework ui-design-system">
           <div class="preview fallback square"><img class="fallback-avatar" src="https://avatars.githubusercontent.com/u/76995045?v=4&amp;s=512" alt="Vben 프로필 이미지" loading="lazy" decoding="async"><p><strong>vbenjs/vue-vben-admin</strong><span>Vue 관리자 화면 템플릿</span></p><dl class="difficulty-stats" aria-label="이슈 난이도 분포"><div><dt>Lv.1</dt><dd>2</dd></div><div><dt>Lv.2</dt><dd>5</dd></div><div><dt>Lv.3</dt><dd>2</dd></div></dl></div>
           <div class="meta"><img class="repo-avatar" src="https://avatars.githubusercontent.com/u/76995045?v=4&amp;s=128" alt="" loading="lazy" decoding="async"><p class="meta-line"><span class="repo">vbenjs/vue-vben-admin</span><span class="title">Vue 관리자 화면 템플릿</span></p></div>
         </article>
-        <article class="card" data-category="framework">
+        <article class="card" data-categories="web-framework">
           <div class="preview asset wide"><img src="https://raw.githubusercontent.com/withastro/astro/main/.github/assets/banner.jpg" alt="Astro 브랜드 배너" loading="lazy" decoding="async"><dl class="difficulty-stats" aria-label="이슈 난이도 분포"><div><dt>Lv.1</dt><dd>1</dd></div><div><dt>Lv.2</dt><dd>0</dd></div><div><dt>Lv.3</dt><dd>2</dd></div></dl></div>
           <div class="meta"><img class="repo-avatar" src="https://avatars.githubusercontent.com/u/44914786?v=4&amp;s=128" alt="" loading="lazy" decoding="async"><p class="meta-line"><span class="repo">withastro/astro</span><span class="title">콘텐츠 중심 웹 프레임워크</span></p></div>
         </article>
-        <article class="card" data-category="framework">
+        <article class="card" data-categories="web-framework ui-design-system">
           <div class="preview asset wide"><img src="https://repository-images.githubusercontent.com/657119460/c1a7fef8-4bb9-410d-be33-87c5677fc518" alt="Reka UI 저장소 대표 이미지" loading="lazy" decoding="async"><dl class="difficulty-stats" aria-label="이슈 난이도 분포"><div><dt>Lv.1</dt><dd>1</dd></div><div><dt>Lv.2</dt><dd>6</dd></div><div><dt>Lv.3</dt><dd>6</dd></div></dl></div>
           <div class="meta"><img class="repo-avatar" src="https://avatars.githubusercontent.com/u/137486839?v=4&amp;s=128" alt="" loading="lazy" decoding="async"><p class="meta-line"><span class="repo">unovue/reka-ui</span><span class="title">Vue용 접근성 UI 프리미티브</span></p></div>
         </article>
-        <article class="card" data-category="framework">
+        <article class="card" data-categories="web-framework backend-api">
           <div class="preview asset square contain"><img src="https://raw.githubusercontent.com/honojs/hono/main/docs/images/hono-title.png" alt="Hono 브랜드 타이틀" loading="lazy" decoding="async"><dl class="difficulty-stats" aria-label="이슈 난이도 분포"><div><dt>Lv.1</dt><dd>1</dd></div><div><dt>Lv.2</dt><dd>2</dd></div><div><dt>Lv.3</dt><dd>2</dd></div></dl></div>
           <div class="meta"><img class="repo-avatar" src="https://avatars.githubusercontent.com/u/98495527?v=4&amp;s=128" alt="" loading="lazy" decoding="async"><p class="meta-line"><span class="repo">honojs/hono</span><span class="title">웹 표준 기반 서버 프레임워크</span></p></div>
         </article>
-        <article class="card" data-category="framework">
+        <article class="card" data-categories="web-framework security-identity">
           <div class="preview asset wide"><img src="https://repository-images.githubusercontent.com/803014189/1fffa32b-9794-4ec0-93e9-3e07401a3f03" alt="Better Auth 저장소 대표 이미지" loading="lazy" decoding="async"><dl class="difficulty-stats" aria-label="이슈 난이도 분포"><div><dt>Lv.1</dt><dd>1</dd></div><div><dt>Lv.2</dt><dd>7</dd></div><div><dt>Lv.3</dt><dd>11</dd></div></dl></div>
           <div class="meta"><img class="repo-avatar" src="https://avatars.githubusercontent.com/u/163827765?v=4&amp;s=128" alt="" loading="lazy" decoding="async"><p class="meta-line"><span class="repo">better-auth/better-auth</span><span class="title">인증 프레임워크</span></p></div>
         </article>
-        <article class="card" data-category="data">
+        <article class="card" data-categories="database backend-api">
           <div class="preview asset wide"><img src="https://repository-images.githubusercontent.com/437245741/3d2045bd-2251-4bd8-857e-0de77547c01b" alt="Dragonfly 저장소 대표 이미지" loading="lazy" decoding="async"><dl class="difficulty-stats" aria-label="이슈 난이도 분포"><div><dt>Lv.1</dt><dd>1</dd></div><div><dt>Lv.2</dt><dd>3</dd></div><div><dt>Lv.3</dt><dd>8</dd></div></dl></div>
           <div class="meta"><img class="repo-avatar" src="https://avatars.githubusercontent.com/u/104819355?v=4&amp;s=128" alt="" loading="lazy" decoding="async"><p class="meta-line"><span class="repo">dragonflydb/dragonfly</span><span class="title">Redis·Memcached 대체 인메모리 DB</span></p></div>
         </article>
-        <article class="card" data-category="data">
+        <article class="card" data-categories="search-knowledge">
           <div class="preview asset tall"><img src="https://raw.githubusercontent.com/asciimoo/hister/master/webui/website/src/lib/assets/screenshot.png" alt="Hister 웹 검색 화면" loading="lazy" decoding="async"><dl class="difficulty-stats" aria-label="이슈 난이도 분포"><div><dt>Lv.1</dt><dd>2</dd></div><div><dt>Lv.2</dt><dd>3</dd></div><div><dt>Lv.3</dt><dd>3</dd></div></dl></div>
           <div class="meta"><img class="repo-avatar" src="https://avatars.githubusercontent.com/u/20240?v=4&amp;s=128" alt="" loading="lazy" decoding="async"><p class="meta-line"><span class="repo">asciimoo/hister</span><span class="title">개인 검색 엔진</span></p></div>
         </article>
-        <article class="card" data-category="ai">
+        <article class="card" data-categories="ai-ml search-knowledge">
           <div class="preview asset wide"><img src="https://raw.githubusercontent.com/semantica-agi/semantica/main/docs/assets/img/semantica-knowledge-explorer-demo.gif" alt="Semantica Knowledge Explorer 데모" loading="lazy" decoding="async"><dl class="difficulty-stats" aria-label="이슈 난이도 분포"><div><dt>Lv.1</dt><dd>0</dd></div><div><dt>Lv.2</dt><dd>5</dd></div><div><dt>Lv.3</dt><dd>5</dd></div></dl></div>
           <div class="meta"><img class="repo-avatar" src="https://avatars.githubusercontent.com/u/213958577?v=4&amp;s=128" alt="" loading="lazy" decoding="async"><p class="meta-line"><span class="repo">semantica-agi/semantica</span><span class="title">AI 컨텍스트 그래프 인프라</span></p></div>
         </article>
-        <article class="card" data-category="dev-tools">
+        <article class="card" data-categories="ide-terminal desktop-app">
           <div class="preview asset square contain"><img src="https://github.com/user-attachments/assets/fe853809-ba8b-400b-83ab-a9a0da25be8a" alt="Ghostty 로고" loading="lazy" decoding="async"><dl class="difficulty-stats" aria-label="이슈 난이도 분포"><div><dt>Lv.1</dt><dd>1</dd></div><div><dt>Lv.2</dt><dd>3</dd></div><div><dt>Lv.3</dt><dd>2</dd></div></dl></div>
           <div class="meta"><img class="repo-avatar" src="https://avatars.githubusercontent.com/u/169223740?v=4&amp;s=128" alt="" loading="lazy" decoding="async"><p class="meta-line"><span class="repo">ghostty-org/ghostty</span><span class="title">GPU 가속 터미널 에뮬레이터</span></p></div>
         </article>
-        <article class="card" data-category="dev-tools">
+        <article class="card" data-categories="dev-tools">
           <div class="preview asset square contain"><img src="https://cdn.lightpanda.io/assets/images/logo/lpd-logo.png" alt="Lightpanda 로고" loading="lazy" decoding="async"><dl class="difficulty-stats" aria-label="이슈 난이도 분포"><div><dt>Lv.1</dt><dd>0</dd></div><div><dt>Lv.2</dt><dd>3</dd></div><div><dt>Lv.3</dt><dd>4</dd></div></dl></div>
           <div class="meta"><img class="repo-avatar" src="https://avatars.githubusercontent.com/u/145980012?v=4&amp;s=128" alt="" loading="lazy" decoding="async"><p class="meta-line"><span class="repo">lightpanda-io/browser</span><span class="title">자동화용 헤드리스 브라우저</span></p></div>
         </article>
-        <article class="card" data-category="dev-tools">
+        <article class="card" data-categories="ide-terminal dev-tools">
           <div class="preview asset square contain"><img src="https://raw.githubusercontent.com/neurosnap/zmx/main/logo.png" alt="zmx 로고" loading="lazy" decoding="async"><dl class="difficulty-stats" aria-label="이슈 난이도 분포"><div><dt>Lv.1</dt><dd>0</dd></div><div><dt>Lv.2</dt><dd>1</dd></div><div><dt>Lv.3</dt><dd>1</dd></div></dl></div>
           <div class="meta"><img class="repo-avatar" src="https://avatars.githubusercontent.com/u/1940365?v=4&amp;s=128" alt="" loading="lazy" decoding="async"><p class="meta-line"><span class="repo">neurosnap/zmx</span><span class="title">터미널 세션 연결·분리 도구</span></p></div>
         </article>
-        <article class="card" data-category="infra">
+        <article class="card" data-categories="observability infra-cloud">
           <div class="preview asset wide"><img src="https://repository-images.githubusercontent.com/825470378/2710c6db-f934-4a8b-a2c4-7a0abbcd2ad6" alt="Beszel 저장소 대표 이미지" loading="lazy" decoding="async"><dl class="difficulty-stats" aria-label="이슈 난이도 분포"><div><dt>Lv.1</dt><dd>1</dd></div><div><dt>Lv.2</dt><dd>11</dd></div><div><dt>Lv.3</dt><dd>7</dd></div></dl></div>
           <div class="meta"><img class="repo-avatar" src="https://avatars.githubusercontent.com/u/8519632?v=4&amp;s=128" alt="" loading="lazy" decoding="async"><p class="meta-line"><span class="repo">henrygd/beszel</span><span class="title">경량 서버 모니터링 서비스</span></p></div>
         </article>
-        <article class="card" data-category="infra">
+        <article class="card" data-categories="infra-cloud dev-tools">
           <div class="preview asset wide contain"><img src="https://raw.githubusercontent.com/superradcompany/microsandbox/main/assets/microsandbox-gh-banner-dark.png" alt="Microsandbox 브랜드 배너" loading="lazy" decoding="async"><dl class="difficulty-stats" aria-label="이슈 난이도 분포"><div><dt>Lv.1</dt><dd>1</dd></div><div><dt>Lv.2</dt><dd>4</dd></div><div><dt>Lv.3</dt><dd>7</dd></div></dl></div>
           <div class="meta"><img class="repo-avatar" src="https://avatars.githubusercontent.com/u/145875517?v=4&amp;s=128" alt="" loading="lazy" decoding="async"><p class="meta-line"><span class="repo">superradcompany/microsandbox</span><span class="title">로컬 우선 microVM 런타임</span></p></div>
         </article>
-        <article class="card" data-category="ai">
+        <article class="card" data-categories="ai-ml security-identity">
           <div class="preview asset tall"><img src="https://raw.githubusercontent.com/Tencent/AI-Infra-Guard/main/img/aig.gif" alt="AI Infra Guard 제품 데모" loading="lazy" decoding="async"><dl class="difficulty-stats" aria-label="이슈 난이도 분포"><div><dt>Lv.1</dt><dd>0</dd></div><div><dt>Lv.2</dt><dd>2</dd></div><div><dt>Lv.3</dt><dd>3</dd></div></dl></div>
           <div class="meta"><img class="repo-avatar" src="https://avatars.githubusercontent.com/u/18461506?v=4&amp;s=128" alt="" loading="lazy" decoding="async"><p class="meta-line"><span class="repo">Tencent/AI-Infra-Guard</span><span class="title">AI 보안 스캔 플랫폼</span></p></div>
         </article>
-        <article class="card" data-category="data">
+        <article class="card" data-categories="observability infra-cloud">
           <div class="preview asset wide"><img src="https://repository-images.githubusercontent.com/792861139/5aa82f46-2f6d-4773-a4f3-b42e136f453f" alt="Glance 저장소 대표 이미지" loading="lazy" decoding="async"><dl class="difficulty-stats" aria-label="이슈 난이도 분포"><div><dt>Lv.1</dt><dd>2</dd></div><div><dt>Lv.2</dt><dd>10</dd></div><div><dt>Lv.3</dt><dd>4</dd></div></dl></div>
           <div class="meta"><img class="repo-avatar" src="https://avatars.githubusercontent.com/u/159397742?v=4&amp;s=128" alt="" loading="lazy" decoding="async"><p class="meta-line"><span class="repo">glanceapp/glance</span><span class="title">셀프호스팅 피드 대시보드</span></p></div>
         </article>
-        <article class="card" data-category="dev-tools">
+        <article class="card" data-categories="dev-tools productivity">
           <div class="preview asset tall"><img src="https://filebrowserquantum.com/images/generated/listing/view-mode-normal-dark.jpg" alt="FileBrowser Quantum 파일 목록 화면" loading="lazy" decoding="async"><dl class="difficulty-stats" aria-label="이슈 난이도 분포"><div><dt>Lv.1</dt><dd>1</dd></div><div><dt>Lv.2</dt><dd>20</dd></div><div><dt>Lv.3</dt><dd>5</dd></div></dl></div>
           <div class="meta"><img class="repo-avatar" src="https://avatars.githubusercontent.com/u/42989099?v=4&amp;s=128" alt="" loading="lazy" decoding="async"><p class="meta-line"><span class="repo">gtsteffaniak/filebrowser</span><span class="title">웹 파일 관리자</span></p></div>
         </article>
-        <article class="card" data-category="app">
+        <article class="card" data-categories="productivity desktop-app">
           <div class="preview asset wide"><img src="https://raw.githubusercontent.com/bookorbit/bookorbit/main/docs/images/dashboard-overview.png" alt="BookOrbit 대시보드 화면" loading="lazy" decoding="async"><dl class="difficulty-stats" aria-label="이슈 난이도 분포"><div><dt>Lv.1</dt><dd>14</dd></div><div><dt>Lv.2</dt><dd>67</dd></div><div><dt>Lv.3</dt><dd>33</dd></div></dl></div>
           <div class="meta"><img class="repo-avatar" src="https://avatars.githubusercontent.com/u/279911312?v=4&amp;s=128" alt="" loading="lazy" decoding="async"><p class="meta-line"><span class="repo">bookorbit/bookorbit</span><span class="title">독서·라이브러리 관리 서비스</span></p></div>
         </article>
-        <article class="card" data-category="app">
+        <article class="card" data-categories="desktop-app">
           <div class="preview asset wide"><img src="https://repository-images.githubusercontent.com/1248194723/027636c2-3777-4a45-b2f4-e64950b94a13" alt="OpenLogi 저장소 대표 이미지" loading="lazy" decoding="async"><dl class="difficulty-stats" aria-label="이슈 난이도 분포"><div><dt>Lv.1</dt><dd>1</dd></div><div><dt>Lv.2</dt><dd>33</dd></div><div><dt>Lv.3</dt><dd>30</dd></div></dl></div>
           <div class="meta"><img class="repo-avatar" src="https://avatars.githubusercontent.com/u/37977109?v=4&amp;s=128" alt="" loading="lazy" decoding="async"><p class="meta-line"><span class="repo">AprilNEA/OpenLogi</span><span class="title">Logitech 장치 설정 앱</span></p></div>
         </article>
-        <article class="card" data-category="media">
+        <article class="card" data-categories="media-creative desktop-app">
           <div class="preview asset wide"><img src="https://repository-images.githubusercontent.com/1004647857/4bc04d99-18c9-4667-b11f-9cd497d2bc63" alt="OpenWhispr 저장소 대표 이미지" loading="lazy" decoding="async"><dl class="difficulty-stats" aria-label="이슈 난이도 분포"><div><dt>Lv.1</dt><dd>4</dd></div><div><dt>Lv.2</dt><dd>20</dd></div><div><dt>Lv.3</dt><dd>18</dd></div></dl></div>
           <div class="meta"><img class="repo-avatar" src="https://avatars.githubusercontent.com/u/254803777?v=4&amp;s=128" alt="" loading="lazy" decoding="async"><p class="meta-line"><span class="repo">OpenWhispr/openwhispr</span><span class="title">로컬·클라우드 음성 받아쓰기 앱</span></p></div>
         </article>
-        <article class="card" data-category="app">
+        <article class="card" data-categories="productivity mobile">
           <div class="preview asset wide"><img src="https://repository-images.githubusercontent.com/1051440251/a78812e5-01fc-4b6c-91a2-02255b1bb758" alt="BeeCount 저장소 대표 이미지" loading="lazy" decoding="async"><dl class="difficulty-stats" aria-label="이슈 난이도 분포"><div><dt>Lv.1</dt><dd>1</dd></div><div><dt>Lv.2</dt><dd>7</dd></div><div><dt>Lv.3</dt><dd>2</dd></div></dl></div>
           <div class="meta"><img class="repo-avatar" src="https://avatars.githubusercontent.com/u/9278923?v=4&amp;s=128" alt="" loading="lazy" decoding="async"><p class="meta-line"><span class="repo">TNT-Likely/BeeCount</span><span class="title">로컬 우선 크로스플랫폼 가계부</span></p></div>
         </article>
-        <article class="card" data-category="app">
+        <article class="card" data-categories="media-creative desktop-app">
           <div class="preview asset wide"><img src="https://repository-images.githubusercontent.com/1206390571/fd6851a0-4e36-4541-a76c-2ad84935d0bc" alt="VoiceStudio 저장소 대표 이미지" loading="lazy" decoding="async"><dl class="difficulty-stats" aria-label="이슈 난이도 분포"><div><dt>Lv.1</dt><dd>0</dd></div><div><dt>Lv.2</dt><dd>2</dd></div><div><dt>Lv.3</dt><dd>2</dd></div></dl></div>
           <div class="meta"><img class="repo-avatar" src="https://avatars.githubusercontent.com/u/4178343?v=4&amp;s=128" alt="" loading="lazy" decoding="async"><p class="meta-line"><span class="repo">debpalash/VoiceStudio</span><span class="title">로컬 음성 생성·편집 도구</span></p></div>
         </article>
-        <article class="card" data-category="ai">
+        <article class="card" data-categories="agents-automation dev-tools">
           <div class="preview asset wide"><img src="https://repository-images.githubusercontent.com/1211139949/484a27cf-6888-472b-9f58-46615a4429b1" alt="Archify 저장소 대표 이미지" loading="lazy" decoding="async"><dl class="difficulty-stats" aria-label="이슈 난이도 분포"><div><dt>Lv.1</dt><dd>7</dd></div><div><dt>Lv.2</dt><dd>10</dd></div><div><dt>Lv.3</dt><dd>10</dd></div></dl></div>
           <div class="meta"><img class="repo-avatar" src="https://avatars.githubusercontent.com/u/53142663?v=4&amp;s=128" alt="" loading="lazy" decoding="async"><p class="meta-line"><span class="repo">tt-a1i/archify</span><span class="title">아키텍처 다이어그램 에이전트 스킬</span></p></div>
         </article>
