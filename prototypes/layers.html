@@ -100,9 +100,8 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--color-text)
 .search input:disabled { cursor: not-allowed; opacity: .55; color: var(--color-dim); }
 .search input::placeholder { color: var(--color-dim); }
 .side-section { padding: var(--space-2xl); border-bottom: 1px solid var(--color-rule); }
-.side-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.side-heading { margin-bottom: 16px; }
 .side-heading h2 { margin: 0; font-size: 16px; font-weight: 600; }
-.side-heading span { padding: 7px 10px; border: 1px solid var(--color-rule); border-radius: var(--radius-sm); font-size: 13px; white-space: nowrap; }
 .repo-list { list-style: none; margin: 0; padding: 0; }
 .repo-list li { display: flex; align-items: center; gap: 16px; padding: 12px 0; }
 .stream-time { width: 40px; flex: 0 0 auto; color: var(--color-dim); font: 11px/1 var(--font-code); }
@@ -276,7 +275,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--color-text)
     <aside class="side" aria-label="보조 정보">
       <label class="search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="m16 16 4 4"/></svg><input type="search" placeholder="Search repositories..." aria-label="레포지토리 검색"></label>
       <section class="side-section">
-        <div class="side-heading"><h2>Recent issues</h2><span>KST</span></div>
+        <div class="side-heading"><h2>Recent issues</h2></div>
         <ul class="repo-list">
           <li><time class="stream-time" datetime="2026-09-10T17:04:51+09:00">17:04</time><span class="repo-copy"><strong>@astrojs/node: trailing-slash redirect drops part of a query string that contains a second `?`</strong><span>withastro/astro #17962</span></span></li>
           <li><time class="stream-time" datetime="2026-09-10T16:27:08+09:00">16:27</time><span class="repo-copy"><strong>[Bug]: VLM parsing layer still crashes on empty/None choices in 0.4.19 - follow-up to #3022</strong><span>volcengine/OpenViking #4899</span></span></li>
