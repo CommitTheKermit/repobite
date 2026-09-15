@@ -244,7 +244,7 @@ class Handler(BaseHTTPRequestHandler):
             return
         if self.path == "/":
             self.reply(200, (radar.ROOT / "web.html").read_bytes(), "text/html; charset=utf-8")
-        elif self.path == "/api/state":
+        elif self.path in {"/api/state", "/data.json"}:
             try:
                 self.reply(200, self.server.app.snapshot())
             except (OSError, ValueError, KeyError, TypeError):

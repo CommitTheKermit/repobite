@@ -9,7 +9,7 @@ assert.match(html, /id="sort"/);
 assert.match(html, /id="clear"/);
 assert.match(html, /selected=selected===r\.repo\?'':r\.repo/);
 assert.match(html, /a\.href=x\.url/);
-assert.match(html, /fetch\('\/api\/state'\)/);
+assert.match(html, /fetch\('\/data\.json'\)/);
 assert.doesNotMatch(html, /\/api\/run/);
 assert.doesNotMatch(html, /id="collect"/);
 assert.doesNotMatch(html, /id="grade"/);
