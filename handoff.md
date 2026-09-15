@@ -1,7 +1,7 @@
-# oss-radar Windows 서버 전환과 다음 구현 계획
+# RepoBite Windows 서버 전환과 다음 구현 계획
 
 ## 프로젝트 위치 / 브랜치
-- 경로: `/Users/ujeonghyeon/Desktop/dev/myDev/2026-oss-radar`
+- 경로: `/Users/ujeonghyeon/Desktop/dev/myDev/repobite`
 - 브랜치: `docs/windows-server-handoff`
 - 커밋 규칙: 새 작업은 새 브랜치에서 시작하고, 프롬프트 단위로 Conventional Commits 형식의 한글 커밋을 남긴다. 비밀값과 서명 트레일러는 커밋하지 않는다.
 

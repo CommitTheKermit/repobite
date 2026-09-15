@@ -1,4 +1,4 @@
-# oss-radar MVP
+# RepoBite MVP
 
 GitHub 이슈 본문을 읽고 난이도(1/2/3)와 준비도(ready/needs_info/undecided)를 독립적으로 판정하는 CLI.
 Python 3.14 표준 라이브러리만 사용한다. Mac 로컬 웹 화면을 지원하며 설치 패키지, DB, 알림 발송은 없다.

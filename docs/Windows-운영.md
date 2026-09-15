@@ -25,7 +25,7 @@ Vertex AI 서비스 계정 JSON은 저장소 밖에 두고 사용자 환경 변�
 powershell -ExecutionPolicy Bypass -File .\scripts\register-tasks.ps1 -BatchTime "03:00"
 ```
 
-`oss-radar-web`은 시스템 시작 시 실행되고 `oss-radar-batch`는 매일 지정 시각에 실행된다.
+`repobite-web`은 시스템 시작 시 실행되고 `repobite-batch`는 매일 지정 시각에 실행된다.
 두 작업 모두 중복 실행을 무시하고 실패 시 15분 간격으로 3회 재시도하며, 실행 시 절전 모드를 해제한다.
 
 작업 스케줄러에서 각 작업을 수동 실행해 종료 코드와 `issues.jsonl`, `grades.jsonl`,

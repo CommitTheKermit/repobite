@@ -23,9 +23,9 @@ $BatchAction = New-ScheduledTaskAction `
     -Argument "-NoProfile -ExecutionPolicy Bypass -File `"$Repo\scripts\run-batch.ps1`"" `
     -WorkingDirectory $Repo
 
-Register-ScheduledTask -TaskName "oss-radar-web" -Action $WebAction `
+Register-ScheduledTask -TaskName "repobite-web" -Action $WebAction `
     -Trigger (New-ScheduledTaskTrigger -AtStartup) -Settings $Settings `
     -User $User -Password $Credential.Password -RunLevel Limited -Force
-Register-ScheduledTask -TaskName "oss-radar-batch" -Action $BatchAction `
+Register-ScheduledTask -TaskName "repobite-batch" -Action $BatchAction `
     -Trigger (New-ScheduledTaskTrigger -Daily -At $BatchTime) -Settings $Settings `
     -User $User -Password $Credential.Password -RunLevel Limited -Force

@@ -409,7 +409,7 @@ def ratio(numerator, denominator):
 
 def render_report(stats):
     s = stats
-    lines = ["# oss-radar 리포트", "",
+    lines = ["# RepoBite 리포트", "",
              f"입력 {s['total']}건 / 판정 성공 {s['valid']}건 / 실패 {s['failed']}건 / AI 제외 {s['excluded']}건", "",
              f"**최신 상태 확인 추천: {ratio(s['target'], s['valid'])}** (분모: 판정 성공 전체, AI 제외 포함)",
              f"Lv.1 × ready 원시 후보: {s['raw_target']}건",

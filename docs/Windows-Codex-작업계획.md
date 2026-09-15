@@ -1,10 +1,10 @@
-# oss-radar Windows 운영 설정 및 실기 검증
+# RepoBite Windows 운영 설정 및 실기 검증
 
 이 문서는 Windows 노트북의 Codex에 그대로 전달할 작업 지시서다.
 
 ## 목표
 
-현재 구현된 oss-radar를 Windows 노트북에서 운영 가능하게 설정하고 실제로 검증한다.
+현재 구현된 RepoBite를 Windows 노트북에서 운영 가능하게 설정하고 실제로 검증한다.
 
 완료 조건은 다음과 같다.
 
@@ -18,11 +18,11 @@
 ## 대상
 
 - 장치: 현재 Windows 노트북
-- 저장소: 현재 Codex에서 연 oss-radar 저장소
+- 저장소: 현재 Codex에서 연 RepoBite 저장소
 - 브랜치: `feat/windows-daily-batch`
 - 기준 커밋: `9fad041 feat(batch): Windows 일일 후보 수집을 추가`
 - 산출물: `issues.jsonl`, `grades.jsonl`, `candidates.jsonl`
-- 예약 작업: `oss-radar-web`, `oss-radar-batch`
+- 예약 작업: `repobite-web`, `repobite-batch`
 
 새 브랜치를 만들지 말고 기존 `feat/windows-daily-batch` 브랜치를 재사용한다.
 
@@ -184,8 +184,8 @@ py -3.14 -c "import radar; from pathlib import Path; files=('issues.jsonl','grad
 ## 6. 기존 예약 작업 확인
 
 ```powershell
-Get-ScheduledTask -TaskName "oss-radar-web" -ErrorAction SilentlyContinue
-Get-ScheduledTask -TaskName "oss-radar-batch" -ErrorAction SilentlyContinue
+Get-ScheduledTask -TaskName "repobite-web" -ErrorAction SilentlyContinue
+Get-ScheduledTask -TaskName "repobite-batch" -ErrorAction SilentlyContinue
 ```
 
 기존 작업이 있으면 `register-tasks.ps1`의 `-Force`가 덮어쓰므로 사용자에게 확인받기 전까지 등록하지 않는다.
@@ -201,9 +201,9 @@ powershell -ExecutionPolicy Bypass -File .\scripts\register-tasks.ps1 -BatchTime
 스크립트가 Windows 작업 계정 암호를 요청하면 사용자가 PowerShell 창에 직접 입력한다. Codex 채팅이나 문서에 암호를 적지 않는다.
 
 ```powershell
-Get-ScheduledTask -TaskName "oss-radar-web" |
+Get-ScheduledTask -TaskName "repobite-web" |
     Select-Object TaskName, State, Triggers, Settings
-Get-ScheduledTask -TaskName "oss-radar-batch" |
+Get-ScheduledTask -TaskName "repobite-batch" |
     Select-Object TaskName, State, Triggers, Settings
 ```
 
@@ -223,7 +223,7 @@ Get-ScheduledTask -TaskName "oss-radar-batch" |
 검증 중 60초 이상 상태 갱신 없이 기다리지 않는다.
 
 ```powershell
-Get-ScheduledTaskInfo -TaskName "oss-radar-batch" |
+Get-ScheduledTaskInfo -TaskName "repobite-batch" |
     Select-Object LastRunTime, LastTaskResult, NextRunTime
 Get-Item .\issues.jsonl, .\grades.jsonl, .\candidates.jsonl |
     Select-Object Name, Length, LastWriteTime
@@ -234,9 +234,9 @@ Get-Item .\issues.jsonl, .\grades.jsonl, .\candidates.jsonl |
 ## 9. 웹 서버 수동 검증
 
 ```powershell
-Start-ScheduledTask -TaskName "oss-radar-web"
+Start-ScheduledTask -TaskName "repobite-web"
 Start-Sleep -Seconds 3
-Get-ScheduledTask -TaskName "oss-radar-web" |
+Get-ScheduledTask -TaskName "repobite-web" |
     Select-Object TaskName, State
 Invoke-WebRequest http://127.0.0.1:8765 -UseBasicParsing |
     Select-Object StatusCode
@@ -251,9 +251,9 @@ Invoke-WebRequest http://127.0.0.1:8765 -UseBasicParsing |
 재부팅 후 같은 저장소에서 Codex를 다시 열고 다음을 실행한다.
 
 ```powershell
-Get-ScheduledTaskInfo -TaskName "oss-radar-web" |
+Get-ScheduledTaskInfo -TaskName "repobite-web" |
     Select-Object LastRunTime, LastTaskResult
-Get-ScheduledTask -TaskName "oss-radar-web" |
+Get-ScheduledTask -TaskName "repobite-web" |
     Select-Object TaskName, State
 Invoke-WebRequest http://127.0.0.1:8765 -UseBasicParsing |
     Select-Object StatusCode

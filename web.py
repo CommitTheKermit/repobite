@@ -283,7 +283,7 @@ if __name__ == "__main__":
     parser.add_argument("--port", type=int, default=8765)
     args = parser.parse_args()
     with make_server(args.port) as server:
-        print(f"oss-radar: http://127.0.0.1:{server.server_port}", flush=True)
+        print(f"RepoBite: http://127.0.0.1:{server.server_port}", flush=True)
         try:
             server.serve_forever()
         except KeyboardInterrupt:
