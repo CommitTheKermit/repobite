@@ -96,6 +96,8 @@ def test_schema_and_grading():
         assert model == radar.MODEL
         assert schema == radar.SCHEMA
         assert "HUMAN_SECRET" not in prompt
+        assert "실제 구현량, 기술 분야, 저장소 규모는 난이도에 반영하지 않는다" in prompt
+        assert "40자 이내" in prompt
         return GOOD
 
     with patch.object(radar.vertex, "generate_json", side_effect=fake_vertex):

@@ -23,39 +23,23 @@ REPO_GRADE_LIMIT = 20
 CANDIDATE_REPO_LIMIT = 5
 MODEL = vertex.DEFAULT_MODEL
 REASONING_EFFORT = "minimal"
-CRITERIA_VERSION = 1
+CRITERIA_VERSION = 2
 SCHEMA = json.loads((ROOT / "schema.json").read_text(encoding="utf-8"))
 READINESS = SCHEMA["properties"]["readiness"]["enum"]
-CRITERIA = """오픈소스 초보자의 기여 난이도와 준비도를 판정한다.
-두 축은 독립이다. 하나로 뭉치지 말 것.
+CRITERIA = """이슈 본문만 보고 바로 작업할 수 있는 정도를 난이도로 판정한다.
+실제 구현량, 기술 분야, 저장소 규모는 난이도에 반영하지 않는다.
 
-난이도 difficulty (1이 가장 쉬움)
-| 신호 | 1 | 3 |
-|---|---|---|
-| 도메인 지식 | 코드만 보면 됨 | 보안·인프라·분산 등 배경 필요 |
-| 변경 범위 | 한 파일 수 줄 | 여러 계층 동시 수정 |
-| 검증 | 로컬 재현 가능 | 특수 환경·타이밍 의존 |
+난이도 difficulty
+- 1 쉬움: 재현, 원인, 수정 제안이 모두 구체적이다.
+- 2 중간: 세 요소 중 일부가 빠졌지만 문제와 다음 조사 방향은 분명하다.
+- 3 어려움: 핵심 정보가 부족해 원인 조사부터 새로 해야 한다.
 
-준비도 readiness
-| 신호 | ready | undecided |
-|---|---|---|
-| 수정 위치 | 파일·함수·라인 명시 | 어디를 고칠지 미상 |
-| 수정 내용 | diff 수준 | 방향만 (direction) |
-| 재현 절차 | 있음 | 없음 |
-| 결정 상태 | 무엇을 할지 확정 | 설계 판단이 남음 |
-
-needs_info는 그 중간(일부는 있으나 착수 전 보완이 필요).
-두 축을 왜 나누는가: 표본에서 부적합 16건 중 8건이 어려워서가 아니라
-아직 안 정해져서 부적합이었다. 진짜 어려운 이슈와 정보가 없는 이슈를 구분한다.
-
-판정 예시:
-- massimoaria/bibliometrix#666: difficulty 1, readiness ready
-  (본문에 diff가 그대로 있고 R/csvOA2df.R:397 한 줄 수정)
-- simonives/redwrench#43: difficulty 2, readiness undecided
-  (Proposed fix direction만 있고 정책 판단이 남음)
+Q00/ouroboros#2216처럼 재현 테스트, 실제·기대 결과, 원인, 최소 수정 방향,
+회귀 테스트가 모두 있는 본문은 구현 범위와 무관하게 difficulty 1이다.
+readiness는 difficulty 1이면 ready, 2이면 needs_info, 3이면 undecided로 쓴다.
 
 exclude는 원인 미상이거나 가설이 반증된 이슈처럼 수집 단계에서 못 거른 것을 표시한다.
-reason에는 초보자에게 보여줄 본문 근거를 한국어로 작성한다. 근거를 지어내지 않는다.
+reason에는 본문에 있거나 빠진 핵심 근거만 한국어 한 문장, 40자 이내로 쓴다.
 exclude=true이면 exclude_reason에 구체적인 이유를, false이면 빈 문자열을 쓴다.
 문장 부호는 일반 hyphen을 사용한다.
 
