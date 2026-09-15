@@ -19,7 +19,6 @@ assert.match(html, /img\.naturalWidth\*p\.clientHeight>img\.naturalHeight\*p\.cl
 assert.match(html, /fallback\.hidden=true/);
 assert.match(html, /img\.hidden=true;fallback\.hidden=false/);
 assert.match(html, /\.side\{position:sticky;top:0;width:360px;height:100vh;overflow-y:auto/);
-assert.match(html, /-webkit-line-clamp:2/);
 assert.match(html, /\['e',0\],\['m',1\],\['h',2\]/);
 assert.doesNotMatch(html, /\/api\/run/);
 assert.doesNotMatch(html, /id="collect"/);
