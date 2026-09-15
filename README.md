@@ -120,7 +120,8 @@ python3 radar.py report
 
 ## 데이터와 비율 해석
 
-`issues.jsonl`은 `repo, number, title, body, url, created_at, labels, user`를 저장한다.
+`issues.jsonl`은 `repo, number, title, body, url, created_at, labels, user, repository_image`를 저장한다.
+`repository_image`는 README 이미지 후보 중 AI가 선택한 네트워크 URL이며, 없으면 웹에서 Social preview를 사용한다.
 본문 null은 빈 문자열로, labels는 이름 배열로, user는 login 문자열로 정규화한다.
 `grades.jsonl`은 원본 필드에 `model, reasoning_effort, criteria_version, graded_at, grade`를 추가한다.
 `grade` 안에 `difficulty, readiness, reason, exclude, exclude_reason`이 있다.

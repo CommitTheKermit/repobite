@@ -91,6 +91,7 @@ class Application:
                 items.append({"repo": issue["repo"], "number": issue["number"],
                               "title": issue["title"], "url": issue["url"],
                               "created_at": issue["created_at"], "description": description,
+                              "repository_image": issue.get("repository_image", ""),
                               "categories": list(categories), "grade": row.get("grade"),
                               "error": row.get("error"), "model": row.get("model"),
                               "freshness": row.get("freshness")})

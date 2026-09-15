@@ -36,6 +36,12 @@ def test_filters_and_collection():
                     {"user": {"type": "User", "login": "ci[bot]"}}):
         assert radar.exclusion_reason({**ISSUE, **changes})
     assert radar.normalize_issue("a/b", ISSUE)["body"] == ""
+    html = '<p>소개 <img src="docs/banner.png" alt="제품 화면"></p><img src="https://img.example/badge.svg" alt="build">'
+    candidates = radar.readme_image_candidates("a/b", html)
+    assert candidates[0]["url"] == "https://raw.githubusercontent.com/a/b/HEAD/docs/banner.png"
+    with (patch.object(radar, "gh_text", return_value=html),
+          patch.object(radar.vertex, "generate_json", return_value={"selected_index": 1})):
+        assert radar.repository_image("a/b") == candidates[0]["url"]
     now = datetime(2026, 9, 10, tzinfo=timezone.utc)
     assert radar.since_timestamp("7d", now) == "2026-09-03T00:00:00Z"
     assert radar.since_timestamp("24h", now) == "2026-09-09T00:00:00Z"

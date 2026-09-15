@@ -11,6 +11,8 @@ assert.match(html, /selected=selected===r\.repo\?'':r\.repo/);
 assert.match(html, /a\.href=x\.url/);
 assert.match(html, /fetch\('\/data\.json'\)/);
 assert.match(html, /opengraph\.githubassets\.com\/1\//);
+assert.match(html, /r\.repository_image\|\|social/);
+assert.match(html, /img\.className='social'/);
 assert.match(html, /\['e',0\],\['m',1\],\['h',2\]/);
 assert.doesNotMatch(html, /\/api\/run/);
 assert.doesNotMatch(html, /id="collect"/);
