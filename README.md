@@ -1,7 +1,47 @@
 # RepoBite MVP
 
 GitHub 이슈 본문을 읽고 난이도(1/2/3)와 준비도(ready/needs_info/undecided)를 독립적으로 판정하는 CLI.
-Python 3.14 표준 라이브러리만 사용한다. Mac 로컬 웹 화면을 지원하며 설치 패키지, DB, 알림 발송은 없다.
+Python 3.14 표준 라이브러리만 사용한다. 로컬 수집·판정과 공개 탐색 화면을 지원한다.
+공용 레포 등록은 Upstash Redis 연결이 필요하며, 설치 패키지와 알림 발송은 없다.
+
+## 사용자들이 추가한 레포
+
+왼쪽 `+` 아이콘(모바일에서는 상단 `+ 담기`)에서 GitHub URL 또는 `owner/repo`를 입력한다.
+로그인 없이 모두에게 공유되며, 상단 **사용자들이 추가한 레포**에서 바로 확인한다.
+등록은 수집을 실행하지 않는다. 다음 정기 수집까지 **수집 대기**로 표시하고,
+수집을 마쳤지만 조건에 맞는 이슈가 없으면 별도로 표시한다.
+중복 주소는 대소문자와 GitHub의 정식 이름을 기준으로 하나로 저장한다.
+기본 수집 목록에 이미 있는 레포는 추가하지 않고 안내한다.
+실패하면 입력을 유지해 재시도할 수 있으며, 취소하면 등록하지 않는다.
+
+공개·이슈 활성화·미보관 레포만 등록한다. 초기 운영 보호를 위해 서비스 전체의 새 주소 확인은
+시간당 30회, 공용 등록 목록은 300개까지 받는다. 로그인, 개인별 보관함과 사용자 삭제 기능은 없다.
+
+`api/repos.py`는 Vercel의 공개 등록/조회 API이고, `community.py`는 DB 접근과 등록 검증을 담당한다.
+Vercel과 나중에 사용할 Windows 작업 계정에 다음 환경변수를 같은 DB 값으로 설정한다.
+값은 채팅·소스·커밋에 넣지 않는다. `.env`는 무시 대상이며 Python이 자동 로드하지 않는다.
+
+- `UPSTASH_REDIS_REST_URL`
+- `UPSTASH_REDIS_REST_TOKEN`
+
+DB 생성과 환경변수 설정, 운영 배포는 별도로 해야 한다. 연결 전에는 기존 레포를 계속 표시하지만
+공용 목록 조회와 등록은 실패 안내를 표시한다. 미연결 상태를 저장 성공으로 처리하지 않는다.
+공개 API의 POST 출처는 정식 운영 주소 `https://repobite.vercel.app`으로 제한한다.
+프리뷰 배포의 등록은 지원하지 않는다. 로컬 `web.py`에서는 기존 Host/Origin 검사를 적용한다.
+
+`python3 community_batch.py`는 기본 목록과 공용 등록 목록을 합쳐 기존 수집·판정·후보 생성을 실행한다.
+성공한 결과만 DB에 저장하므로 웹 재배포 없이 다음 페이지 조회에 반영된다.
+배치 도중 추가된 레포는 다음 배치까지 대기로 남는다. 실패하면 이전 공개 결과를 유지한다.
+기본 최근 24시간 갱신 기준과 실행당 100건·레포당 20건 판정 상한은 유지한다.
+새 레포의 과거 전체 이슈를 소급 수집하지는 않는다. 실행 파일은 `.radar-community/`에 보관하며,
+등록 목록과 공개 결과는 별도 DB 키라 결과 반영 중 등록을 덮어쓰지 않는다.
+Windows 스케줄러 연결 방법은 [Windows 운영 문서](docs/Windows-운영.md)를 따른다.
+
+검증: `python3 test_community.py`, `python3 test_web.py`, `python3 test_radar.py`, `node test_web_ui.mjs`.
+외부 DB/GitHub를 대체한 검증이며 실제 계정 연결과 Windows 작업 실행은 별도 확인해야 한다.
+연결 계약 근거: [Upstash REST API](https://upstash.com/docs/redis/features/restapi),
+[Vercel Python Functions](https://vercel.com/docs/functions/runtimes/python),
+[GitHub 레포 조회 API](https://docs.github.com/en/rest/repos/repos#get-a-repository).
 
 ## Mac에서 웹으로 사용
 

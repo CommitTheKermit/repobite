@@ -90,6 +90,12 @@ def main():
             assert (state()["count"], state()["grade_count"], state()["deferred_count"]) == (180, 100, 80)
             (root / "issues.jsonl").write_bytes(original_issues)
             assert request("/.env")[0] == request("/../radar.py")[0] == 404
+            with patch.object(web.community, "feed", return_value={"repos": [], "snapshot": None}):
+                assert request("/api/repos")[0] == 200
+            with patch.object(web.community, "register", return_value={"created": True, "repo": {"repo": "a/b"}}) as register:
+                assert request("/api/repos", {"repo": "a/b"})[0] == 201
+                assert request("/api/repos", {"repo": "a/b"}, {"Origin": "https://attacker.example"})[0] == 403
+                register.assert_called_once_with("a/b")
             assert request("/api/state", headers={"Host": "attacker.example"})[0] == 403
             for headers in ({"Origin": "https://attacker.example"}, {"Origin": ""},
                             {"Content-Type": "text/plain"}, {"X-Radar-Request": ""}):

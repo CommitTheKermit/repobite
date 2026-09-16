@@ -13,6 +13,7 @@ import tempfile
 import threading
 import uuid
 
+import community
 import radar
 
 MAX_REPOS = 30
@@ -46,6 +47,25 @@ REPO_CATALOG = {
     "debpalash/VoiceStudio": ("음성 생성·편집 도구", ("media-creative", "desktop-app")),
     "tt-a1i/archify": ("아키텍처 다이어그램 에이전트 스킬", ("agents-automation", "dev-tools")),
 }
+
+
+def public_items(issues, rows):
+    grades = {radar.issue_key(row): row for row in rows}
+    items = []
+    for issue in issues:
+        row = grades.get(radar.issue_key(issue), {})
+        if any(row.get(key) != issue.get(key) for key in ("title", "body")):
+            row = {}
+        description, categories = REPO_CATALOG.get(issue["repo"], ("카테고리 미정 레포지토리", ()))
+        items.append({"repo": issue["repo"], "number": issue["number"],
+                      "title": issue["title"], "url": issue["url"],
+                      "created_at": issue["created_at"], "user": issue.get("user", ""),
+                      "description": description,
+                      "repository_image": issue.get("repository_image", ""),
+                      "categories": list(categories), "grade": row.get("grade"),
+                      "error": row.get("error"), "model": row.get("model"),
+                      "freshness": row.get("freshness")})
+    return items
 
 
 class Application:
@@ -83,19 +103,7 @@ class Application:
             summary = {key: stats[key] for key in ("valid", "failed", "excluded", "target", "eligible")}
             summary["cross"] = [[stats["cross"][level, state] for state in radar.READINESS]
                                 for level in (1, 2, 3)]
-            grades = {radar.issue_key(row): row for row in rows}
-            items = []
-            for issue in issues:
-                row = grades.get(radar.issue_key(issue), {})
-                description, categories = REPO_CATALOG.get(issue["repo"], ("카테고리 미정 레포지토리", ()))
-                items.append({"repo": issue["repo"], "number": issue["number"],
-                              "title": issue["title"], "url": issue["url"],
-                              "created_at": issue["created_at"], "user": issue.get("user", ""),
-                              "description": description,
-                              "repository_image": issue.get("repository_image", ""),
-                              "categories": list(categories), "grade": row.get("grade"),
-                              "error": row.get("error"), "model": row.get("model"),
-                              "freshness": row.get("freshness")})
+            items = public_items(issues, rows)
             repos = source.parent / "repos.txt"
             if not repos.exists():
                 repos = self.root / "repos.txt"
@@ -248,6 +256,11 @@ class Handler(BaseHTTPRequestHandler):
             return
         if self.path == "/":
             self.reply(200, (radar.ROOT / "web.html").read_bytes(), "text/html; charset=utf-8")
+        elif self.path == "/api/repos":
+            try:
+                self.reply(200, community.feed())
+            except (OSError, ValueError, RuntimeError, KeyError, TypeError):
+                self.reply(503, {"error": "공용 목록을 불러오지 못했습니다. 잠시 후 다시 시도하세요."})
         elif self.path in {"/api/state", "/data.json"}:
             try:
                 self.reply(200, self.server.app.snapshot())
@@ -258,6 +271,23 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         if not self.local_request(mutation=True):
+            return
+        if self.path == "/api/repos":
+            try:
+                length = int(self.headers.get("Content-Length", "0"))
+                if not 0 < length <= 1024:
+                    raise ValueError("입력이 너무 깁니다.")
+                payload = json.loads(self.rfile.read(length))
+                if not isinstance(payload, dict):
+                    raise ValueError("레포 주소를 입력하세요.")
+                result = community.register(payload.get("repo"))
+                self.reply(201 if result["created"] else 200, result)
+            except ValueError:
+                self.reply(400, {"error": "공개 GitHub 레포 주소와 이슈 기능 활성화 여부를 확인하세요."})
+            except OverflowError as error:
+                self.reply(429, {"error": str(error)})
+            except (OSError, RuntimeError, KeyError, TypeError):
+                self.reply(503, {"error": "등록하지 못했습니다. 잠시 후 다시 시도하세요."})
             return
         if self.path != "/api/run":
             self.reply(404, {"error": "작업 경로가 없습니다."})
