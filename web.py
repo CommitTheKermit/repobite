@@ -90,7 +90,8 @@ class Application:
                 description, categories = REPO_CATALOG.get(issue["repo"], ("카테고리 미정 레포지토리", ()))
                 items.append({"repo": issue["repo"], "number": issue["number"],
                               "title": issue["title"], "url": issue["url"],
-                              "created_at": issue["created_at"], "description": description,
+                              "created_at": issue["created_at"], "user": issue.get("user", ""),
+                              "description": description,
                               "repository_image": issue.get("repository_image", ""),
                               "categories": list(categories), "grade": row.get("grade"),
                               "error": row.get("error"), "model": row.get("model"),
@@ -224,7 +225,9 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Cache-Control", "no-store")
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline'; "
-                         "style-src 'self' 'unsafe-inline'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'")
+                         "style-src 'self' 'unsafe-inline'; img-src 'self' https://avatars.githubusercontent.com "
+                         "https://opengraph.githubassets.com https://raw.githubusercontent.com data:; "
+                         "frame-ancestors 'none'; base-uri 'none'; form-action 'self'")
         self.end_headers()
         self.wfile.write(body)
 

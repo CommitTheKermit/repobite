@@ -77,6 +77,7 @@ def main():
         try:
             assert request("/")[0] == 200
             assert state()["summary"]["target"] == 1
+            assert state()["items"][0]["user"] == issue["user"]
             assert state()["max_repos"] == 30
             assert state()["default_repos"] == "a/b\n"
             assert (state()["grade_count"], state()["deferred_count"]) == (1, 0)
