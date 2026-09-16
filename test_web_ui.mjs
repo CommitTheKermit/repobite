@@ -58,3 +58,42 @@ runInNewContext(functions + `
     submitted:[{repo:'new/pending',description:''},{repo:'new/empty',description:''}],
     collected:new Set(['new/empty']),tags:[],query:'',sort:'recommended',good:()=>false});
 console.log('통과: 공용/기본 구분·대기/빈 결과 구분·대소문자 중복 병합·검색·정렬');
+
+// 검색은 저장하지 않고 선택한 정식 이름만 기존 등록 입력란에 전달한다.
+const nodes=new Map;
+function element(){return {value:'',textContent:'',children:[],attributes:{},
+  append(...children){this.children.push(...children)},
+  replaceChildren(...children){this.children=children},
+  setAttribute(key,value){this.attributes[key]=value},
+  querySelectorAll(){return this.children.map(li=>li.children[0])},focus(){this.focused=true}}}
+const $=id=>{if(!nodes.has(id))nodes.set(id,element());return nodes.get(id)};
+let response,requestURL;
+const searchCode=html.slice(html.indexOf('let repoSearchController;'),html.indexOf("$('search-repos').onclick"));
+const search=runInNewContext(searchCode+';({searchRepositories,clearRepoSearch})',{
+  $,AbortController,setTimeout,clearTimeout,fetch:async url=>{requestURL=url;return response},
+  make:(tag,cls,text)=>Object.assign(element(),{tag,textContent:text})});
+const found={full_name:'owner/project',description:'<script>text only</script>',private:false,archived:false,has_issues:true};
+response={ok:true,json:async()=>({items:[found,{...found,private:true},{...found,archived:true},{...found,has_issues:false}]})};
+$('repo-query').value='project';
+await search.searchRepositories();
+assert.equal(new URL(requestURL).searchParams.get('q'),'project in:name is:public archived:false');
+assert.equal($('repo-results').children.length,1);
+assert.equal($('repo-input').value,'');
+const choice=$('repo-results').children[0].children[0];
+assert.equal(choice.children[1].textContent,found.description);
+choice.onclick();assert.equal($('repo-input').value,'owner/project');
+assert.equal(choice.attributes['aria-pressed'],true);
+response={ok:false,status:403};await search.searchRepositories();
+assert.match($('repo-search-status').textContent,/요청 한도/);
+assert.equal($('search-repos').disabled,false);
+response={ok:true,json:async()=>({items:[]})};await search.searchRepositories();
+assert.match($('repo-search-status').textContent,/담을 수 있는 레포가 없습니다/);
+let release,started;
+const jsonStarted=new Promise(resolve=>started=resolve);
+response={ok:true,json:()=>new Promise(resolve=>{release=resolve;started()})};
+const pending=search.searchRepositories();await jsonStarted;
+search.clearRepoSearch();release({items:[found]});await pending;
+assert.equal($('repo-results').children.length,0);
+assert.equal($('repo-search-status').textContent,'');
+assert.match(readFileSync(new URL('./web.py',import.meta.url),'utf8'),/connect-src 'self' https:\/\/api\.github\.com/);
+console.log('통과: 이름 검색·등록 가능 결과·선택 시 입력·요청 제한·빈 결과·늦은 응답 무시');

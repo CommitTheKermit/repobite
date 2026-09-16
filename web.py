@@ -235,7 +235,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline'; "
                          "style-src 'self' 'unsafe-inline'; img-src 'self' https://avatars.githubusercontent.com "
                          "https://opengraph.githubassets.com https://raw.githubusercontent.com data:; "
-                         "frame-ancestors 'none'; base-uri 'none'; form-action 'self'")
+                         "connect-src 'self' https://api.github.com; frame-ancestors 'none'; base-uri 'none'; form-action 'self'")
         self.end_headers()
         self.wfile.write(body)
 
