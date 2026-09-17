@@ -76,6 +76,7 @@ def atomic_output(path):
             stream.close()
             temporary.replace(path)
         finally:
+            stream.close()
             temporary.unlink(missing_ok=True)
 
 

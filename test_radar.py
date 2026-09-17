@@ -132,6 +132,7 @@ def test_schema_and_grading():
         except RuntimeError:
             pass
         assert target.read_bytes() == before
+        assert not list(target.parent.glob("*.tmp"))
         args.output = source
         rejects(radar.grade, args)
         rejects(radar.unique_issues, [issue, issue])
