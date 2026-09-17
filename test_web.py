@@ -14,9 +14,31 @@ import web
 from test_radar import GOOD, ISSUE
 
 
+def check_process_stop():
+    # 자식이 파이프를 물려받으므로 communicate 완료는 자식 종료도 확인한다.
+    child = "import time; time.sleep(10)"
+    parent = ("import subprocess,sys,time; "
+              f"subprocess.Popen([sys.executable, '-c', {child!r}]); "
+              "print('ready', flush=True); time.sleep(10)")
+    with web.subprocess.Popen([web.sys.executable, "-c", parent],
+                              stdout=web.subprocess.PIPE, stderr=web.subprocess.PIPE,
+                              start_new_session=web.os.name != "nt") as process:
+        try:
+            assert process.stdout.readline().strip() == b"ready"
+            web.stop_process(process)
+            process.communicate(timeout=5)
+            assert process.returncode != 0
+        finally:
+            if process.poll() is None:
+                web.stop_process(process)
+
+
 def main():
-    with tempfile.TemporaryDirectory() as directory:
+    check_process_stop()
+    with tempfile.TemporaryDirectory(prefix="레포 테스트 ") as directory:
         root = Path(directory)
+        (root / "fixtures").mkdir()
+        (root / "fixtures/sample30.json").write_text("[]", encoding="utf-8")
         issue = radar.normalize_issue("a/b", ISSUE)
         (root / "issues.jsonl").write_text(json.dumps(issue) + "\n")
         fresh = {"eligible": True, "reason": "확인 완료", "checked_at": "now"}
@@ -57,7 +79,7 @@ def main():
             assert not kwargs.get("shell")
             output = Path(command[command.index("--output") + 1])
             if command[2] == "collect":
-                result = {**issue, "number": 2, "title": "<script>untrusted</script>"}
+                result = {**issue, "number": 2, "title": "한글 이슈 <script>untrusted</script>"}
             else:
                 assert ("--all" in command) == expect_full
                 source = Path(command[command.index("--input") + 1])
@@ -67,7 +89,7 @@ def main():
                 result = {**radar.read_jsonl(source)[0], "grade": GOOD, "model": radar.MODEL,
                           "reasoning_effort": radar.REASONING_EFFORT,
                           "criteria_version": radar.CRITERIA_VERSION, "freshness": fresh}
-            output.write_text(json.dumps(result) + "\n")
+            output.write_text(json.dumps(result, ensure_ascii=False) + "\n", encoding="utf-8")
             process = MagicMock()
             process.__enter__.return_value = process
             process.stderr = iter(["작업 완료\n"])
@@ -108,7 +130,7 @@ def main():
                 assert request("/api/run", {"action": "grade"})[0] == 409
                 assert request("/api/run", {"action": "grade_all"})[0] == 409
             server.app.busy = False
-            defaults = (radar.ROOT / "repos.txt").read_text()
+            defaults = (radar.ROOT / "repos.txt").read_text(encoding="utf-8")
             names = [name for line in defaults.splitlines() if (name := line.split("#", 1)[0].strip())]
             assert len(names) == len(set(name.lower() for name in names)) == 30
             assert "nousresearch/hermes-agent" not in {name.lower() for name in names}
@@ -140,14 +162,25 @@ def main():
                 expect_full = False
             assert (root / "grades.jsonl").read_bytes() == original
             assert web.Application(root).snapshot()["items"] == state()["items"]
+            saved_pointer = server.app.data / "current.txt"
+            assert saved_pointer.is_file() and not saved_pointer.is_symlink()
+            if web.os.name != "nt":
+                legacy = server.app.data / "current"
+                legacy.symlink_to(saved_pointer.read_text(encoding="utf-8"), target_is_directory=True)
+                saved_pointer.unlink()
+                assert web.Application(root).snapshot()["items"] == state()["items"]
+                with patch.object(web.subprocess, "Popen", side_effect=fake_process):
+                    assert request("/api/run", {"action": "grade"})[0] == 202
+                    wait_done()
+                assert saved_pointer.is_file()
             (root / "repos.txt").write_text("new/default\n")
             assert state()["repos"] == "a/b\n"
             assert state()["default_repos"] == "new/default\n"
-            pointer = (server.app.data / "current").resolve()
+            pointer = server.app.paths()
             with patch.object(web.subprocess, "Popen", side_effect=FileNotFoundError):
                 assert request("/api/run", {"action": "collect", "repos": "a/b", "since": "7d"})[0] == 202
                 wait_done()
-            assert (server.app.data / "current").resolve() == pointer
+            assert server.app.paths() == pointer
             assert state()["summary"]["target"] == 1
             def partial_failure(command, **kwargs):
                 process = fake_process(command, **kwargs)
@@ -156,12 +189,12 @@ def main():
             with patch.object(web.subprocess, "Popen", side_effect=partial_failure):
                 assert request("/api/run", {"action": "collect", "repos": "a/b", "since": "7d"})[0] == 202
                 wait_done()
-            assert (server.app.data / "current").resolve() == pointer
+            assert server.app.paths() == pointer
             server.app.process = MagicMock(pid=12345)
             server.app.process.poll.return_value = None
-            with patch.object(web.os, "killpg") as kill:
+            with patch.object(web, "stop_process") as kill:
                 server.app.stop()
-                kill.assert_called_once_with(12345, web.signal.SIGTERM)
+                kill.assert_called_once_with(server.app.process)
             assert request("/api/run", {"action": "grade"})[0] == 409
             print("통과: HTTP 실행·기본 30개·31개 거절·목록 복원·입력 검증·교차 출처 차단·중복 실행 방지·수집/판정 연결·실패 보존·재시작 복원")
         finally:

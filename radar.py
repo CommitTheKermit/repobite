@@ -136,7 +136,7 @@ def normalize_issue(repo, issue, repository_image=""):
 
 def gh_json(endpoint, *options):
     result = subprocess.run(["gh", "api", "--hostname", "github.com", endpoint, *options],
-                            capture_output=True, text=True, timeout=180)
+                            capture_output=True, text=True, encoding="utf-8", timeout=180)
     if result.returncode:
         # 외부 stderr에는 인증값 또는 이슈 본문이 섞일 수 있어 그대로 출력하지 않는다.
         raise RuntimeError(f"gh api 실패 (종료 코드 {result.returncode})")
@@ -148,7 +148,7 @@ def gh_json(endpoint, *options):
 
 def gh_text(endpoint, *options):
     result = subprocess.run(["gh", "api", "--hostname", "github.com", endpoint, *options],
-                            capture_output=True, text=True, timeout=180)
+                            capture_output=True, text=True, encoding="utf-8", timeout=180)
     if result.returncode:
         raise RuntimeError(f"gh api 실패 (종료 코드 {result.returncode})")
     return result.stdout

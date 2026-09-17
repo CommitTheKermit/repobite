@@ -1,4 +1,4 @@
-param(
+﻿param(
     [string]$BatchTime = "03:00"
 )
 

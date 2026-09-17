@@ -68,7 +68,7 @@ def apply_freshness(rows, run=subprocess.run, checked_at=None):
             query, options = _query([row for _, row in batch])
             response = run(["gh", "api", "graphql", "--hostname", "github.com",
                             "-f", f"query={query}", *options], capture_output=True,
-                           text=True, timeout=180)
+                           text=True, encoding="utf-8", timeout=180)
             if response.returncode:
                 raise RuntimeError("gh api 실패")
             payload = json.loads(response.stdout)

@@ -34,7 +34,7 @@ def main():
     assert seen["body"]["generationConfig"]["temperature"] == 0
     assert seen["body"]["generationConfig"]["thinkingConfig"] == {"thinkingLevel": "MINIMAL"}
     assert seen["timeout"] == 300
-    with tempfile.NamedTemporaryFile("w", encoding="utf-8") as file:
+    with tempfile.NamedTemporaryFile("w", encoding="utf-8", delete_on_close=False) as file:
         json.dump({"project_id": "service-account-project"}, file)
         file.flush()
         with patch.dict(os.environ, {"GOOGLE_APPLICATION_CREDENTIALS": file.name}, clear=True):

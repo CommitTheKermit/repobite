@@ -1,4 +1,4 @@
-"""Mac 로컬 웹: python3 web.py (http://127.0.0.1:8765)."""
+"""로컬 웹: python web.py (http://127.0.0.1:8765)."""
 
 import argparse
 from collections import deque
@@ -68,6 +68,19 @@ def public_items(issues, rows):
     return items
 
 
+def stop_process(process):
+    if os.name == "nt":
+        result = subprocess.run(["taskkill", "/PID", str(process.pid), "/T", "/F"],
+                                capture_output=True, timeout=15)
+        if result.returncode and process.poll() is None:
+            raise subprocess.SubprocessError("작업 프로세스를 종료하지 못했습니다")
+    else:
+        try:
+            os.killpg(process.pid, signal.SIGTERM)
+        except ProcessLookupError:
+            pass
+
+
 class Application:
     def __init__(self, root=radar.ROOT):
         self.root = Path(root)
@@ -80,6 +93,15 @@ class Application:
         self.logs = deque(maxlen=80)
 
     def paths(self):
+        saved = self.data / "current.txt"
+        if saved.exists():
+            name = saved.read_text(encoding="utf-8")
+            if not name.startswith("run-") or len(name) != 36 or any(
+                    char not in "0123456789abcdef" for char in name[4:]):
+                raise ValueError("저장된 작업 경로가 잘못되었습니다")
+            directory = self.data / name
+            return directory / "issues.jsonl", directory / "grades.jsonl"
+        # 기존 Mac 심볼릭 링크는 다음 성공 실행 전까지 읽을 수 있다.
         pointer = self.data / "current"
         directory = pointer.resolve() if pointer.is_symlink() else self.root
         return directory / "issues.jsonl", directory / "grades.jsonl"
@@ -95,7 +117,7 @@ class Application:
                 row.get(key) == originals[radar.issue_key(row)].get(key)
                 for key in ("title", "body"))]
             sample_path = self.root / "fixtures/sample30.json"
-            samples = json.loads(sample_path.read_text()) if sample_path.exists() else []
+            samples = json.loads(sample_path.read_text(encoding="utf-8")) if sample_path.exists() else []
             stats = radar.aggregate(rows, samples)
             reusable = radar.reusable_grades(rows, issues, radar.MODEL)
             unresolved = [issue for issue in issues if radar.issue_key(issue) not in reusable]
@@ -108,8 +130,8 @@ class Application:
             if not repos.exists():
                 repos = self.root / "repos.txt"
             return {"busy": self.busy, "message": self.message, "logs": list(self.logs),
-                    "repos": repos.read_text() if repos.exists() else "",
-                    "default_repos": (self.root / "repos.txt").read_text(), "max_repos": MAX_REPOS,
+                    "repos": repos.read_text(encoding="utf-8") if repos.exists() else "",
+                    "default_repos": (self.root / "repos.txt").read_text(encoding="utf-8"), "max_repos": MAX_REPOS,
                     "source": "웹 작업 결과" if source.parent != self.root else "기존 CLI 데이터",
                     "count": len(issues), "items": items, "summary": summary,
                     "grade_count": grade_count, "deferred_count": len(unresolved) - grade_count,
@@ -150,7 +172,7 @@ class Application:
         threading.Thread(target=self.run, args=(action, repos, since), daemon=True).start()
 
     def run(self, action, repos, since):
-        # ponytail: Mac 한 사용자당 작업 하나. 다중 사용자 서비스가 되면 작업 큐로 전환.
+        # ponytail: 로컬 작업 하나. 다중 사용자 서비스가 되면 작업 큐로 전환.
         is_grading = action in ("grade", "grade_all")
         try:
             self.data.mkdir(exist_ok=True)
@@ -176,14 +198,16 @@ class Application:
                     if action == "sample":
                         command += ["--sample", str(self.root / "fixtures/sample30.json")]
                     else:
-                        (work / "repos.txt").write_text(repos)
+                        (work / "repos.txt").write_text(repos, encoding="utf-8")
                         command += ["--repos", str(work / "repos.txt"), "--since", since]
                 with subprocess.Popen(command, cwd=work, stdout=subprocess.DEVNULL,
-                                      stderr=subprocess.PIPE, text=True, start_new_session=True) as process:
+                                      stderr=subprocess.PIPE, text=True, encoding="utf-8",
+                                      env={**os.environ, "PYTHONIOENCODING": "utf-8"},
+                                      start_new_session=os.name != "nt") as process:
                     with self.lock:
                         self.process = process
                         if self.stopping:
-                            os.killpg(process.pid, signal.SIGTERM)
+                            stop_process(process)
                     for line in process.stderr:
                         with self.lock:
                             self.logs.append(line.rstrip()[:500])
@@ -196,10 +220,10 @@ class Application:
                     else:
                         saved = self.data / f"run-{uuid.uuid4().hex}"
                         work.rename(saved)
-                        pointer = self.data / "current.next"
+                        pointer = self.data / "current.txt.next"
                         pointer.unlink(missing_ok=True)
-                        pointer.symlink_to(saved.name, target_is_directory=True)
-                        pointer.replace(self.data / "current")
+                        pointer.write_text(saved.name, encoding="utf-8")
+                        pointer.replace(self.data / "current.txt")
                         self.message = ("일부 판정이 실패했습니다. 결과와 Vertex AI 인증을 확인하세요."
                                         if code else "판정이 완료됐습니다." if is_grading
                                         else "수집이 완료됐습니다. 건수를 확인하고 판정을 시작하세요.")
@@ -215,10 +239,7 @@ class Application:
         with self.lock:
             self.stopping = True
             if self.process is not None and self.process.poll() is None:
-                try:
-                    os.killpg(self.process.pid, signal.SIGTERM)
-                except ProcessLookupError:
-                    pass
+                stop_process(self.process)
 
 
 class Handler(BaseHTTPRequestHandler):

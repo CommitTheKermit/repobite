@@ -243,7 +243,7 @@ def test_report():
     assert "5/5 (100.0%)" in output
     assert "측정 불가" in radar.render_report(radar.aggregate([], samples))
     rejects(radar.aggregate, [{"repo": "a/b", "number": 1}])
-    fixture = json.loads((radar.ROOT / "fixtures/sample30.json").read_text())
+    fixture = json.loads((radar.ROOT / "fixtures/sample30.json").read_text(encoding="utf-8"))
     assert len(fixture) == 30
     assert Counter(row["verdict"] for row in fixture) == {"적합": 5, "조건부": 9, "부적합": 16}
 

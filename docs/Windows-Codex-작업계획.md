@@ -1,6 +1,10 @@
 # RepoBite Windows 운영 설정 및 실기 검증
 
 이 문서는 Windows 노트북의 Codex에 그대로 전달할 작업 지시서다.
+전역 Codex 투두나 Mac의 컨텍스트 파일 없이 이 문서와 [Windows-운영.md](Windows-운영.md)로 이어서 진행한다.
+
+사전 검증 범위: Mac 회귀 테스트와 GitHub Actions Windows Server 2025의 Python 3.14·Node 24·Windows PowerShell 검사.
+실제 GitHub/Vertex 인증, 공용 DB 연결, 작업 계정 암호, 예약 실행, 절전·재부팅은 실제 노트북에서 확인해야 한다.
 
 ## 목표
 
@@ -9,8 +13,8 @@
 완료 조건은 다음과 같다.
 
 1. Python, GitHub CLI, Google Cloud CLI 인증이 정상이다.
-2. `radar.py batch`가 실제 GitHub 및 Vertex AI를 사용해 성공한다.
-3. `issues.jsonl`, `grades.jsonl`, `candidates.jsonl`이 정상 생성된다.
+2. `scripts/run-batch.ps1`이 실제 GitHub 및 Vertex AI를 사용해 성공한다. 공용 DB 연결 시에는 공용 배치 경로여야 한다.
+3. 선택된 배치 경로에서 `issues.jsonl`, `grades.jsonl`, `candidates.jsonl`이 정상 생성된다. 공용 모드에서는 운영 화면의 수집 대기 해제까지 확인한다.
 4. Windows 작업 스케줄러가 웹 서버와 일일 배치를 실행한다.
 5. 배치의 실제 예약 실행과 웹 서버의 재부팅 후 자동 실행을 검증한다.
 6. 비밀값이나 서비스 계정 파일은 저장소와 로그에 남지 않는다.
@@ -20,8 +24,8 @@
 - 장치: 현재 Windows 노트북
 - 저장소: 현재 Codex에서 연 RepoBite 저장소
 - 브랜치: `feat/windows-daily-batch`
-- 기준 커밋: `9fad041 feat(batch): Windows 일일 후보 수집을 추가`
-- 산출물: `issues.jsonl`, `grades.jsonl`, `candidates.jsonl`
+- 기준: 원격 `feat/windows-daily-batch`의 Windows preflight 통과 커밋. 테스트 실행의 SHA와 현재 `git rev-parse HEAD`가 같은지 확인한다.
+- 산출물: 로컬 모드는 저장소 루트, 공용 모드는 `.radar-community/` 아래의 `issues.jsonl`, `grades.jsonl`, `candidates.jsonl`
 - 예약 작업: `repobite-web`, `repobite-batch`
 
 새 브랜치를 만들지 말고 기존 `feat/windows-daily-batch` 브랜치를 재사용한다.
@@ -58,7 +62,8 @@
 2. 매일 배치를 실행할 현지 시각
 3. Windows 작업 계정에 실제 암호가 설정되어 있는지
 4. `GOOGLE_APPLICATION_CREDENTIALS` 사용자 환경 변수가 설정되어 있는지
-5. 검증을 위한 재부팅을 지금 수행해도 되는지
+5. 공용 DB를 연결할지, 두 `UPSTASH_REDIS_REST_*` 사용자 환경변수와 Vercel 설정이 준비됐는지
+6. 검증을 위한 재부팅을 지금 수행해도 되는지
 
 Windows 암호, 서비스 계정 JSON 내용, 액세스 토큰을 채팅에 입력하게 하지 않는다. 암호가 필요하면 사용자가 PowerShell의 보안 입력창에 직접 입력한다.
 
@@ -73,8 +78,8 @@ git remote -v
 
 - 추적 중인 미커밋 변경이 있으면 내용을 파악하고 사용자에게 보고한 뒤 중단한다.
 - 브랜치가 다르면 `feat/windows-daily-batch`가 로컬에 있는지 확인하고 전환한다.
-- 커밋 `9fad041`이 없으면 기능을 재작성하지 말고 저장소 전달 방법을 사용자에게 묻는다.
-- 원본 환경에는 Git remote가 없었으므로 원격 브랜치가 있다고 가정하지 않는다.
+- 원격 저장소는 `https://github.com/CommitTheKermit/repobite.git`이다. Windows 사본이 뒤처졌으면 변경을 보존하고 `git pull --ff-only`로 갱신한다.
+- [.github/workflows/windows.yml](../.github/workflows/windows.yml)의 Windows preflight 결과를 확인한다. CI 성공은 실제 계정 인증이나 예약 실행 성공을 의미하지 않는다.
 - 단순 착수 점검에서는 미추적 파일을 나열하지 않는다.
 
 필수 파일을 확인한다.
@@ -83,6 +88,9 @@ git remote -v
 Test-Path .\radar.py
 Test-Path .\freshness.py
 Test-Path .\vertex.py
+Test-Path .\community.py
+Test-Path .\community_batch.py
+Test-Path .\test_windows.ps1
 Test-Path .\scripts\run-batch.ps1
 Test-Path .\scripts\run-web.ps1
 Test-Path .\scripts\register-tasks.ps1
@@ -150,8 +158,12 @@ py -3.14 test_radar.py
 py -3.14 test_freshness.py
 py -3.14 test_vertex.py
 py -3.14 test_web.py
+py -3.14 test_community.py
 node test_web_ui.mjs
+powershell -NoProfile -ExecutionPolicy Bypass -File .\test_windows.ps1
 ```
+
+각 명령 직후 `$LASTEXITCODE`가 0인지 확인한다. `test_windows.ps1`은 Python 실행을 대체해 분기·경로·종료 코드를 검사하며 실제 배치나 작업 등록을 실행하지 않는다.
 
 하나라도 실패하면 작업 스케줄러를 등록하지 않는다. 전체 오류와 관련 호출 경로를 확인하고 공통 원인을 가장 작은 위치에서 수정한다. Windows 호환성 수정에는 최소 재현 테스트를 남기고 전체 테스트를 다시 실행한다.
 
@@ -164,17 +176,22 @@ powershell -ExecutionPolicy Bypass -File .\scripts\run-batch.ps1
 $LASTEXITCODE
 ```
 
-종료 코드가 0인지 확인한다. 파일 내용 대신 존재 여부, 크기, 갱신 시각만 출력한다.
+종료 코드가 0인지 확인한다. 공용 DB 환경변수가 둘 다 있으면 `community_batch.py`, 둘 다 없으면 `radar.py batch`가 실행된다. 하나만 있으면 설정 오류다.
+공용 DB가 없으면 로컬 배치만 검증하고 공용 등록·운영 반영은 미검증으로 남긴다. 임의로 DB를 생성하지 않는다.
+DB 연결과 운영 화면 검증 순서는 [Windows-운영.md](Windows-운영.md)의 공용 DB 절차를 따른다.
+
+파일 내용 대신 존재 여부, 크기, 갱신 시각만 출력한다. 아래 `$BatchDir`을 이후 예약 실행 검사에도 사용한다.
 
 ```powershell
-Get-Item .\issues.jsonl, .\grades.jsonl, .\candidates.jsonl |
+$BatchDir = if ($env:UPSTASH_REDIS_REST_URL -and $env:UPSTASH_REDIS_REST_TOKEN) { '.radar-community' } else { '.' }
+Get-Item "$BatchDir\issues.jsonl", "$BatchDir\grades.jsonl", "$BatchDir\candidates.jsonl" |
     Select-Object Name, Length, LastWriteTime
 ```
 
 JSONL 형식과 후보 중복을 검사한다.
 
 ```powershell
-py -3.14 -c "import radar; from pathlib import Path; files=('issues.jsonl','grades.jsonl','candidates.jsonl'); rows={p:radar.read_jsonl(Path(p)) for p in files}; candidates=rows['candidates.jsonl']; assert len(candidates)==len({radar.issue_key(r) for r in candidates}); print({p:len(v) for p,v in rows.items()})"
+py -3.14 -c "import radar; from pathlib import Path; import os; root=Path('.radar-community') if os.environ.get('UPSTASH_REDIS_REST_URL') and os.environ.get('UPSTASH_REDIS_REST_TOKEN') else Path('.'); files=('issues.jsonl','grades.jsonl','candidates.jsonl'); rows={p:radar.read_jsonl(root/p) for p in files}; candidates=rows['candidates.jsonl']; assert len(candidates)==len({radar.issue_key(r) for r in candidates}); print({p:len(v) for p,v in rows.items()})"
 ```
 
 후보 조건은 판정 성공, `exclude=false`, `difficulty=1`, `readiness=ready`, `freshness.eligible=true`, 같은 `repo/number` 중복 없음이다. 한 실행에서 레포당 새 후보를 최대 5건 추가하고 기존 후보 이력은 유지한다.
@@ -225,7 +242,8 @@ Get-ScheduledTask -TaskName "repobite-batch" |
 ```powershell
 Get-ScheduledTaskInfo -TaskName "repobite-batch" |
     Select-Object LastRunTime, LastTaskResult, NextRunTime
-Get-Item .\issues.jsonl, .\grades.jsonl, .\candidates.jsonl |
+$BatchDir = if ($env:UPSTASH_REDIS_REST_URL -and $env:UPSTASH_REDIS_REST_TOKEN) { '.radar-community' } else { '.' }
+Get-Item "$BatchDir\issues.jsonl", "$BatchDir\grades.jsonl", "$BatchDir\candidates.jsonl" |
     Select-Object Name, Length, LastWriteTime
 ```
 
@@ -288,6 +306,8 @@ fix(windows): 예약 실행 호환성을 수정
 - 예약 배치의 `LastRunTime`, `LastTaskResult`
 - 재부팅 후 웹 작업 상태와 HTTP 상태 코드
 - 발생한 Windows 전용 수정과 커밋
+- 공용 DB 연결 여부와 운영 화면의 수집 대기 해제 여부
+- 절전 후 예약 실행, 덮개 닫힘, 네트워크 복구는 실제 노트북에서 별도 확인한 경우만 보고
 - 남은 미검증 항목
 
 실행하지 않은 항목을 완료했다고 말하지 않는다.
