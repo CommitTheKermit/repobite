@@ -57,3 +57,4 @@ try {
     Remove-Item Env:REPOBITE_TEST_PROBE, Env:REPOBITE_TEST_ROOT, Env:REPOBITE_TEST_SCRIPT, Env:REPOBITE_TEST_EXIT -ErrorAction SilentlyContinue
 }
 Write-Output 'PASS: PowerShell syntax, batch selection, working directory, exit codes'
+exit 0
