@@ -34,8 +34,10 @@ function py {
     $global:LASTEXITCODE = [int]$env:REPOBITE_TEST_EXIT
 }
 Set-Location $env:TEMP
-& (Join-Path $env:REPOBITE_TEST_ROOT ('scripts\' + $env:REPOBITE_TEST_SCRIPT))
-exit $LASTEXITCODE
+try {
+    & (Join-Path $env:REPOBITE_TEST_ROOT ('scripts\' + $env:REPOBITE_TEST_SCRIPT))
+    exit $LASTEXITCODE
+} catch { exit 1 }
 '@
         & powershell.exe -NoProfile -ExecutionPolicy Bypass -Command $command *> $null
         if ($LASTEXITCODE -ne $case[5]) { throw "Unexpected wrapper exit: $($case[0])" }
