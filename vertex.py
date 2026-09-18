@@ -3,12 +3,19 @@
 import json
 import os
 import re
+import shutil
 import subprocess
+import time
+from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
 
 DEFAULT_MODEL = "gemini-3.1-flash-lite"
 DEFAULT_LOCATION = "global"
+
+
+def _gcloud():
+    return shutil.which("gcloud") or "gcloud"
 
 
 def _safe_name(value, label):
@@ -31,7 +38,7 @@ def project_id(run=subprocess.run):
         if not value:
             raise RuntimeError("서비스 계정 파일에 project_id가 없습니다")
         return _safe_name(value, "서비스 계정 project_id")
-    result = run(["gcloud", "config", "get-value", "project"], capture_output=True,
+    result = run([_gcloud(), "config", "get-value", "project"], capture_output=True,
                  text=True, timeout=30)
     value = result.stdout.strip()
     if result.returncode or not value or value == "(unset)":
@@ -48,7 +55,7 @@ def access_token(run=subprocess.run, open_url=urlopen):
         with open_url(request, timeout=10) as response:
             token = json.load(response).get("access_token")
     else:
-        result = run(["gcloud", "auth", "application-default", "print-access-token"],
+        result = run([_gcloud(), "auth", "application-default", "print-access-token"],
                      capture_output=True, text=True, timeout=30)
         token = result.stdout.strip() if result.returncode == 0 else ""
     if not token:
@@ -56,7 +63,7 @@ def access_token(run=subprocess.run, open_url=urlopen):
     return token
 
 
-def generate_json(prompt, schema, model=DEFAULT_MODEL, open_url=urlopen):
+def generate_json(prompt, schema, model=DEFAULT_MODEL, open_url=urlopen, sleep=time.sleep):
     project = project_id()
     location = _safe_name(os.environ.get("GOOGLE_CLOUD_LOCATION", DEFAULT_LOCATION),
                           "GOOGLE_CLOUD_LOCATION")
@@ -80,8 +87,20 @@ def generate_json(prompt, schema, model=DEFAULT_MODEL, open_url=urlopen):
         "Content-Type": "application/json",
         "X-Goog-User-Project": project,
     })
-    with open_url(request, timeout=300) as response:
-        payload = json.load(response)
+    for attempt, delay in enumerate((1, 2, 4, 8, None)):
+        try:
+            with open_url(request, timeout=300) as response:
+                payload = json.load(response)
+            break
+        except HTTPError as error:
+            if error.code not in {429, 500, 502, 503, 504} or delay is None:
+                raise
+            retry_after = error.headers.get("Retry-After")
+            try:
+                delay = max(delay, min(float(retry_after), 30))
+            except (TypeError, ValueError):
+                pass
+            sleep(delay)
     try:
         text = payload["candidates"][0]["content"]["parts"][0]["text"]
         return json.loads(text)
