@@ -20,6 +20,8 @@ Vertex AI 서비스 계정 JSON은 저장소 밖에 두고 사용자 환경 변�
 레포당 새 후보를 최대 5건 추가한다. 기존 후보는 유지하고 같은 `repo/number`는 다시 추가하지 않는다.
 
 관리자 PowerShell에서 다음 명령을 실행해 작업을 등록한다. 계정 암호는 작업 스케줄러 등록에만 전달하며 파일에 저장하지 않는다.
+등록 스크립트는 현재 GitHub CLI 토큰을 Windows DPAPI로 암호화해 사용자 로컬 앱 데이터에 저장한다.
+암호화 파일은 같은 Windows 사용자와 컴퓨터에서 실행되는 예약 작업만 복호화할 수 있다.
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\register-tasks.ps1 -BatchTime "03:00"
@@ -27,6 +29,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\register-tasks.ps1 -BatchTime
 
 `repobite-web`은 시스템 시작 시 실행되고 `repobite-batch`는 매일 지정 시각에 실행된다.
 두 작업 모두 중복 실행을 무시하고 실패 시 15분 간격으로 3회 재시도하며, 실행 시 절전 모드를 해제한다.
+배치 콘솔 로그는 `%LOCALAPPDATA%\RepoBite\batch.log`에 누적되어 예약 실행 실패 원인을 확인할 수 있다.
 
 작업 스케줄러에서 각 작업을 수동 실행해 종료 코드와 로컬 모드의 `issues.jsonl`, `grades.jsonl`,
 `candidates.jsonl` 갱신을 확인한다. 그다음 Windows를 재부팅해 `http://127.0.0.1:8765` 접속을 확인한다.
