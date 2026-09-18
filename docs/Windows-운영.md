@@ -1,5 +1,8 @@
 # Windows 운영
 
+서버의 SSH 주소, 공개키 로그인, 원격 웹 터널과 점검 명령은
+[Windows 홈 서버 SSH 접속](Windows-SSH-접속.md)에 정리했다.
+
 Python 3.14와 GitHub CLI를 설치한 뒤 저장소에서 아래 명령을 확인한다.
 
 ```powershell
@@ -32,7 +35,9 @@ powershell -ExecutionPolicy Bypass -File .\scripts\register-tasks.ps1 -BatchTime
 배치 콘솔 로그는 `%LOCALAPPDATA%\RepoBite\batch.log`에 누적되어 예약 실행 실패 원인을 확인할 수 있다.
 
 작업 스케줄러에서 각 작업을 수동 실행해 종료 코드와 로컬 모드의 `issues.jsonl`, `grades.jsonl`,
-`candidates.jsonl` 갱신을 확인한다. 그다음 Windows를 재부팅해 `http://127.0.0.1:8765` 접속을 확인한다.
+`candidates.jsonl` 갱신을 확인한다. 이 서버의 일상 운영은 AC 전원에서 자동 절전을 끈 상시 켜짐
+방식이며 재부팅은 정기 운영 절차가 아니다. 업데이트나 정전 뒤 복구까지 검증할 때만 사용자 허락을
+받아 재부팅하고 `http://127.0.0.1:8765` 접속을 확인한다.
 현재 웹 서버는 로컬 요청만 허용하므로 Host와 Origin 검사를 완화하거나 외부에 공개하지 않는다.
 
 ## 나중에 공용 DB에 연결하기
@@ -77,5 +82,6 @@ Windows 심볼릭 링크 생성 권한 없이 저장·재시작할 수 있으며
 웹 종료는 Windows의 `taskkill /T /F`, Unix의 프로세스 그룹 종료로 하위 작업까지 정리한다.
 한글 데이터는 UTF-8로 읽으며 PowerShell 5.1용 한글 스크립트는 UTF-8 BOM을 유지한다.
 
-이 검사가 성공해도 실제 GitHub/Vertex 인증, 공용 DB 저장·운영 반영, 예약 시각 실행,
-절전·덮개 닫힘·재부팅 후 동작은 [Windows-Codex-작업계획.md](Windows-Codex-작업계획.md)에 따라 따로 검증한다.
+이 검사가 성공해도 실제 GitHub/Vertex 인증, 공용 DB 저장·운영 반영과 예약 시각 실행은
+[Windows-Codex-작업계획.md](Windows-Codex-작업계획.md)에 따라 따로 검증한다. 절전·덮개 닫힘·재부팅
+검증은 선택한 전원 운영 방식에 필요한 경우에만 수행한다.

@@ -116,6 +116,8 @@ python3 radar.py report
 기존 후보는 유지하고 같은 `repo/number`는 다시 넣지 않으며, 실행마다 레포당 새 후보를 최대 5건 추가한다.
 `batch`는 최근 24시간 이슈 수집, 제한 판정, 후보 생성을 순서대로 실행하고 중간 단계가 실패하면 즉시 종료한다.
 Windows 자동 실행 설정은 [Windows 운영 문서](docs/Windows-운영.md)를 따른다.
+원격 관리는 [Windows 홈 서버 SSH 접속 문서](docs/Windows-SSH-접속.md)의 Tailscale SSH와
+로컬 웹 포트 포워딩 절차를 따른다.
 
 `repos.txt`에 추적할 레포를 한 줄에 하나씩 적는다. 빈 줄과 `#` 주석을 허용한다.
 기본은 **10개 분야 × 3개, 총 30개**다. AI 에이전트, 모델 추론, 프런트엔드, 백엔드,
