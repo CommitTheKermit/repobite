@@ -10,6 +10,23 @@
 사전 검증 범위: Mac 회귀 테스트와 GitHub Actions Windows Server 2025의 Python 3.14·Node 24·Windows PowerShell 검사.
 실제 GitHub/Vertex 인증, 공용 DB 연결, 작업 계정 암호, 예약 실행, 절전·재부팅은 실제 노트북에서 확인해야 한다.
 
+## Windows 장치 현황 참고 (2026-09-19)
+
+[서버 구성 작업 이력](windows-setup-worklog.md)과 [원격 접속 안내](windows-remote-access.md)는
+사용자가 전달한 플리파 운영 문서의 원본 사본이다. RepoBite 설치 완료 기록이 아니며,
+아래 내용은 문서 기준이다. 이번 문서 반영에서 Windows에 원격 접속해 재검증하지 않았다.
+
+- `vivobook`에서 Tailscale, 공개키 SSH와 플리파 HTTPS 응답을 확인한 기록이 있다.
+- SSH 계정은 `qnf323`, 사용자 프로필 폴더는 `C:\Users\qnf32`다. 플리파 경로를 RepoBite 경로로 사용하지 않는다.
+- AC 자동 절전·최대 절전은 해제했으며 배터리 정책은 변경하지 않았다.
+- 최신 작업 이력상 OpenSSH는 `InstallPending`, `RebootPending: true`, 서비스 실행 중이나 시작 유형은 `Manual`이다.
+  원격 접속 안내의 자동 시작 설명은 현재 검증값으로 간주하지 않는다.
+- Windows 기본 OpenSSH와 Preview 설치가 겹쳐 있다. 사용자 현장 대응 또는 별도 복구 경로를 확보하고
+  재부팅 허락을 받은 뒤 서비스 상태·자동 시작·Mac 재접속을 확인한다. 그 전에는 Preview를 제거하지 않는다.
+- 플리파는 사용자 로그인 후 자동 실행된다. 이는 RepoBite의 시작 시 예약 작업과 별개다.
+- RepoBite의 Windows 저장소 위치, GitHub/Vertex 인증, 공용 DB 연결, 실제 배치와 예약 실행은
+  이 두 문서로 확인되지 않는다. 아래 절차에서 별도로 확인한다.
+
 ## 목표
 
 현재 구현된 RepoBite를 Windows 노트북에서 운영 가능하게 설정하고 실제로 검증한다.
