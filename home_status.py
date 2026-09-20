@@ -21,7 +21,7 @@ def windows_status():
         return {"available": False, "reason": "Windows에서 확인할 수 있습니다."}
     try:
         result = subprocess.run(
-            ["powershell.exe", "-NoProfile", "-NonInteractive", "-File",
+            ["powershell.exe", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File",
              str(ROOT / "scripts/read-home-status.ps1")],
             capture_output=True, timeout=20, check=True, encoding="utf-8")
         return json.loads(result.stdout.lstrip("\ufeff"))
