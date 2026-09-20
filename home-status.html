@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="ko">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>홈서버 상태</title>
+<style>
+body{font:16px/1.6 system-ui,sans-serif;background:#f4f6f8;color:#172b3a;margin:0}main{max-width:860px;margin:48px auto;padding:0 24px}h1{font-size:30px;margin-bottom:4px}h2{font-size:20px;margin:28px 0 12px}p{color:#43576a}.panel{background:white;border:1px solid #d8e0e7;border-radius:12px;padding:20px;margin:16px 0;overflow:auto}table{width:100%;border-collapse:collapse;text-align:left}th,td{padding:10px 8px;border-bottom:1px solid #e5eaf0;vertical-align:top}th{font-weight:600}.ok{color:#146c43}.bad{color:#a12e19}button{font:inherit;padding:8px 16px;border:1px solid #bccbd7;border-radius:8px;background:white;cursor:pointer}button:focus-visible,a:focus-visible{outline:3px solid #2367b2}small{display:block;color:#526879}a{color:#16599c}#notice{font-weight:600}@media(max-width:540px){main{margin:24px auto;padding:0 12px}.panel{padding:12px}th,td{padding:8px 4px;font-size:14px}}
+</style>
+<main>
+<small>TAILSCALE 내부 전용</small>
+<h1>홈서버 상태</h1>
+<p>서비스와 정기 수집 상태를 30초마다 확인합니다.</p>
+<button id="refresh" type="button">새로 확인</button> <a href="/status.json">세션용 JSON</a>
+<p id="notice" role="status" aria-live="polite">확인 중...</p>
+<small id="checked"></small>
+<section class="panel"><h2>서비스와 예약 작업</h2><table><thead><tr><th scope="col">항목</th><th scope="col">상태</th><th scope="col">확인 내용</th></tr></thead><tbody id="services"></tbody></table></section>
+<section class="panel"><h2>최근 수집</h2><p>36시간이 지난 결과는 오래된 것으로 표시합니다. 로컬 수집과 공용 수집은 별도로 확인합니다.</p><table><thead><tr><th scope="col">수집</th><th scope="col">건수</th><th scope="col">갱신 시각</th></tr></thead><tbody id="collections"></tbody></table></section>
+<section class="panel"><h2>운영 메모</h2><ul id="notes"></ul></section>
+<p>이 화면에 접속되지 않으면 서버 상태는 확인 불가입니다. 이전 표시를 현재 정상 상태로 판단하지 마세요.</p>
+</main>
+<script>
+const time = value => value ? new Date(value).toLocaleString('ko-KR') : '기록 없음';
+function row(target, values, healthy) {
+  const tr = document.createElement('tr');
+  for (const value of values) { const td = document.createElement('td'); td.textContent = value; tr.append(td); }
+  tr.children[1].className = healthy ? 'ok' : 'bad'; target.append(tr);
+}
+let loading = false;
+async function refresh() {
+  if (loading) return;
+  loading = true;
+  const notice = document.querySelector('#notice');
+  try {
+    const response = await fetch('/status.json', {cache:'no-store', signal:AbortSignal.timeout(25000)});
+    if (!response.ok) throw Error();
+    const status = await response.json();
+    if (!status.checked_at || Date.now() - Date.parse(status.checked_at) > 60000) throw Error();
+    document.querySelector('#checked').textContent = `확인 시각: ${time(status.checked_at)} · 부팅: ${time(status.system.booted_at)}`;
+    const services = document.querySelector('#services'); services.replaceChildren();
+    const system = status.system;
+    let healthy = system.available && system.web_status === 200;
+    if (!system.available) row(services, ['시스템', '확인 불가', system.reason], false);
+    for (const service of system.services || []) {
+      const ok = service.state === 'Running' && service.start_mode === 'Auto'; healthy &&= ok;
+      row(services, [service.name, service.state, `시작 유형: ${service.start_mode}`], ok);
+    }
+    row(services, ['RepoBite HTTP', system.web_status || '확인 불가', '로컬 웹 응답'], system.web_status === 200);
+    for (const task of system.tasks || []) {
+      const ok = task.name === 'repobite-web' ? task.state === 'Running' : task.last_result === 0 && task.state !== 'Disabled';
+      healthy &&= ok;
+      row(services, [task.name, task.state, `최근: ${time(task.last_run)} / 결과: ${task.last_result ?? '없음'} / 다음: ${time(task.next_run)}`], ok);
+    }
+    const collections = document.querySelector('#collections'); collections.replaceChildren();
+    for (const [mode, files] of Object.entries(status.collections)) {
+      for (const [name, file] of Object.entries(files)) {
+        const label = file.missing ? '미수집' : file.unavailable ? '확인 불가' : `${file.rows}건${file.stale ? ' (오래됨)' : ''}`;
+        row(collections, [`${mode === 'local' ? '로컬' : '공용'} / ${name}`, label, time(file.updated_at)], !file.missing && !file.unavailable && !file.stale);
+      }
+    }
+    const notes = document.querySelector('#notes'); notes.replaceChildren();
+    for (const note of status.notes.length ? status.notes : ['등록된 메모가 없습니다.']) { const li = document.createElement('li'); li.textContent = note; notes.append(li); }
+    notice.textContent = healthy ? '서비스 확인 완료' : '확인이 필요한 서비스가 있습니다.';
+    notice.className = healthy ? 'ok' : 'bad';
+  } catch {
+    notice.textContent = '연결 또는 상태 조회 실패. 아래 내용은 마지막 확인 기록입니다.';
+    notice.className = 'bad';
+  } finally { loading = false; }
+}
+document.querySelector('#refresh').addEventListener('click', refresh);
+refresh(); setInterval(refresh, 30000);
+</script>
+</html>

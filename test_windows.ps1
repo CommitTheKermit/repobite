@@ -20,7 +20,7 @@ try {
         @('run-batch.ps1', 'test-url', 'test-token', 'community_batch.py', '', 0),
         @('run-batch.ps1', 'test-url', '', '', '', 1),
         @('run-batch.ps1', '', 'test-token', '', '', 1),
-        @('run-web.ps1', '', '', 'web.py', '', 0),
+        @('run-web.ps1', '', '', 'web.py', '--status-port|8767', 0),
         @('run-batch.ps1', '', '', 'radar.py', 'batch', 7)
     )) {
         $env:UPSTASH_REDIS_REST_URL = $case[1]
@@ -44,7 +44,7 @@ try {
         if ($case[3]) {
             $result = Get-Content -Raw -Encoding UTF8 $Probe | ConvertFrom-Json
             $expected = @('-3.14', $case[3])
-            if ($case[4]) { $expected += $case[4] }
+            if ($case[4]) { $expected += $case[4].Split('|') }
             if (($result.argv -join '|') -ne ($expected -join '|') -or $result.cwd -ne $Repo) {
                 throw "Incorrect command or working directory: $($case[0])"
             }

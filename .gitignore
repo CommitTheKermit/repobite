@@ -8,3 +8,4 @@ __pycache__/
 .radar-web/
 .radar-community/
 .vercel
+.home-status-notes.json

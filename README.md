@@ -58,6 +58,8 @@ python3 web.py
 ```
 
 [로컬 웹 화면](http://127.0.0.1:8765)을 연다. 포트가 사용 중이면 `python3 web.py --port 8766`으로 바꾼다.
+
+Windows 홈서버는 [Tailscale 내부 상태 페이지](docs/홈서버-상태.md)에서 서비스와 예약 수집 상태를 확인한다.
 이 Mac에 로그인된 `gh`와 Google Cloud ADC를 사용한다. 서버를 켠 터미널은 실행 중에 유지한다.
 서버 종료는 `Ctrl+C`이며, 진행 중인 CLI 작업도 종료 신호를 보낸다.
 

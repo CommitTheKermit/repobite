@@ -27,7 +27,7 @@ jobs:
           package-manager-cache: false
       - name: Python regression tests without external API calls
         run: |
-          foreach ($test in @('radar', 'freshness', 'vertex', 'web', 'community')) {
+          foreach ($test in @('radar', 'freshness', 'vertex', 'web', 'community', 'home_status')) {
             python "test_$test.py"
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           }

@@ -14,6 +14,7 @@ import threading
 import uuid
 
 import community
+import home_status
 import radar
 
 MAX_REPOS = 30
@@ -335,7 +336,13 @@ def make_server(port=8765, root=radar.ROOT):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--port", type=int, default=8765)
+    parser.add_argument("--status-port", type=int, help="상태 조회 전용 loopback 포트")
     args = parser.parse_args()
+    status_server = None
+    if args.status_port:
+        status_server = home_status.make_server(
+            args.status_port, radar.ROOT, os.environ.get("HOME_STATUS_HOST", ""))
+        threading.Thread(target=status_server.serve_forever, daemon=True).start()
     with make_server(args.port) as server:
         print(f"RepoBite: http://127.0.0.1:{server.server_port}", flush=True)
         try:
@@ -344,3 +351,6 @@ if __name__ == "__main__":
             pass
         finally:
             server.app.stop()
+            if status_server:
+                status_server.shutdown()
+                status_server.server_close()
