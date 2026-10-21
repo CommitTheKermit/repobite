@@ -1,6 +1,6 @@
 """실행: python3.14 test_repository_discovery.py. GitHub 호출은 mock으로 대체한다."""
 
-from contextlib import redirect_stderr
+from contextlib import redirect_stderr, redirect_stdout
 from datetime import datetime, timedelta, timezone
 from email.message import Message
 import io
@@ -351,6 +351,75 @@ def test_exact_fifteen_each_and_full_famous_pagination():
     assert "page=2" in evidence["urls"][1]
 
 
+def test_partial_trending_requires_opt_in_and_preserves_source_evidence():
+    names = [f"owner/r{i}" for i in range(30)]
+    infos = {name: api_repo(name, i+1, 300000-i, has_issues=(i != 0))
+             for i, name in enumerate(names)}
+    def github(endpoint):
+        if endpoint.startswith("search/"):
+            return {"items": list(infos.values()), "total_count": 30, "incomplete_results": False}
+        return infos[endpoint[6:]]
+    with tempfile.TemporaryDirectory() as directory:
+        output = Path(directory)/"out.json"
+        output.write_text("previous")
+        options = dict(limit=30, period="weekly", output_path=output, gh=github, clock=lambda: NOW,
+            open_url=lambda *a, **k: HTMLResponse(trending_html(names[:15])))
+        rejects(discovery.run_github_trending, **options)
+        assert output.read_text() == "previous"
+        result = discovery.run_github_trending(**options, allow_partial_trend=True)
+        assert result["requested_total"] == 30 and result["actual_total"] == 29
+        assert result["trend"]["status"] == "partial" and result["trend"]["shortfall"] == 1
+        assert len(result["trend"]["items"]) == 14
+        assert result["famous"]["status"] == "complete" and result["famous"]["shortfall"] == 0
+        assert len(result["famous"]["items"]) == 15
+        assert result["source"]["trending"]["rows"] == 15
+        assert result["source"]["excluded"] == {"issues_disabled": 1}
+        assert len(set(result["repos"])) == result["actual_total"] == 29
+        assert json.loads(output.read_text()) == result
+        with patch.object(discovery, "run_github_trending", return_value=result) as runner, redirect_stdout(io.StringIO()) as stdout:
+            assert discovery.main(["--source", "github-trending", "--limit", "30", "--period", "weekly",
+                                   "--allow-partial-trending", "--output", str(output)]) == 0
+            assert runner.call_args.kwargs["allow_partial_trend"] is True
+            assert stdout.getvalue().strip() == "저장소 후보: 트렌드 14개, 유명 15개"
+
+
+def test_partial_trending_does_not_hide_source_or_famous_failures():
+    with tempfile.TemporaryDirectory() as directory:
+        output = Path(directory)/"out.json"
+        output.write_text("previous")
+        infos = {"owner/disabled": api_repo("owner/disabled", 1, 300000, has_issues=False),
+                 "owner/trend": api_repo("owner/trend", 2, 290000),
+                 "owner/famous": api_repo("owner/famous", 3, 280000)}
+        def github(endpoint):
+            if endpoint.startswith("search/"):
+                return {"items": list(infos.values()), "total_count": 3, "incomplete_results": False}
+            return infos[endpoint[6:]]
+        options = dict(limit=4, period="weekly", output_path=output, gh=github, clock=lambda: NOW,
+                       allow_partial_trend=True)
+        html = trending_html(["owner/disabled", "owner/trend"])
+        # 적격 유명 후보가 2개 미만이면 Trending 일부 허용과 관계없이 실패한다.
+        rejects(discovery.run_github_trending, **options, open_url=lambda *a, **k: HTMLResponse(html))
+        assert output.read_text() == "previous"
+        for invalid_html in (trending_html([]), html[:-7], html.replace("Box-row", "Changed"),
+                             trending_html(["owner/disabled"])):
+            rejects(discovery.run_github_trending, **options,
+                    open_url=lambda *a, **k: HTMLResponse(invalid_html))
+            assert output.read_text() == "previous"
+        response = HTMLResponse(html)
+        response.headers.replace_header("Content-Length", "999999")
+        rejects(discovery.run_github_trending, **options, open_url=lambda *a, **k: response)
+        assert output.read_text() == "previous"
+        for failure in (RuntimeError("API failure"),
+                        {"items": [], "total_count": 0, "incomplete_results": True}):
+            def failing(endpoint):
+                if isinstance(failure, RuntimeError):
+                    raise failure
+                return failure if endpoint.startswith("search/") else github(endpoint)
+            rejects(discovery.run_github_trending, **{**options, "gh": failing},
+                    open_url=lambda *a, **k: HTMLResponse(html))
+            assert output.read_text() == "previous"
+
+
 if __name__ == "__main__":
     test_missing_history_never_fills_trend_with_famous()
     test_deltas_identity_quota_and_actual_period()
@@ -364,5 +433,7 @@ if __name__ == "__main__":
     test_famous_threshold_is_search_optimization_not_selection_cutoff()
     test_trending_failures_preserve_previous_output()
     test_exact_fifteen_each_and_full_famous_pagination()
+    test_partial_trending_requires_opt_in_and_preserves_source_evidence()
+    test_partial_trending_does_not_hide_source_or_famous_failures()
     print("통과: GitHub Trending 순위·기간·15:15 할당·원천별 다음 순위·완전 검색·오류 보존")
     print("통과: 1:1 할당·자체 관측 7일 순증가·부족분·중복제외·저장소 상태·API 실패 보존")

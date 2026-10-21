@@ -369,9 +369,12 @@ def famous_search(threshold, gh):
     raise ValueError("유명 저장소 검색을 완전히 읽지 못했습니다")
 
 
-def run_github_trending(*, limit, period, output_path, gh=None, clock=None, open_url=None):
-    """Trending 순서 우선, 중복을 뺀 유명 저장소 순서로 정확히 절반씩 제안한다."""
+def run_github_trending(*, limit, period, output_path, allow_partial_trend=False,
+                        gh=None, clock=None, open_url=None):
+    """Trending 우선으로 제안하며 명시한 경우만 적격 Trending 일부를 허용한다."""
     limit = positive_even(limit)
+    if type(allow_partial_trend) is not bool:
+        raise ValueError("Trending 일부 허용 여부는 bool이어야 합니다")
     gh = gh or radar.gh_json
     clock = clock or (lambda: datetime.now(timezone.utc))
     output_path = Path(output_path)
@@ -379,7 +382,7 @@ def run_github_trending(*, limit, period, output_path, gh=None, clock=None, open
         raise ValueError("기존 수집 목록과 공개 데이터는 덮어쓸 수 없습니다")
     quota = limit // 2
     ranked, trending_source = fetch_trending(period, clock=clock, open_url=open_url)
-    cache, excluded = {}, Counter()
+    cache = {}
 
     def current(name):
         key = name.lower()
@@ -392,7 +395,6 @@ def run_github_trending(*, limit, period, output_path, gh=None, clock=None, open
     for record in ranked:
         row, reason = current(record["repo"])
         if reason:
-            excluded[reason] += 1
             continue
         if row["id"] in used:
             raise ValueError("Trending 순위의 저장소 ID가 중복되었습니다")
@@ -402,7 +404,8 @@ def run_github_trending(*, limit, period, output_path, gh=None, clock=None, open
                       "ranking_observed_at": trending_source["fetched_at"], "period": period})
         if len(trend) == quota:
             break
-    if len(trend) != quota:
+    if not trend or (len(trend) != quota and not allow_partial_trend):
+        excluded = Counter(reason for _, reason in cache.values() if reason)
         raise ValueError(f"적격 Trending 저장소가 부족합니다 ({len(trend)}/{quota}개, 제외 {dict(excluded)}). 이전 후보 출력을 보존합니다")
     threshold, searches = 100000, []
     while True:
@@ -415,9 +418,7 @@ def run_github_trending(*, limit, period, output_path, gh=None, clock=None, open
         for candidate, (row, reason) in zip(candidates, checked):
             if row is not None and row["id"] != candidate["id"]:
                 raise ValueError("유명 저장소 검색과 현재 저장소 ID가 다릅니다")
-            if reason:
-                excluded[reason] += 1
-            elif row["id"] not in used:
+            if not reason and row["id"] not in used:
                 eligible[row["id"]] = row
         selected = sorted(eligible.values(), key=lambda row: (-row["stars"], row["repo"].lower()))[:quota]
         # 검색 하한보다 높은 최종 경계를 확보한 경우만 하한 아래의 검색을 생략한다.
@@ -430,13 +431,15 @@ def run_github_trending(*, limit, period, output_path, gh=None, clock=None, open
             raise ValueError("적격 유명 저장소가 부족합니다. 이전 후보 출력을 보존합니다")
         threshold //= 2
     result = {"version": 1, "method": "github_trending_and_cumulative_stars", "requested_total": limit,
+              "actual_total": len(trend) + len(famous),
               "generated_at": clock().astimezone(timezone.utc).isoformat(timespec="seconds"),
               "selection_order": ["trend", "famous"], "quota": {"trend": quota, "famous": quota},
-              "trend": {"status": "complete", "items": trend, "shortfall": 0},
+              "trend": {"status": "complete" if len(trend) == quota else "partial",
+                        "items": trend, "shortfall": quota - len(trend)},
               "famous": {"status": "complete", "items": famous, "shortfall": 0},
               "repos": [row["repo"] for row in trend + famous],
               "source": {"trending": trending_source, "famous_searches": searches,
-                         "excluded": dict(excluded),
+                         "excluded": dict(Counter(reason for _, reason in cache.values() if reason)),
                          "rank_scope": "공개·미보관·활성·이슈 허용 저장소, Trending 우선 중복 제외",
                          "consistency": "검색 인덱스 전체 결과와 개별 API 관측을 사용하며 원자적 글로벌 스냅샷은 아님"}}
     with radar.atomic_output(output_path) as stream:
@@ -449,6 +452,7 @@ def main(argv=None):
     parser.add_argument("--limit", type=int, required=True, help="총 제안 수, 양의 짝수")
     parser.add_argument("--source", choices=("github-trending", "own-history"), required=True)
     parser.add_argument("--period", choices=tuple(PERIOD_LABELS), help="GitHub Trending 조회 기간, github-trending에서 필수")
+    parser.add_argument("--allow-partial-trending", action="store_true", help="적격 Trending이 1개 이상이면 확보한 수만 제안")
     parser.add_argument("--tolerance-hours", type=float, help="7일 전 관측과 허용할 시간 오차, 0 이상 168 미만")
     parser.add_argument("--query", default=DEFAULT_QUERY, help="관측할 공개 저장소 검색 쿼리")
     parser.add_argument("--search-limit", type=int, default=100, help="검색 후보 상한, 1부터 1000")
@@ -461,7 +465,8 @@ def main(argv=None):
         parser.error("own-history에는 --tolerance-hours가 필요합니다")
     try:
         if args.source == "github-trending":
-            result = run_github_trending(limit=args.limit, period=args.period, output_path=args.output)
+            result = run_github_trending(limit=args.limit, period=args.period, output_path=args.output,
+                                         allow_partial_trend=args.allow_partial_trending)
         else:
             result = run(limit=args.limit, tolerance_hours=args.tolerance_hours,
                          history_path=args.history, output_path=args.output,
@@ -469,9 +474,7 @@ def main(argv=None):
     except (OSError, ValueError, TypeError, RuntimeError, KeyError, OverflowError, subprocess.TimeoutExpired):
         print("저장소 발굴 실패: 원천 응답·후보 부족·입력·GitHub 상태를 확인하세요. 이전 후보 출력을 보존합니다.", file=sys.stderr)
         return 1
-    print(f"저장소 후보: 트렌드 {len(result['trend']['items'])}개 "
-          f"(부족 {result['trend']['shortfall']}개), 유명 {len(result['famous']['items'])}개 "
-          f"(부족 {result['famous']['shortfall']}개)")
+    print(f"저장소 후보: 트렌드 {len(result['trend']['items'])}개, 유명 {len(result['famous']['items'])}개")
     return 0
 
 
