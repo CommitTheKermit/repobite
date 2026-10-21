@@ -89,6 +89,10 @@ def handle_account(request):
             return
         user = accounts.require_user(session)
         payload = read_payload(request)
+        if payload.get("expected_user_id") != user["id"]:
+            respond(request, 409, {"error": "로그인 계정이 바뀌었습니다. 화면을 새로고침한 뒤 다시 시도하세요.",
+                                   "code": "account_changed"})
+            return
         if action == "preferences" and request.command == "POST":
             saved = accounts.save_preferences(user["id"], payload.get("email"), payload.get("delivery_enabled"))
             respond(request, 200, {"preferences": saved})

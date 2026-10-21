@@ -7,7 +7,7 @@ function browserStorage() {
 }
 
 class AccountError extends Error {
-  constructor(message, status = 0) { super(message); this.status = status; }
+  constructor(message, status = 0, code = '') { super(message); this.status = status; this.code = code; }
 }
 
 function sessionValue(value) {
@@ -33,7 +33,7 @@ export function mountAccountUI({ document, fetch, storage = browserStorage(),
     return [id, node];
   }));
   let current = { authenticated: false, subscriptions: [] };
-  let revision = 0, busy = false, destroyed = false, emailDirty = false, repoDirty = false;
+  let revision = 0, busy = false, destroyed = false, emailDirty = false, deliveryDirty = false, repoDirty = false;
   let draftOwnerId = null, draftRestored = false, stateUnknown = false, callbackNoticeShown = false;
   const listeners = [];
   const listen = (node, event, listener) => {
@@ -50,7 +50,8 @@ export function mountAccountUI({ document, fetch, storage = browserStorage(),
 
   function preserveDraft() {
     const draft = { email: el.email.value, delivery_enabled: el.delivery.checked,
-      repo: el.repo.value, owner_id: current.user?.id ?? draftOwnerId };
+      repo: el.repo.value, owner_id: current.user?.id ?? draftOwnerId,
+      dirty: { email: emailDirty, delivery: deliveryDirty, repo: repoDirty } };
     try { storage?.setItem(DRAFT_KEY, JSON.stringify(draft)); } catch {}
   }
 
@@ -69,17 +70,20 @@ export function mountAccountUI({ document, fetch, storage = browserStorage(),
       if (userId) removeDraft();
       return;
     }
-    if (!emailDirty) {
-      el.email.value = draft.email; el.delivery.checked = draft.delivery_enabled; emailDirty = true;
-    }
-    if (!repoDirty) { el.repo.value = draft.repo; repoDirty = true; }
+    // v1에는 편집 여부가 없어 비어 있지 않은 값만 복원한다. 기본 빈값으로 기존 설정을 가리지 않는다.
+    const edited = draft.dirty && typeof draft.dirty === 'object' ? draft.dirty : {
+      email: draft.email !== '', delivery: draft.delivery_enabled === true, repo: draft.repo !== ''
+    };
+    if (!emailDirty && edited.email === true) { el.email.value = draft.email; emailDirty = true; }
+    if (!deliveryDirty && edited.delivery === true) { el.delivery.checked = draft.delivery_enabled; deliveryDirty = true; }
+    if (!repoDirty && edited.repo === true) { el.repo.value = draft.repo; repoDirty = true; }
     draftOwnerId = draft.owner_id;
     removeDraft();
   }
 
   function clearPrivateInputs() {
     el.email.value = ''; el.delivery.checked = false; el.repo.value = '';
-    emailDirty = false; repoDirty = false; draftOwnerId = null;
+    emailDirty = false; deliveryDirty = false; repoDirty = false; draftOwnerId = null;
     removeDraft();
   }
 
@@ -116,10 +120,8 @@ export function mountAccountUI({ document, fetch, storage = browserStorage(),
     current = snapshot; stateUnknown = false;
     restoreDraft(snapshot.user?.id);
     if (snapshot.authenticated) {
-      if (!emailDirty) {
-        el.email.value = snapshot.preferences.email;
-        el.delivery.checked = snapshot.preferences.delivery_enabled;
-      }
+      if (!emailDirty) el.email.value = snapshot.preferences.email;
+      if (!deliveryDirty) el.delivery.checked = snapshot.preferences.delivery_enabled;
       draftOwnerId = snapshot.user.id;
     }
     render(); notify();
@@ -138,7 +140,7 @@ export function mountAccountUI({ document, fetch, storage = browserStorage(),
     catch { throw new AccountError('계정 응답을 확인하지 못했습니다. 입력을 유지하고 다시 시도하세요.'); }
     if (!response.ok) {
       throw new AccountError(typeof value?.error === 'string' ? value.error.slice(0, 300)
-        : '계정 요청을 처리하지 못했습니다. 입력을 유지하고 다시 시도하세요.', response.status);
+        : '계정 요청을 처리하지 못했습니다. 입력을 유지하고 다시 시도하세요.', response.status, value?.code);
     }
     return value;
   }
@@ -158,7 +160,7 @@ export function mountAccountUI({ document, fetch, storage = browserStorage(),
   }
   function fail(error, ticket) {
     if (!active(ticket)) return;
-    if (error.status === 401) {
+    if (error.status === 401 || (error.status === 409 && error.code === 'account_changed')) {
       current = { authenticated: false, subscriptions: [] };
       notify();
     }
@@ -191,7 +193,7 @@ export function mountAccountUI({ document, fetch, storage = browserStorage(),
     const expectedUser = current.user.id, ticket = ++revision;
     busy = true; message('저장 결과를 확인하고 있습니다.'); render();
     try {
-      const result = await api(action, method, payload);
+      const result = await api(action, method, { ...payload, expected_user_id: expectedUser });
       if (!active(ticket)) return false;
       const snapshot = sessionValue(await api('session'));
       if (!active(ticket)) return false;
@@ -208,13 +210,13 @@ export function mountAccountUI({ document, fetch, storage = browserStorage(),
 
   async function saveEmail(event) {
     event?.preventDefault();
-    emailDirty = true;
+    emailDirty = true; deliveryDirty = true;
     const email = el.email.value, delivery = el.delivery.checked;
     return confirmedMutation('preferences', 'POST', { email, delivery_enabled: delivery },
       (snapshot, result) => typeof result?.preferences?.email === 'string'
         && snapshot.preferences.email === result.preferences.email
         && snapshot.preferences.delivery_enabled === delivery,
-      () => { emailDirty = false; message('이메일 설정을 저장했습니다. 자동 이메일은 발송하지 않습니다.'); });
+      () => { emailDirty = false; deliveryDirty = false; message('이메일 설정을 저장했습니다. 자동 이메일은 발송하지 않습니다.'); });
   }
 
   async function changeSubscription(repo, remove) {
@@ -258,7 +260,7 @@ export function mountAccountUI({ document, fetch, storage = browserStorage(),
   listen(el.close, 'click', close);
   listen(el.dialog, 'cancel', event => { event.preventDefault(); close(); });
   listen(el.email, 'input', () => { emailDirty = true; });
-  listen(el.delivery, 'change', () => { emailDirty = true; });
+  listen(el.delivery, 'change', () => { deliveryDirty = true; });
   listen(el.repo, 'input', () => { repoDirty = true; });
   listen(el['email-form'], 'submit', saveEmail);
   listen(el['repo-form'], 'submit', event => { event.preventDefault(); return changeSubscription(el.repo.value, false); });

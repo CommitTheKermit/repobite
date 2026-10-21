@@ -257,14 +257,37 @@ class AccountsHTTPTest(AccountsFixture, unittest.TestCase):
 
     def test_payload_cannot_choose_another_account(self):
         secret, other = self.login(10), self.login(20)
-        self.assertEqual(self.request("preferences", "POST", {"user_id": "20", "email": "x@example.com",
+        self.assertEqual(self.request("preferences", "POST", {"user_id": "20", "expected_user_id": "10", "email": "x@example.com",
             "delivery_enabled": True}, secret)[0], 200)
         self.assertEqual(self.request(secret=secret)[1]["preferences"]["email"], "x@example.com")
         self.assertEqual(self.request(secret=other)[1]["preferences"]["email"], "")
         with patch.object(accounts, "verified_repository", return_value="owner/repo"):
-            self.assertEqual(self.request("subscriptions", "POST", {"repo": "owner/repo", "user_id": "20"}, secret)[0], 201)
-        self.assertEqual(self.request("subscriptions", "DELETE", {"repo": "OWNER/REPO"}, other)[1]["removed"], False)
+            self.assertEqual(self.request("subscriptions", "POST", {"repo": "owner/repo", "user_id": "20", "expected_user_id": "10"}, secret)[0], 201)
+        self.assertEqual(self.request("subscriptions", "DELETE", {"repo": "OWNER/REPO", "expected_user_id": "20"}, other)[1]["removed"], False)
         self.assertEqual(self.request(secret=secret)[1]["subscriptions"], ["owner/repo"])
+
+    def test_stale_tab_cannot_write_when_another_tab_switches_the_session_account(self):
+        first, current = self.login(10), self.login(20)
+        accounts.save_preferences("10", "a@example.com", True)
+        accounts.save_preferences("20", "b@example.com", True)
+        self.db("HSET", accounts.subscriptions_key("20"), "owner/b", "Owner/B")
+        for action, method, payload in (
+            ("preferences", "POST", {"email": "a-draft@example.com", "delivery_enabled": True}),
+            ("subscriptions", "POST", {"repo": "Owner/A"}),
+            ("subscriptions", "DELETE", {"repo": "Owner/B"}),
+        ):
+            with self.subTest(action=action, method=method), patch.object(accounts, "verified_repository") as github:
+                status, body, _ = self.request(action, method, {**payload, "expected_user_id": "10"}, current)
+                self.assertEqual(status, 409)
+                self.assertEqual(body["code"], "account_changed")
+                github.assert_not_called()
+        self.assertEqual(accounts.preferences("10")["email"], "a@example.com")
+        self.assertEqual(accounts.preferences("20")["email"], "b@example.com")
+        self.assertEqual(accounts.subscriptions("20"), ["Owner/B"])
+        self.assertEqual(self.request("preferences", "POST", {"email": "a-draft@example.com", "delivery_enabled": True}, current)[0], 409)
+        self.assertEqual(self.request("logout", "POST", secret=current)[0], 200)
+        self.assertFalse(accounts.session_snapshot(current)["authenticated"])
+        self.assertTrue(accounts.session_snapshot(first)["authenticated"])
 
     def test_cookie_settings_callback_failure_and_safe_service_errors(self):
         status, _, headers = self.request("start")

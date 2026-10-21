@@ -310,3 +310,69 @@ test('브라우저가 sessionStorage 속성 접근을 차단해도 기본 마운
     else delete globalThis.sessionStorage;
   }
 });
+
+test('무편집 로그인 복원은 기존 이메일과 수신 동의를 기본 빈값으로 덮어쓰지 않는다', async () => {
+  const storage = memoryStorage();
+  const anonymous = mount(() => response({ authenticated: false }), { storage });
+  await anonymous.controller.ready;
+  await anonymous.document.get('login').emit('click');
+  const existing = mount(() => response(signedIn('10', [], 'saved@example.com', true)), { storage });
+  await existing.controller.ready;
+  assert.equal(existing.document.get('email').value, 'saved@example.com');
+  assert.equal(existing.document.get('delivery').checked, true);
+});
+
+test('편집정보 없는 이전 빈 복원값도 기존 계정 설정을 가리지 않는다', async () => {
+  const storage = memoryStorage([['repobite:account-draft:v1', JSON.stringify({
+    email: '', delivery_enabled: false, repo: '', owner_id: null })]]);
+  const app = mount(() => response(signedIn('10', [], 'saved@example.com', true)), { storage });
+  await app.controller.ready;
+  assert.equal(app.document.get('email').value, 'saved@example.com');
+  assert.equal(app.document.get('delivery').checked, true);
+});
+
+test('이메일만 편집한 로그인 입력은 편집하지 않은 수신 동의를 덮어쓰지 않는다', async () => {
+  const storage = memoryStorage();
+  const anonymous = mount(() => response({ authenticated: false }), { storage });
+  await anonymous.controller.ready;
+  await input(anonymous.document, 'email', 'draft@example.com');
+  await anonymous.document.get('login').emit('click');
+  const existing = mount(() => response(signedIn('10', [], 'saved@example.com', true)), { storage });
+  await existing.controller.ready;
+  assert.equal(existing.document.get('email').value, 'draft@example.com');
+  assert.equal(existing.document.get('delivery').checked, true);
+});
+
+test('의도적으로 비운 이메일과 해제한 수신 동의는 같은 계정 로그인 후 복원한다', async () => {
+  const storage = memoryStorage();
+  const before = mount(() => response(signedIn('10', [], 'saved@example.com', true)), { storage });
+  await before.controller.ready;
+  await input(before.document, 'email', '');
+  before.document.get('delivery').checked = false;
+  await before.document.get('delivery').emit('change');
+  await before.document.get('login').emit('click');
+  const restored = mount(() => response(signedIn('10', [], 'saved@example.com', true)), { storage });
+  await restored.controller.ready;
+  assert.equal(restored.document.get('email').value, '');
+  assert.equal(restored.document.get('delivery').checked, false);
+});
+
+test('다른 탭의 계정 전환은 저장 계정 조건으로 거절하고 새 계정 이메일을 바꾸지 않는다', async () => {
+  let backend = signedIn('10', [], 'a@example.com', true);
+  let requestPayload;
+  const app = mount(call => {
+    if (call.method === 'GET') return response(backend);
+    requestPayload = call.payload;
+    if (call.payload.expected_user_id !== backend.user.id) return response({ code: 'account_changed', error: '로그인 계정이 바뀌었습니다.' }, 409);
+    backend = signedIn(backend.user.id, [], call.payload.email, call.payload.delivery_enabled);
+    return response({ preferences: backend.preferences });
+  });
+  await app.controller.ready;
+  await input(app.document, 'email', 'a-draft@example.com');
+  backend = signedIn('20', [], 'b@example.com', true);
+  await app.document.get('email-form').emit('submit');
+  assert.equal(requestPayload.expected_user_id, '10');
+  assert.equal(backend.preferences.email, 'b@example.com');
+  assert.equal(app.controller.getState().authenticated, false);
+  assert.match(app.document.get('message').textContent, /계정이 바뀌었습니다/);
+});
