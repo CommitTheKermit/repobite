@@ -33,17 +33,15 @@ powershell -ExecutionPolicy Bypass -File .\scripts\register-tasks.ps1 -BatchTime
 `repobite-web`은 시스템 시작 시 실행되고 `repobite-batch`는 매일 지정 시각에 실행된다.
 두 작업 모두 중복 실행을 무시하고 실패 시 15분 간격으로 3회 재시도하며, 실행 시 절전 모드를 해제한다.
 웹 작업은 상시 실행을 위해 실행 시간 제한을 `PT0S`로 등록한다. 배치는 기본 72시간 제한을 유지한다.
-기존 웹 작업은 등록 스크립트 변경만으로 갱신되지 않는다. 관리자 PowerShell에서 현재 작업의
-설정 객체를 읽어 `ExecutionTimeLimit`만 바꾸고 적용한다. 실행 중인 작업을 다시 등록하거나
-배치의 설정을 함께 바꾸지 않는다.
+기존 웹 작업은 등록 스크립트 변경만으로 갱신되지 않는다. 암호 로그온 작업의 설정 변경에는
+작업 계정 암호가 다시 필요하다. 암호 없이 `Set-ScheduledTask`를 실행하면 이 환경에서는
+`0x8007052e`로 거절됐다. 계정이나 로그온 유형을 바꾸어 우회하지 않는다.
+Windows 서버의 관리자 PowerShell에서 저장소 루트를 열고 아래 스크립트를 실행한다.
+암호는 서버 콘솔의 보안 입력으로만 받고 채팅, 파일, 명령줄 인자에 기록하지 않는다.
+스크립트는 기존 웹 작업의 실행 시간 제한만 변경하고 웹 작업을 재시작한다. 배치는 수정하지 않는다.
 
 ```powershell
-$WebTask = Get-ScheduledTask -TaskName repobite-web
-$WebTask.Settings.ExecutionTimeLimit = 'PT0S'
-Set-ScheduledTask -TaskName repobite-web -Settings $WebTask.Settings
-if ((Get-ScheduledTask -TaskName repobite-web).State -ne 'Running') {
-    Start-ScheduledTask -TaskName repobite-web
-}
+powershell -ExecutionPolicy Bypass -File .\scripts\update-web-task.ps1
 ```
 
 적용 후 `ExecutionTimeLimit=PT0S`, 작업 상태 `Running`, loopback 웹 `8765`와 상태 서버
@@ -110,3 +108,12 @@ Windows 심볼릭 링크 생성 권한 없이 저장·재시작할 수 있으며
 이 검사가 성공해도 실제 GitHub/Vertex 인증, 공용 DB 저장·운영 반영과 예약 시각 실행은
 [Windows-Codex-작업계획.md](Windows-Codex-작업계획.md)에 따라 따로 검증한다. 절전·덮개 닫힘·재부팅
 검증은 선택한 전원 운영 방식에 필요한 경우에만 수행한다.
+
+## 2026-10-21 운영 수정의 검증 범위
+
+- 웹 중단 원인: 작업 스케줄러의 72시간 실행 제한에 의한 종료 이벤트를 확인했다.
+- HTTP 진단 코드와 신규 웹 등록 설정은 Windows의 Python 및 PowerShell 검사에서 통과했다.
+- 기존 웹 작업의 제한 변경은 암호 재입력이 없어 거절됐다. 위 스크립트의 서버 실행 후 `PT0S`를 재확인해야 한다.
+- 기존 작업을 수동 시작해 `Running`, loopback 웹과 상태 서버의 HTTP 200, 내부 HTTPS 상태 응답 200을 확인했다. 현재 작업 제한은 `PT72H`다. 다음 부팅 및 다음 일일 배치 성공은 미검증이다.
+
+암호 로그온 근거: [Task Scheduler 등록 API](https://learn.microsoft.com/en-us/windows/win32/taskschd/taskfolder-registertaskdefinition).

@@ -75,6 +75,47 @@ function Register-ScheduledTask {
 }
 & (Join-Path $env:REPOBITE_TEST_ROOT 'scripts\register-tasks.ps1')
 if (($global:Registered -join '|') -ne 'repobite-web|repobite-batch') { throw 'Missing task registration' }
+
+$global:UpdatedTask = [pscustomobject]@{
+    State = 'Running'
+    Principal = [pscustomobject]@{ UserId = 'fixture-user' }
+    Settings = [pscustomobject]@{ ExecutionTimeLimit = 'PT72H'; RestartCount = 3 }
+}
+$global:UpdateCalls = @()
+function Get-ScheduledTask {
+    param($TaskName)
+    if ($TaskName -ne 'repobite-web') { throw 'Unexpected task access' }
+    $global:UpdatedTask
+}
+function Set-ScheduledTask {
+    param($TaskName, $Settings, $User, $Password)
+    if ($TaskName -ne 'repobite-web' -or $Settings.ExecutionTimeLimit -ne 'PT0S' -or
+        $Settings.RestartCount -ne 3 -or $User -ne 'fixture-user' -or $Password -ne 'fixture-password') {
+        throw 'Incorrect existing task update'
+    }
+    $global:UpdateCalls += 'set'
+}
+function Stop-ScheduledTask {
+    param($TaskName)
+    if ($TaskName -ne 'repobite-web') { throw 'Unexpected stop' }
+    $global:UpdatedTask.State = 'Ready'
+    $global:UpdateCalls += 'stop'
+}
+function Start-ScheduledTask {
+    param($TaskName)
+    if ($TaskName -ne 'repobite-web') { throw 'Unexpected start' }
+    $global:UpdatedTask.State = 'Running'
+    $global:UpdateCalls += 'start'
+}
+function Invoke-WebRequest {
+    param([switch]$UseBasicParsing, $Uri, $TimeoutSec)
+    if ($Uri -notin @('http://127.0.0.1:8765/', 'http://127.0.0.1:8767/status.json')) {
+        throw 'Unexpected network request'
+    }
+    [pscustomobject]@{ StatusCode = 200 }
+}
+& (Join-Path $env:REPOBITE_TEST_ROOT 'scripts\update-web-task.ps1')
+if (($global:UpdateCalls -join '|') -ne 'set|stop|start') { throw 'Incorrect update and restart order' }
 '@
     & powershell.exe -NoProfile -ExecutionPolicy Bypass -Command $registrationProbe
     if ($LASTEXITCODE -ne 0) { throw 'Task registration settings test failed' }
