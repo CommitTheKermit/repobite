@@ -22,6 +22,10 @@ def handle_contributions(request):
             return
         user = accounts.require_user(cookie_value(request.headers, accounts.SESSION_COOKIE))
         if request.command == "GET":
+            if params.get("expected_user_id", [None])[0] != user["id"]:
+                respond(request, 409, {"error": "로그인 계정이 변경됐습니다. 기록을 다시 확인하세요.",
+                                       "code": "account_changed"})
+                return
             respond(request, 200, contributions.user_contributions(user["id"]))
             return
         payload = read_payload(request)

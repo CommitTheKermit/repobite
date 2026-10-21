@@ -316,7 +316,7 @@ class HTTPFixture(Fixture):
         self.server.server_close()
         self.thread.join()
 
-    def request(self, *, action="", method="GET", payload=None, secret=None, origin=accounts.PUBLIC_ORIGIN, raw=None):
+    def request(self, *, action="", method="GET", payload=None, secret=None, origin=accounts.PUBLIC_ORIGIN, raw=None, expected="auto"):
         connection = HTTPConnection("127.0.0.1", self.server.server_port)
         headers = {"Content-Type": "application/json"}
         if origin is not None:
@@ -324,7 +324,12 @@ class HTTPFixture(Fixture):
         if secret is not None:
             headers["Cookie"] = accounts.SESSION_COOKIE + "=" + secret
         body = raw if raw is not None else json.dumps(payload).encode() if payload is not None else None
-        connection.request(method, "/api/contributions?action=" + action, body, headers)
+        query = "/api/contributions?action=" + action
+        if method == "GET":
+            expected = ("20" if secret == self.other_secret else "10") if expected == "auto" else expected
+            if expected is not None:
+                query += "&expected_user_id=" + expected
+        connection.request(method, query, body, headers)
         response = connection.getresponse()
         result = response.status, json.loads(response.read()), dict(response.getheaders())
         connection.close()
@@ -345,6 +350,13 @@ class ContributionHTTPTests(HTTPFixture, unittest.TestCase):
             self.assertEqual((status, body["code"]), (409, "account_changed"))
         self.assertEqual(self.saved()["records"], [])
         self.github_mock.assert_not_called()
+
+    def test_stale_account_cannot_read_other_accounts_records(self):
+        for expected in (None, "20", ""):
+            status, body, _ = self.request(secret=self.secret, expected=expected)
+            self.assertEqual((status, body["code"]), (409, "account_changed"))
+            self.assertNotIn("records", body)
+        self.assertEqual(self.request(secret=self.secret, expected="10")[0], 200)
 
     def test_private_list_and_mutation_are_bound_to_current_session_and_no_store(self):
         status, result, headers = self.request(action="start", method="POST", payload=self.payload(), secret=self.secret)
