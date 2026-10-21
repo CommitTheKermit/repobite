@@ -35,7 +35,7 @@ class SupplyTests(unittest.TestCase):
                 judgement(4, excluded=True), judgement(5, grade=None, error="HTTPError")]
         result = quality.measure_quality(rows, scope="population", scope_description="fixture 모집단")
         supply = result["supply"]
-        self.assertEqual(supply["attempted"], 5)
+        self.assertEqual(supply["profile_rows"], 5)
         self.assertEqual(supply["successful"], 4)
         self.assertEqual(supply["failed"], 1)
         self.assertEqual(supply["raw_lv1_ready_supply"], quality.ratio(2, 5))
@@ -53,8 +53,19 @@ class SupplyTests(unittest.TestCase):
                 judgement(6, criteria_version=1)]
         result = quality.measure_quality(rows)
         self.assertEqual(result["input"]["excluded_rows"], 5)
-        self.assertEqual(result["supply"]["attempted"], 1)
+        self.assertEqual(result["supply"]["profile_rows"], 1)
         self.assertEqual(result["policy"], quality.current_profile())
+
+    def test_cumulative_rows_do_not_claim_model_attempt_count(self):
+        rows = [judgement(1, graded_at="2026-10-20T02:00:00Z"),
+                judgement(2, graded_at="2026-10-21T02:00:00Z"),
+                judgement(3, grade=None, error="HTTPError", graded_at="2026-10-21T02:00:00Z")]
+        supply = quality.measure_quality(rows)["supply"]
+        self.assertEqual(supply["profile_rows"], 3)
+        self.assertNotIn("attempted", supply)
+        self.assertEqual(supply["limitation"],
+                         "may_include_reused_judgements_row_count_is_not_model_call_count")
+        self.assertEqual(supply["raw_lv1_ready_supply"], quality.ratio(2, 3))
 
     def test_only_historical_input_is_unavailable_instead_of_zero_quality(self):
         result = quality.measure_quality([judgement(1, criteria_version=1)])

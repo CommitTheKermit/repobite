@@ -107,7 +107,8 @@ def measure_supply(rows):
     return {
         "status": "measured" if total else "measurement_unavailable",
         "denominator": "all_current_profile_rows_including_failures",
-        "attempted": total, "successful": len(successful), "failed": total - len(successful),
+        "profile_rows": total, "successful": len(successful), "failed": total - len(successful),
+        "limitation": "may_include_reused_judgements_row_count_is_not_model_call_count",
         "success": ratio(len(successful), total),
         "raw_lv1_ready_supply": ratio(len(candidates), total),
         "freshness_eligible_supply": freshness_supply,
