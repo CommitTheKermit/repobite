@@ -359,7 +359,10 @@ def grade(args):
             return {**issue, **metadata, "grade": grade_issue(issue, args.model)}
         except (OSError, ValueError, RuntimeError, subprocess.TimeoutExpired) as error:
             # 실패도 행으로 남겨 report에서 판정 누락을 숨기지 않는다.
-            return {**issue, **metadata, "grade": None, "error": type(error).__name__}
+            failure = {**issue, **metadata, "grade": None, "error": type(error).__name__}
+            if isinstance(error, vertex.VertexHTTPError):
+                failure.update(error="HTTPError", error_details=error.diagnostics)
+            return failure
 
     results = dict(reused)
     failed = 0
@@ -368,7 +371,9 @@ def grade(args):
             results[issue_key(row)] = row
             failed += row["grade"] is None
             print(f"판정 {index}/{len(selected)}: {row['repo']}#{row['number']} "
-                  f"{'실패 ' + row['error'] if row['grade'] is None else '완료'}", file=sys.stderr)
+                  f"{'실패 ' + row['error'] if row['grade'] is None else '완료'}"
+                  + (" " + json.dumps(row["error_details"], ensure_ascii=False)
+                     if "error_details" in row else ""), file=sys.stderr)
     ordered = [results[issue_key(issue)] for issue in issues if issue_key(issue) in results]
     ordered = freshness.apply_freshness(ordered)
     with atomic_output(args.output) as stream:

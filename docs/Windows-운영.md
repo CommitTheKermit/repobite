@@ -32,7 +32,32 @@ powershell -ExecutionPolicy Bypass -File .\scripts\register-tasks.ps1 -BatchTime
 
 `repobite-web`은 시스템 시작 시 실행되고 `repobite-batch`는 매일 지정 시각에 실행된다.
 두 작업 모두 중복 실행을 무시하고 실패 시 15분 간격으로 3회 재시도하며, 실행 시 절전 모드를 해제한다.
+웹 작업은 상시 실행을 위해 실행 시간 제한을 `PT0S`로 등록한다. 배치는 기본 72시간 제한을 유지한다.
+기존 웹 작업은 등록 스크립트 변경만으로 갱신되지 않는다. 관리자 PowerShell에서 현재 작업의
+설정 객체를 읽어 `ExecutionTimeLimit`만 바꾸고 적용한다. 실행 중인 작업을 다시 등록하거나
+배치의 설정을 함께 바꾸지 않는다.
+
+```powershell
+$WebTask = Get-ScheduledTask -TaskName repobite-web
+$WebTask.Settings.ExecutionTimeLimit = 'PT0S'
+Set-ScheduledTask -TaskName repobite-web -Settings $WebTask.Settings
+if ((Get-ScheduledTask -TaskName repobite-web).State -ne 'Running') {
+    Start-ScheduledTask -TaskName repobite-web
+}
+```
+
+적용 후 `ExecutionTimeLimit=PT0S`, 작업 상태 `Running`, loopback 웹 `8765`와 상태 서버
+`8767`의 HTTP 200을 각각 확인한다. 수동 기동 성공과 다음 부팅의 자동 기동 검증은 별개다.
 배치 콘솔 로그는 `%LOCALAPPDATA%\RepoBite\batch.log`에 누적되어 예약 실행 실패 원인을 확인할 수 있다.
+Vertex HTTP 오류는 재시도마다 `http_status`, 상태 코드별 원인 `cause`, 시도 횟수 `attempts`,
+재시도 여부 `retry`를 기록한다. 응답이 구조화된 오류를 제공하면 `api_status`와 `ErrorInfo.reason`도
+기록한다. 최종 실패의 같은 진단은 `grades.jsonl`의 `error_details`에 남는다.
+원문 메시지, 요청 URL, 인증 헤더, 오류 metadata와 이슈 본문은 진단 로그에 복사하지 않는다.
+따라서 과거 실행의 `HTTPError`만 있는 행에서 HTTP 코드를 소급 복원할 수는 없다.
+재시도 간격과 판정 일부 실패 시 후보 생성을 건너뛰는 기존 정책은 유지한다.
+
+오류 구조 근거: [Vertex AI 오류 코드](https://cloud.google.com/vertex-ai/generative-ai/docs/model-reference/api-errors),
+[Google ErrorInfo](https://docs.cloud.google.com/spanner/docs/reference/rest/v1/ErrorInfo).
 
 작업 스케줄러에서 각 작업을 수동 실행해 종료 코드와 로컬 모드의 `issues.jsonl`, `grades.jsonl`,
 `candidates.jsonl` 갱신을 확인한다. 이 서버의 일상 운영은 AC 전원에서 자동 절전을 끈 상시 켜짐

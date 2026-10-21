@@ -50,11 +50,39 @@ try {
             }
         } elseif (Test-Path $Probe) { throw 'Partial DB configuration must not launch Python' }
     }
+    # Run the actual registrar with credential/file/task mutations replaced by fixtures.
+    # New-ScheduledTaskSettingsSet stays real so the resulting XML duration is checked.
+    $registrationProbe = @'
+$ErrorActionPreference = 'Stop'
+Import-Module ScheduledTasks -ErrorAction Stop
+$global:Registered = @()
+function gh { $global:LASTEXITCODE = 0; 'fixture-token' }
+function New-Item { param($ItemType, [switch]$Force, $Path) }
+function Export-Clixml {
+    param([Parameter(ValueFromPipeline)]$InputObject, $Path)
+    process {}
+}
+function Read-Host {
+    param($Prompt, [switch]$AsSecureString)
+    ConvertTo-SecureString 'fixture-password' -AsPlainText -Force
+}
+function Register-ScheduledTask {
+    param($TaskName, $Action, $Trigger, $Settings, $User, $Password, $RunLevel, [switch]$Force)
+    $expectedLimit = if ($TaskName -eq 'repobite-web') { 'PT0S' } else { 'PT72H' }
+    if ($Settings.ExecutionTimeLimit -ne $expectedLimit) { throw "Incorrect execution limit: $TaskName" }
+    if ($Settings.RestartCount -ne 3) { throw "Missing restart policy: $TaskName" }
+    $global:Registered += $TaskName
+}
+& (Join-Path $env:REPOBITE_TEST_ROOT 'scripts\register-tasks.ps1')
+if (($global:Registered -join '|') -ne 'repobite-web|repobite-batch') { throw 'Missing task registration' }
+'@
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -Command $registrationProbe
+    if ($LASTEXITCODE -ne 0) { throw 'Task registration settings test failed' }
 } finally {
     Remove-Item $Probe -ErrorAction SilentlyContinue
     $env:UPSTASH_REDIS_REST_URL = $PreviousUrl
     $env:UPSTASH_REDIS_REST_TOKEN = $PreviousToken
     Remove-Item Env:REPOBITE_TEST_PROBE, Env:REPOBITE_TEST_ROOT, Env:REPOBITE_TEST_SCRIPT, Env:REPOBITE_TEST_EXIT -ErrorAction SilentlyContinue
 }
-Write-Output 'PASS: PowerShell syntax, batch selection, working directory, exit codes'
+Write-Output 'PASS: PowerShell syntax, batch selection, working directory, exit codes, web unlimited runtime'
 exit 0

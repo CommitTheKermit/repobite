@@ -16,12 +16,15 @@ $GitHubToken | ConvertTo-SecureString -AsPlainText -Force |
 $GitHubToken = $null
 $Password = Read-Host "Windows 작업 계정 암호" -AsSecureString
 $Credential = [System.Net.NetworkCredential]::new("", $Password)
-$Settings = New-ScheduledTaskSettingsSet `
-    -MultipleInstances IgnoreNew `
-    -RestartCount 3 `
-    -RestartInterval (New-TimeSpan -Minutes 15) `
-    -StartWhenAvailable `
-    -WakeToRun
+$CommonSettings = @{
+    MultipleInstances = 'IgnoreNew'
+    RestartCount = 3
+    RestartInterval = (New-TimeSpan -Minutes 15)
+    StartWhenAvailable = $true
+    WakeToRun = $true
+}
+$WebSettings = New-ScheduledTaskSettingsSet @CommonSettings -ExecutionTimeLimit ([TimeSpan]::Zero)
+$BatchSettings = New-ScheduledTaskSettingsSet @CommonSettings
 
 $WebAction = New-ScheduledTaskAction `
     -Execute "powershell.exe" `
@@ -33,8 +36,8 @@ $BatchAction = New-ScheduledTaskAction `
     -WorkingDirectory $Repo
 
 Register-ScheduledTask -TaskName "repobite-web" -Action $WebAction `
-    -Trigger (New-ScheduledTaskTrigger -AtStartup) -Settings $Settings `
+    -Trigger (New-ScheduledTaskTrigger -AtStartup) -Settings $WebSettings `
     -User $User -Password $Credential.Password -RunLevel Limited -Force
 Register-ScheduledTask -TaskName "repobite-batch" -Action $BatchAction `
-    -Trigger (New-ScheduledTaskTrigger -Daily -At $BatchTime) -Settings $Settings `
+    -Trigger (New-ScheduledTaskTrigger -Daily -At $BatchTime) -Settings $BatchSettings `
     -User $User -Password $Credential.Password -RunLevel Limited -Force

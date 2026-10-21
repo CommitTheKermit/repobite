@@ -9,6 +9,7 @@ import json
 from pathlib import Path
 import tempfile
 import threading
+from urllib.error import HTTPError
 from unittest.mock import patch
 
 import radar
@@ -119,6 +120,19 @@ def test_schema_and_grading():
         assert rows[0]["grade"] == GOOD and rows[1]["grade"] is None
         assert rows[0]["criteria_version"] == radar.CRITERIA_VERSION
         assert radar.aggregate(rows)["failed"] == 1
+        http_failure = radar.vertex.VertexHTTPError(
+            HTTPError("secret-url", 429, "secret-message", {},
+                      io.BytesIO(b'{"error":{"status":"RESOURCE_EXHAUSTED"}}')), 5)
+        failure_log = io.StringIO()
+        with (patch.object(radar, "grade_issue", side_effect=http_failure),
+              patch.object(radar.freshness, "apply_freshness", side_effect=lambda rows: rows),
+              redirect_stderr(failure_log)):
+            assert radar.grade(args) == 1
+        failed_row = radar.read_jsonl(target)[1]
+        assert failed_row["error"] == "HTTPError"
+        assert failed_row["error_details"]["http_status"] == 429
+        assert '"http_status": 429' in failure_log.getvalue()
+        assert "secret" not in failure_log.getvalue()
         with (patch.object(radar, "grade_issue", return_value=GOOD) as model,
               patch.object(radar.freshness, "apply_freshness", side_effect=lambda rows: rows)):
             assert radar.grade(args) == 0

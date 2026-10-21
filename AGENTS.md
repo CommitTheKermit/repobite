@@ -1,5 +1,9 @@
 # RepoBite 프로젝트 메모리
 
+## 작업별 문서
+
+- Windows 웹·배치 예약 작업, 실행 시간 제한과 HTTP 실패 로그를 변경하거나 점검할 때는 [Windows 운영](docs/Windows-운영.md)을 먼저 읽는다.
+
 ## Vercel 배포
 
 - Vercel 프로젝트 이름은 `repobite`이고 정식 운영 주소는 `https://repobite.vercel.app`이다.
