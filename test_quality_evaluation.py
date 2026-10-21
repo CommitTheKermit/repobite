@@ -74,8 +74,8 @@ class EvaluationTests(unittest.TestCase):
                 self.assertEqual(0, evaluation.evaluate(destination, 1))
                 with self.assertRaises(FileExistsError):
                     evaluation.evaluate(destination, 1)
-            manifest = json.loads((destination / "manifest.json").read_text())
-            result = json.loads((destination / "quality.json").read_text())
+            manifest = json.loads((destination / "manifest.json").read_text(encoding="utf-8"))
+            result = json.loads((destination / "quality.json").read_text(encoding="utf-8"))
             self.assertEqual(2, len(calls))
             self.assertNotEqual(calls[0].output, calls[1].output)
             self.assertEqual(1, result["supply"]["failed"])
@@ -92,7 +92,7 @@ class EvaluationTests(unittest.TestCase):
             with self.assertRaises(RuntimeError):
                 evaluation.evaluate(destination, 1)
             grade.assert_not_called()
-            text = (destination / "manifest.json").read_text()
+            text = (destination / "manifest.json").read_text(encoding="utf-8")
             self.assertNotIn("secret text", text)
             self.assertEqual("interrupted_do_not_rerun", json.loads(text)["status"])
 

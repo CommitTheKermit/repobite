@@ -153,23 +153,23 @@ def test_persistence_error_preserves_previous_output_and_history():
         options = dict(limit=2, tolerance_hours=1, history_path=history, output_path=output, clock=lambda: NOW)
         with patch.object(discovery.radar, "gh_json", side_effect=RuntimeError("API error")):
             rejects(discovery.run, **options)
-        assert history.read_bytes() == original_history and output.read_text() == "previous proposal"
+        assert history.read_bytes() == original_history and output.read_text(encoding="utf-8") == "previous proposal"
         # 검색과 첫 저장소 확인 이후의 API 실패도 부분 결과를 저장하지 않는다.
         with patch.object(discovery.radar, "gh_json", side_effect=[
                 {"items": [{"full_name": "owner/a"}, {"full_name": "owner/b"}],
                  "incomplete_results": False, "total_count": 2},
                 api_repo("owner/a", 1, 100), RuntimeError("second repository failed")]):
             rejects(discovery.run, **options)
-        assert history.read_bytes() == original_history and output.read_text() == "previous proposal"
+        assert history.read_bytes() == original_history and output.read_text(encoding="utf-8") == "previous proposal"
         incomplete = {"items": [], "incomplete_results": True, "total_count": 0}
         with patch.object(discovery.radar, "gh_json", return_value=incomplete):
             rejects(discovery.run, **options)
-        assert history.read_bytes() == original_history and output.read_text() == "previous proposal"
+        assert history.read_bytes() == original_history and output.read_text(encoding="utf-8") == "previous proposal"
         with patch.object(discovery.radar, "gh_json", return_value={"items": [{"full_name": "owner/a"}],
                 "incomplete_results": False, "total_count": 1}) as gh:
             gh.side_effect = [gh.return_value, api_repo("owner/a", 1, 100)]
             result = discovery.run(**options)
-        assert json.loads(output.read_text()) == result
+        assert json.loads(output.read_text(encoding="utf-8")) == result
         assert result["trend"]["status"] == "unmeasured"
         stored = discovery.read_history(history)
         assert stored == [sample("owner/a", 1, 100)]
@@ -259,7 +259,7 @@ def test_trending_quota_fills_from_next_source_rank():
         output = Path(directory) / "discovery.json"
         result = discovery.run_github_trending(limit=4, period="weekly", output_path=output,
             gh=github, clock=lambda: NOW, open_url=lambda *a, **k: HTMLResponse(trending_html(names)))
-        assert json.loads(output.read_text()) == result
+        assert json.loads(output.read_text(encoding="utf-8")) == result
         assert result["repos"] == ["owner/trend-first", "owner/trend-next", "owner/famous-one", "owner/famous-two"]
         assert result["trend"]["items"][0]["rank"] == 2
         assert result["trend"]["items"][0]["period"] == "weekly"
@@ -306,10 +306,10 @@ def test_trending_failures_preserve_previous_output():
                 return {"items": [], "total_count": 0, "incomplete_results": True}
             return infos[endpoint[6:]]
         rejects(discovery.run_github_trending, gh=incomplete, **options)
-        assert output.read_text() == "previous"
+        assert output.read_text(encoding="utf-8") == "previous"
         rejects(discovery.run_github_trending, gh=incomplete,
                 **{**options, "open_url": lambda *a, **k: HTMLResponse(trending_html(["owner/a"]))})
-        assert output.read_text() == "previous"
+        assert output.read_text(encoding="utf-8") == "previous"
         for response in ({"items": [], "total_count": 2, "incomplete_results": False},
                          {"items": [], "total_count": 1001, "incomplete_results": False},
                          {"items": [infos["owner/b"], infos["owner/a"]], "total_count": 2, "incomplete_results": False}):
@@ -322,7 +322,7 @@ def test_trending_failures_preserve_previous_output():
                 return infos[endpoint[6:]]
             return api_repo(endpoint[6:], 99, 300000)
         rejects(discovery.run_github_trending, gh=mismatched_id, **options)
-        assert output.read_text() == "previous"
+        assert output.read_text(encoding="utf-8") == "previous"
 
 
 def test_exact_fifteen_each_and_full_famous_pagination():
@@ -365,7 +365,7 @@ def test_partial_trending_requires_opt_in_and_preserves_source_evidence():
         options = dict(limit=30, period="weekly", output_path=output, gh=github, clock=lambda: NOW,
             open_url=lambda *a, **k: HTMLResponse(trending_html(names[:15])))
         rejects(discovery.run_github_trending, **options)
-        assert output.read_text() == "previous"
+        assert output.read_text(encoding="utf-8") == "previous"
         result = discovery.run_github_trending(**options, allow_partial_trend=True)
         assert result["requested_total"] == 30 and result["actual_total"] == 29
         assert result["trend"]["status"] == "partial" and result["trend"]["shortfall"] == 1
@@ -375,7 +375,7 @@ def test_partial_trending_requires_opt_in_and_preserves_source_evidence():
         assert result["source"]["trending"]["rows"] == 15
         assert result["source"]["excluded"] == {"issues_disabled": 1}
         assert len(set(result["repos"])) == result["actual_total"] == 29
-        assert json.loads(output.read_text()) == result
+        assert json.loads(output.read_text(encoding="utf-8")) == result
         with patch.object(discovery, "run_github_trending", return_value=result) as runner, redirect_stdout(io.StringIO()) as stdout:
             assert discovery.main(["--source", "github-trending", "--limit", "30", "--period", "weekly",
                                    "--allow-partial-trending", "--output", str(output)]) == 0
@@ -399,16 +399,16 @@ def test_partial_trending_does_not_hide_source_or_famous_failures():
         html = trending_html(["owner/disabled", "owner/trend"])
         # 적격 유명 후보가 2개 미만이면 Trending 일부 허용과 관계없이 실패한다.
         rejects(discovery.run_github_trending, **options, open_url=lambda *a, **k: HTMLResponse(html))
-        assert output.read_text() == "previous"
+        assert output.read_text(encoding="utf-8") == "previous"
         for invalid_html in (trending_html([]), html[:-7], html.replace("Box-row", "Changed"),
                              trending_html(["owner/disabled"])):
             rejects(discovery.run_github_trending, **options,
                     open_url=lambda *a, **k: HTMLResponse(invalid_html))
-            assert output.read_text() == "previous"
+            assert output.read_text(encoding="utf-8") == "previous"
         response = HTMLResponse(html)
         response.headers.replace_header("Content-Length", "999999")
         rejects(discovery.run_github_trending, **options, open_url=lambda *a, **k: response)
-        assert output.read_text() == "previous"
+        assert output.read_text(encoding="utf-8") == "previous"
         for failure in (RuntimeError("API failure"),
                         {"items": [], "total_count": 0, "incomplete_results": True}):
             def failing(endpoint):
@@ -417,7 +417,7 @@ def test_partial_trending_does_not_hide_source_or_famous_failures():
                 return failure if endpoint.startswith("search/") else github(endpoint)
             rejects(discovery.run_github_trending, **{**options, "gh": failing},
                     open_url=lambda *a, **k: HTMLResponse(html))
-            assert output.read_text() == "previous"
+            assert output.read_text(encoding="utf-8") == "previous"
 
 
 if __name__ == "__main__":
