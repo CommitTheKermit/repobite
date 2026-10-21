@@ -12,7 +12,9 @@ import sys
 import tempfile
 import threading
 import uuid
+from urllib.parse import urlsplit
 
+from api.account import handle_account
 import community
 import home_status
 import radar
@@ -227,8 +229,12 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         if not self.local_request():
             return
-        if self.path == "/":
+        if urlsplit(self.path).path == "/api/account":
+            handle_account(self)
+        elif self.path == "/":
             self.reply(200, (radar.ROOT / "web.html").read_bytes(), "text/html; charset=utf-8")
+        elif self.path == "/account-ui.mjs":
+            self.reply(200, (radar.ROOT / "account-ui.mjs").read_bytes(), "text/javascript; charset=utf-8")
         elif self.path == "/api/repos":
             try:
                 self.reply(200, community.feed())
@@ -243,6 +249,10 @@ class Handler(BaseHTTPRequestHandler):
             self.reply(404, {"error": "페이지가 없습니다."})
 
     def do_POST(self):
+        if urlsplit(self.path).path == "/api/account":
+            if self.local_request():
+                handle_account(self)
+            return
         if not self.local_request(mutation=True):
             return
         if self.path == "/api/repos":
@@ -276,6 +286,15 @@ class Handler(BaseHTTPRequestHandler):
             self.reply(400, {"error": f"입력을 확인하세요. owner/repo 형식으로 최대 {MAX_REPOS}개를 입력하고, 판정 전에는 수집하세요."})
         except RuntimeError as error:
             self.reply(409, {"error": str(error)})
+
+
+    def do_DELETE(self):
+        if not self.local_request():
+            return
+        if urlsplit(self.path).path == "/api/account":
+            handle_account(self)
+        else:
+            self.reply(404, {"error": "페이지가 없습니다."})
 
 
 def make_server(port=8765, root=radar.ROOT):

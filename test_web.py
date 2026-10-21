@@ -72,6 +72,10 @@ def main():
                 assert time.monotonic() < deadline, "작업이 종료되지 않았습니다"
                 time.sleep(.01)
 
+        assert request('/api/account?action=session') == (200, b'{"authenticated": false}')
+        assert request('/api/account?action=session', headers={'Host': 'attacker.example'})[0] == 403
+        assert request('/api/account?action=preferences', {'email': 'x@example.test'})[0] == 403
+        assert request('/account-ui.mjs')[0] == 200
         expect_full = False
 
         def fake_process(command, **kwargs):

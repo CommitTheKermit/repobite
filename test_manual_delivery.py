@@ -84,6 +84,17 @@ def main():
             pass
         else:
             raise AssertionError('최신성 검사에서 무효화한 초안을 내보냈습니다')
+        # 수신 거부 계정은 다음 준비에서 사라지고 이전 자동 생성 메일도 제거한다.
+        new = prepare(subscribers=bob)
+        store.export_prepared(new, root / 'export')
+        (root / 'export' / 'operator-note.eml').write_text('수동 파일')
+        assert (root / 'export' / (new[0]['id'] + '.eml')).exists()
+        assert prepare(subscribers=[]) == []
+        store.export_prepared([], root / 'export')
+        assert not (root / 'export' / (new[0]['id'] + '.eml')).exists()
+        assert (root / 'export' / 'operator-note.eml').exists()
+        assert store.db.execute("SELECT COUNT(*) FROM digests WHERE state='prepared'").fetchone()[0] == 0
+        assert store.db.execute('SELECT COUNT(*) FROM sent_issues').fetchone()[0] == 3
         store.close()
     print('통과: 하루 3건·구독 격리·최신성·공개 검증·초안/발송 분리·재시작·중복 방지')
 

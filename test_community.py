@@ -92,6 +92,7 @@ def test_snapshot_recovery():
 
 def main():
     test_snapshot_recovery()
+    test_personal_subscriptions_join_collection()
     assert community.normalize_repo(" https://github.com/Owner/Repo/ ") == "Owner/Repo"
     for value in (None, [], "https://evil.test/a/b", "a/b?x=1", "a/..", "a/b/issues/1",
                   "https://github.com/a/b#x", "a/реро", "-a/b", "a/b\nInjected"):
@@ -207,5 +208,29 @@ def main():
     print("통과: 등록 검증·중복·요청 제한·HTTP 경계·목록 병합·정기 반영·실패 시 이전 공개 결과 보존")
 
 
+def test_personal_subscriptions_join_collection():
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        (root / "repos.txt").write_text("a/b\n", encoding="utf-8")
+
+        def batch(args):
+            assert args.repos.read_text(encoding="utf-8").splitlines() == ['a/b', 'Personal/Repo']
+            args.issues.write_text('', encoding='utf-8')
+            args.grades.write_text('', encoding='utf-8')
+            return 0
+
+        with (patch.object(community, 'registrations', return_value=[]),
+              patch.object(community_batch.accounts, 'subscription_repositories',
+                           return_value=['A/B', 'Personal/Repo']),
+              patch.object(radar, 'gh_json', return_value={'private': False}),
+              patch.object(radar, 'batch', side_effect=batch),
+              patch.object(community, 'redis') as publish, redirect_stdout(io.StringIO())):
+            assert community_batch.run(root) == 0
+            snapshot = json.loads(publish.call_args.args[-1])
+            assert snapshot['collected_repos'] == ['a/b', 'personal/repo']
+            assert set(snapshot) == {'items', 'collected_repos', 'collected_at'}
+
+
 if __name__ == "__main__":
-    main()
+    with patch.object(community_batch.accounts, "subscription_repositories", return_value=[]):
+        main()

@@ -9,3 +9,8 @@ __pycache__/
 .radar-community/
 .vercel
 .home-status-notes.json
+
+# 운영자 수동 발송 파일은 공개 경로 밖에서 보관
+*.sqlite
+*.sqlite-*
+*.eml

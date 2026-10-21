@@ -7,6 +7,7 @@ import subprocess
 import sys
 import tempfile
 
+import accounts
 import community
 import radar
 from public_feed import public_items
@@ -22,6 +23,10 @@ def run(root=radar.ROOT, since="24h"):
             names.setdefault(community.normalize_repo(name).lower(), name)
     for row in submitted:
         name = community.normalize_repo(row["repo"])
+        names.setdefault(name.lower(), name)
+    # 개인 식별자·이메일은 수집 목록이나 공개 결과로 전달하지 않는다.
+    for value in accounts.subscription_repositories():
+        name = community.normalize_repo(value)
         names.setdefault(name.lower(), name)
     # gh가 비공개 레포 권한을 갖고 있어도 공개 피드에 그 내용을 올리지 않는다.
     for name in names.values():

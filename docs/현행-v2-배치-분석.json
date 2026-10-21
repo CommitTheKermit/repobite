@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "policy": {
+    "model": "gemini-3.1-flash-lite",
+    "reasoning_effort": "minimal",
+    "criteria_version": 2
+  },
+  "scope": {
+    "kind": "sample",
+    "description": "Windows 기존 누적 판정 파일 115개 고유 이슈. 성공 재사용을 포함할 수 있으며 단일 실행의 신규 호출 100건 또는 일반 모집단을 뜻하지 않는다. 새 유료 판정·반복 판정·사람 감사 없음.",
+    "basis": "operator_declared_not_independently_verified",
+    "limitation": "input_scope_only_collection_filters_and_unselected_issues_not_measured"
+  },
+  "input": {
+    "rows": 115,
+    "current_rows": 115,
+    "excluded_rows": 0,
+    "excluded_by_profile_fields": []
+  },
+  "supply": {
+    "status": "measured",
+    "denominator": "all_current_profile_rows_including_failures",
+    "profile_rows": 115,
+    "successful": 110,
+    "failed": 5,
+    "limitation": "may_include_reused_judgements_row_count_is_not_model_call_count",
+    "success": {
+      "numerator": 110,
+      "denominator": 115,
+      "rate": 0.9565217391304348,
+      "status": "measured"
+    },
+    "raw_lv1_ready_supply": {
+      "numerator": 77,
+      "denominator": 115,
+      "rate": 0.6695652173913044,
+      "status": "measured"
+    },
+    "freshness_eligible_supply": {
+      "numerator": 62,
+      "denominator": 115,
+      "rate": 0.5391304347826087,
+      "status": "measured"
+    },
+    "raw_candidate_freshness": {
+      "eligible": 62,
+      "ineligible": 15,
+      "unverified": 0
+    },
+    "freshness_basis": "recorded_snapshot_only_no_live_recheck_or_age_guarantee",
+    "excluded": 5,
+    "difficulty_among_successful": {
+      "1": 77,
+      "2": 17,
+      "3": 16
+    },
+    "readiness_among_successful": {
+      "needs_info": 17,
+      "ready": 77,
+      "undecided": 16
+    },
+    "v2_readiness_mapping_violations": 0
+  },
+  "repeat": {
+    "status": "measurement_unavailable",
+    "reason": "반복 판정 입력이 없습니다"
+  },
+  "audit": {
+    "status": "measurement_unavailable",
+    "reason": "사람 감사 입력이 없습니다",
+    "human_audit_performed": false
+  },
+  "evidence": {
+    "source_sha256": "fdcc9791037b66ec01b1e40294b5c4c2bfb21335bde0b63d765228795203a841",
+    "file_modified_at": "2026-10-20T18:04:25.096376+00:00",
+    "source_rows": 115,
+    "checked_on": "2026-10-21"
+  }
+}

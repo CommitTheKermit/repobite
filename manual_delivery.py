@@ -10,8 +10,10 @@ from email.policy import SMTP
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 import sqlite3
+import subprocess
 import sys
 
 import community
@@ -29,7 +31,7 @@ def korean_day():
 def is_public_repository(repo):
     try:
         return radar.gh_json('repos/' + repo).get('private') is False
-    except (OSError, ValueError, RuntimeError):
+    except (OSError, ValueError, RuntimeError, subprocess.SubprocessError):
         return False
 
 
@@ -57,6 +59,7 @@ class ManualDelivery:
                 public_check=is_public_repository):
         """재생성 시 최신성을 재확인한다. 초안은 발송 실적으로 집계하지 않는다."""
         day = day or korean_day()
+        subscribers = list(subscribers)
         date.fromisoformat(day)
         candidates = radar.unique_issues(rows)
         candidates = [row for row in candidates if freshness.is_candidate(row)
@@ -73,6 +76,9 @@ class ManualDelivery:
         prepared = []
         self.db.execute('BEGIN IMMEDIATE')
         try:
+            # 전달받은 전체 수신 목록을 기준으로 미발송 초안을 재작성한다.
+            # 수신 거부·구독 해지·날짜 변경으로 빠진 초안을 재사용하지 않는다.
+            self.db.execute("DELETE FROM digests WHERE state='prepared'")
             for subscriber in subscribers:
                 user_id = str(subscriber['user_id'])
                 email = subscriber['email']
@@ -141,6 +147,17 @@ class ManualDelivery:
         temporary.replace(path)
         return path
 
+    def export_prepared(self, prepared, directory):
+        """현재 실행이 생성한 초안만 남긴다. 이미 복사한 외부 파일은 회수할 수 없다."""
+        directory = Path(directory)
+        directory.mkdir(parents=True, exist_ok=True, mode=0o700)
+        # 새 준비가 끝난 뒤 이전 자동 생성 파일만 지운다. 수동 파일은 건드리지 않는다.
+        for path in directory.glob('*.eml'):
+            if re.fullmatch(r'[0-9a-f]{64}', path.stem):
+                path.unlink()
+        for item in prepared:
+            self.export(item['id'], directory)
+
     def confirm_sent(self, digest_id, today=None):
         """운영자의 발송 확인이다. 제공자의 전달/수신 증거를 의미하지 않는다."""
         self.db.execute('BEGIN IMMEDIATE')
@@ -180,8 +197,8 @@ def main():
         if args.command == 'prepare':
             import accounts
             prepared = store.prepare(radar.read_jsonl(args.input), accounts.delivery_subscribers())
+            store.export_prepared(prepared, args.output)
             for item in prepared:
-                store.export(item['id'], args.output)
                 print(f"초안 {item['id']} - {item['count']}건")
             print('초안만 생성했습니다. 메일을 보내지 않았습니다.')
         else:
