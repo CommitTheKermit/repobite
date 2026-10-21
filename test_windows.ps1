@@ -1,4 +1,4 @@
-# No external API calls or scheduled task registration.
+﻿# No external API calls or scheduled task registration.
 $ErrorActionPreference = 'Stop'
 $Repo = $PSScriptRoot
 foreach ($file in Get-ChildItem "$Repo\scripts\*.ps1") {
@@ -49,6 +49,49 @@ try {
                 throw "Incorrect command or working directory: $($case[0])"
             }
         } elseif (Test-Path $Probe) { throw 'Partial DB configuration must not launch Python' }
+    }
+    # Exercise native Python stderr through the real wrapper and a temporary transcript.
+    # Both API entry points are fixtures; no credentials or external requests are used.
+    $LogFixture = Join-Path ([IO.Path]::GetTempPath()) ([guid]::NewGuid().ToString())
+    $null = New-Item -ItemType Directory -Force (Join-Path $LogFixture 'scripts')
+    Copy-Item (Join-Path $Repo 'scripts\run-batch.ps1') (Join-Path $LogFixture 'scripts\run-batch.ps1')
+    $fixturePython = @'
+import io, json, os, sys
+from unittest.mock import patch
+from urllib.error import HTTPError
+sys.path.insert(0, os.environ['REPOBITE_TEST_ROOT'])
+import vertex
+
+def fail(*args, **kwargs):
+    body = {"error": {"status": "RESOURCE_EXHAUSTED", "details": [
+        {"@type": "type.googleapis.com/google.rpc.ErrorInfo", "reason": "RATE_LIMIT_EXCEEDED"}]}}
+    raise HTTPError('https://fixture.invalid', 429, 'fixture', {}, io.BytesIO(json.dumps(body).encode()))
+
+with patch.object(vertex, 'project_id', return_value='fixture'), patch.object(vertex, 'access_token', return_value='fixture'):
+    try:
+        vertex.generate_json('fixture', {}, open_url=fail, sleep=lambda _: None)
+    except vertex.VertexHTTPError:
+        print('FIXTURE child_completed')
+        sys.exit(7)
+'@
+    [IO.File]::WriteAllText((Join-Path $LogFixture 'community_batch.py'), $fixturePython, [Text.UTF8Encoding]::new($false))
+    $fixtureRunner = @'
+$env:LOCALAPPDATA = Join-Path $PSScriptRoot 'local'
+$env:GH_TOKEN = 'fixture-token'
+$env:UPSTASH_REDIS_REST_URL = 'https://fixture.invalid'
+$env:UPSTASH_REDIS_REST_TOKEN = 'fixture-token'
+Remove-Item Env:REPOBITE_TEST_PROBE -ErrorAction SilentlyContinue
+& (Join-Path $PSScriptRoot 'scripts\run-batch.ps1')
+exit $LASTEXITCODE
+'@
+    $runnerPath = Join-Path $LogFixture 'runner.ps1'
+    [IO.File]::WriteAllText($runnerPath, $fixtureRunner, [Text.UTF8Encoding]::new($false))
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $runnerPath *> $null
+    if ($LASTEXITCODE -ne 7) { throw 'Native batch exit code was lost' }
+    $logText = Get-Content -Raw -Encoding UTF8 (Join-Path $LogFixture 'local\RepoBite\batch.log')
+    foreach ($expected in @('http_status=429', 'reason=RATE_LIMIT_EXCEEDED', 'attempts=5', 'FIXTURE child_completed',
+        '요청 한도 또는 처리 용량 초과')) {
+        if (-not $logText.Contains($expected)) { throw "Missing transcript diagnostic: $expected" }
     }
     # Run the actual registrar with credential/file/task mutations replaced by fixtures.
     # New-ScheduledTaskSettingsSet stays real so the resulting XML duration is checked.
@@ -121,9 +164,10 @@ if (($global:UpdateCalls -join '|') -ne 'set|stop|start') { throw 'Incorrect upd
     if ($LASTEXITCODE -ne 0) { throw 'Task registration settings test failed' }
 } finally {
     Remove-Item $Probe -ErrorAction SilentlyContinue
+    if ($LogFixture -and (Test-Path $LogFixture)) { Remove-Item -Recurse -Force $LogFixture }
     $env:UPSTASH_REDIS_REST_URL = $PreviousUrl
     $env:UPSTASH_REDIS_REST_TOKEN = $PreviousToken
     Remove-Item Env:REPOBITE_TEST_PROBE, Env:REPOBITE_TEST_ROOT, Env:REPOBITE_TEST_SCRIPT, Env:REPOBITE_TEST_EXIT -ErrorAction SilentlyContinue
 }
-Write-Output 'PASS: PowerShell syntax, batch selection, working directory, exit codes, web unlimited runtime'
+Write-Output 'PASS: PowerShell syntax, batch selection, working directory, exit codes, native HTTP transcript, web unlimited runtime'
 exit 0

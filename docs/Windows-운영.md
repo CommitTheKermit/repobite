@@ -47,6 +47,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\update-web-task.ps1
 적용 후 `ExecutionTimeLimit=PT0S`, 작업 상태 `Running`, loopback 웹 `8765`와 상태 서버
 `8767`의 HTTP 200을 각각 확인한다. 수동 기동 성공과 다음 부팅의 자동 기동 검증은 별개다.
 배치 콘솔 로그는 `%LOCALAPPDATA%\RepoBite\batch.log`에 누적되어 예약 실행 실패 원인을 확인할 수 있다.
+Python 표준 출력과 오류 출력은 PowerShell 파이프라인으로 모아 transcript에 기록하고 원래 종료 코드를 유지한다. UTF-8로 한글 원인을 보존하며, 오류 출력 자체로 Python 재시도를 중단하지 않는다.
 Vertex HTTP 오류는 재시도마다 `http_status`, 상태 코드별 원인 `cause`, 시도 횟수 `attempts`,
 재시도 여부 `retry`를 기록한다. 응답이 구조화된 오류를 제공하면 `api_status`와 `ErrorInfo.reason`도
 기록한다. 최종 실패의 같은 진단은 `grades.jsonl`의 `error_details`에 남는다.
@@ -112,7 +113,7 @@ Windows 심볼릭 링크 생성 권한 없이 저장·재시작할 수 있으며
 ## 2026-10-21 운영 수정의 검증 범위
 
 - 웹 중단 원인: 작업 스케줄러의 72시간 실행 제한에 의한 종료 이벤트를 확인했다.
-- HTTP 진단 코드와 신규 웹 등록 설정은 Windows의 Python 및 PowerShell 검사에서 통과했다.
+- HTTP 진단 코드와 신규 웹 등록 설정은 Windows의 Python 및 PowerShell 검사에서 통과했다. 모의 HTTP 429의 5회 시도, API 원인, 한글 원인과 비정상 종료 코드가 실제 배치 wrapper의 임시 transcript에 남는지도 검사한다. 실제 API 호출은 사용하지 않는다.
 - 기존 웹 작업의 제한 변경은 암호 재입력이 없어 거절됐다. 위 스크립트의 서버 실행 후 `PT0S`를 재확인해야 한다.
 - 기존 작업을 수동 시작해 `Running`, loopback 웹과 상태 서버의 HTTP 200, 내부 HTTPS 상태 응답 200을 확인했다. 현재 작업 제한은 `PT72H`다. 다음 부팅 및 다음 일일 배치 성공은 미검증이다.
 
