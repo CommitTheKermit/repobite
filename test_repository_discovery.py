@@ -2,6 +2,7 @@
 
 from contextlib import redirect_stderr
 from datetime import datetime, timedelta, timezone
+from email.message import Message
 import io
 import json
 from pathlib import Path
@@ -189,8 +190,165 @@ def test_persistence_error_preserves_previous_output_and_history():
         rejects(discovery.run, **{**options, "history_path": output})
         rejects(discovery.run, **{**options, "output_path": discovery.radar.ROOT / "repos.txt"})
         with patch.object(discovery, "run", side_effect=RuntimeError("sensitive detail")), redirect_stderr(io.StringIO()) as errors:
-            assert discovery.main(["--limit", "2", "--tolerance-hours", "1"]) == 1
+            assert discovery.main(["--source", "own-history", "--limit", "2", "--tolerance-hours", "1"]) == 1
             assert "sensitive detail" not in errors.getvalue()
+
+
+def trending_html(names, period="weekly"):
+    rows = [f'<article class="Box-row"><h2><a href="/{name}">{name}</a></h2>'
+            f'<span>{1000-rank:,} stars {discovery.PERIOD_LABELS[period]}</span></article>'
+            for rank, name in enumerate(names)]
+    return '<html><h1>Trending</h1>' + "".join(rows) + '</html>'
+
+
+class HTMLResponse(io.BytesIO):
+    def __init__(self, html, url="https://github.com/trending?since=weekly"):
+        content = html.encode()
+        super().__init__(content)
+        self.status = 200
+        self.url = url
+        self.headers = Message()
+        self.headers["Content-Type"] = "text/html; charset=utf-8"
+        self.headers["Content-Length"] = str(len(content))
+
+
+def test_trending_parser_and_transport_fail_closed():
+    html = trending_html(["owner/one", "owner/two"])
+    rows = discovery.parse_trending(html, "weekly")
+    assert rows == [{"repo": "owner/one", "rank": 1, "period_stars": 1000},
+                    {"repo": "owner/two", "rank": 2, "period_stars": 999}]
+    for malformed in (html[:-7], html.replace('Box-row', 'Changed'),
+                      html.replace('this week', 'today'),
+                      html.replace('owner/two', 'owner/one'),
+                      html.replace('1,000', '1,00'),
+                      html.replace('<h2>', '<h3>').replace('</h2>', '</h3>'),
+                      html.replace('Trending</h1>', 'Sign in</h1>')):
+        rejects(discovery.parse_trending, malformed, "weekly")
+    for change in ("redirect", "partial", "type", "status"):
+        response = HTMLResponse(html)
+        if change == "redirect":
+            response.url = "https://github.com/login"
+        elif change == "partial":
+            response.headers.replace_header("Content-Length", "999999")
+        elif change == "type":
+            response.headers.replace_header("Content-Type", "application/json")
+        else:
+            response.status = 206
+        rejects(discovery.fetch_trending, "weekly", open_url=lambda *a, **k: response)
+    def opener(request, timeout):
+        assert request.full_url == "https://github.com/trending?since=weekly" and timeout == 30
+        return HTMLResponse(html)
+    fetched, source = discovery.fetch_trending("weekly", open_url=opener, clock=lambda: NOW)
+    assert fetched == rows and source["period"] == "weekly" and source["rows"] == 2
+    assert source["fetched_at"] == NOW.isoformat() and len(source["sha256"]) == 64
+
+
+def test_trending_quota_fills_from_next_source_rank():
+    names = ["owner/disabled", "owner/trend-first", "owner/trend-next"]
+    infos = {"owner/disabled": api_repo("owner/disabled", 10, 250000, has_issues=False),
+             "owner/trend-first": api_repo("owner/trend-first", 1, 240000),
+             "owner/trend-next": api_repo("owner/trend-next", 2, 230000),
+             "owner/famous-one": api_repo("owner/famous-one", 3, 220000),
+             "owner/famous-two": api_repo("owner/famous-two", 4, 210000)}
+    def github(endpoint):
+        if endpoint.startswith("search/"):
+            items = list(infos.values())
+            return {"items": items, "total_count": len(items), "incomplete_results": False}
+        return infos[endpoint[6:]]
+    with tempfile.TemporaryDirectory() as directory:
+        output = Path(directory) / "discovery.json"
+        result = discovery.run_github_trending(limit=4, period="weekly", output_path=output,
+            gh=github, clock=lambda: NOW, open_url=lambda *a, **k: HTMLResponse(trending_html(names)))
+        assert json.loads(output.read_text()) == result
+        assert result["repos"] == ["owner/trend-first", "owner/trend-next", "owner/famous-one", "owner/famous-two"]
+        assert result["trend"]["items"][0]["rank"] == 2
+        assert result["trend"]["items"][0]["period"] == "weekly"
+        assert result["source"]["famous_searches"][0]["total_count"] == 5
+        assert result["source"]["famous_searches"][0]["returned_count"] == 5
+        assert result["quota"] == {"trend": 2, "famous": 2}
+        assert result["famous"]["shortfall"] == result["trend"]["shortfall"] == 0
+        assert not list(Path(directory).glob("*.tmp"))
+
+
+def test_famous_threshold_is_search_optimization_not_selection_cutoff():
+    infos = {"owner/trend-one": api_repo("owner/trend-one", 1, 200000),
+             "owner/trend-two": api_repo("owner/trend-two", 2, 190000),
+             "owner/famous-one": api_repo("owner/famous-one", 3, 90000),
+             "owner/famous-two": api_repo("owner/famous-two", 4, 80000)}
+    calls = []
+    def github(endpoint):
+        calls.append(endpoint)
+        if endpoint.startswith("search/"):
+            query = parse_qs(urlsplit(endpoint).query)["q"][0]
+            threshold = int(query.split()[0].split(">=")[1])
+            items = [row for row in infos.values() if row["stargazers_count"] >= threshold]
+            return {"items": items, "total_count": len(items), "incomplete_results": False}
+        return infos[endpoint[6:]]
+    with tempfile.TemporaryDirectory() as directory:
+        result = discovery.run_github_trending(limit=4, period="weekly", output_path=Path(directory)/"out.json",
+            gh=github, clock=lambda: NOW,
+            open_url=lambda *a, **k: HTMLResponse(trending_html(["owner/trend-one", "owner/trend-two"])))
+        assert [row["threshold"] for row in result["source"]["famous_searches"]] == [100000, 50000]
+        assert result["famous"]["items"][-1]["stars"] == 80000
+        assert all("fork%3Atrue" in call for call in calls if call.startswith("search/"))
+
+
+def test_trending_failures_preserve_previous_output():
+    with tempfile.TemporaryDirectory() as directory:
+        output = Path(directory) / "out.json"
+        output.write_text("previous")
+        infos = {"owner/a": api_repo("owner/a", 1, 200000),
+                 "owner/b": api_repo("owner/b", 2, 190000)}
+        options = dict(limit=4, period="weekly", output_path=output, clock=lambda: NOW,
+                       open_url=lambda *a, **k: HTMLResponse(trending_html(list(infos))))
+        def incomplete(endpoint):
+            if endpoint.startswith("search/"):
+                return {"items": [], "total_count": 0, "incomplete_results": True}
+            return infos[endpoint[6:]]
+        rejects(discovery.run_github_trending, gh=incomplete, **options)
+        assert output.read_text() == "previous"
+        rejects(discovery.run_github_trending, gh=incomplete,
+                **{**options, "open_url": lambda *a, **k: HTMLResponse(trending_html(["owner/a"]))})
+        assert output.read_text() == "previous"
+        for response in ({"items": [], "total_count": 2, "incomplete_results": False},
+                         {"items": [], "total_count": 1001, "incomplete_results": False},
+                         {"items": [infos["owner/b"], infos["owner/a"]], "total_count": 2, "incomplete_results": False}):
+            rejects(discovery.famous_search, 100000, lambda endpoint: response)
+        def mismatched_id(endpoint):
+            if endpoint.startswith("search/"):
+                return {"items": [api_repo("owner/c", 3, 300000), api_repo("owner/d", 4, 250000)],
+                        "total_count": 2, "incomplete_results": False}
+            if endpoint[6:] in infos:
+                return infos[endpoint[6:]]
+            return api_repo(endpoint[6:], 99, 300000)
+        rejects(discovery.run_github_trending, gh=mismatched_id, **options)
+        assert output.read_text() == "previous"
+
+
+def test_exact_fifteen_each_and_full_famous_pagination():
+    names = [f"owner/r{i}" for i in range(30)]
+    infos = {name: api_repo(name, i+1, 300000-i) for i, name in enumerate(names)}
+    def github(endpoint):
+        if endpoint.startswith("search/"):
+            return {"items": list(infos.values()), "total_count": 30, "incomplete_results": False}
+        return infos[endpoint[6:]]
+    with tempfile.TemporaryDirectory() as directory:
+        result = discovery.run_github_trending(limit=30, period="weekly", output_path=Path(directory)/"out.json",
+            gh=github, clock=lambda: NOW,
+            open_url=lambda *a, **k: HTMLResponse(trending_html(names[:15])))
+        assert result["quota"] == {"trend": 15, "famous": 15}
+        assert len(result["trend"]["items"]) == len(result["famous"]["items"]) == 15
+        assert result["repos"] == names
+        assert len({row["id"] for group in ("trend", "famous") for row in result[group]["items"]}) == 30
+    def paginated(endpoint):
+        page = int(parse_qs(urlsplit(endpoint).query)["page"][0])
+        return {"items": [api_repo(f"owner/r{i}", i+1, 300000-i)
+                          for i in range((page-1)*100, min(page*100,150))],
+                "total_count": 150, "incomplete_results": False}
+    records, evidence = discovery.famous_search(100000, paginated)
+    assert len(records) == evidence["returned_count"] == evidence["total_count"] == 150
+    assert len(evidence["urls"]) == 2
+    assert "page=2" in evidence["urls"][1]
 
 
 if __name__ == "__main__":
@@ -201,4 +359,10 @@ if __name__ == "__main__":
     test_search_history_refresh_casefold_and_exclusion()
     test_search_pagination_uses_constant_page_size()
     test_persistence_error_preserves_previous_output_and_history()
+    test_trending_parser_and_transport_fail_closed()
+    test_trending_quota_fills_from_next_source_rank()
+    test_famous_threshold_is_search_optimization_not_selection_cutoff()
+    test_trending_failures_preserve_previous_output()
+    test_exact_fifteen_each_and_full_famous_pagination()
+    print("통과: GitHub Trending 순위·기간·15:15 할당·원천별 다음 순위·완전 검색·오류 보존")
     print("통과: 1:1 할당·자체 관측 7일 순증가·부족분·중복제외·저장소 상태·API 실패 보존")
