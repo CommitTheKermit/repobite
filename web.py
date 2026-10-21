@@ -15,6 +15,7 @@ import uuid
 from urllib.parse import urlsplit
 
 from api.account import handle_account
+from api.contributions import handle_contributions
 import community
 import home_status
 import radar
@@ -231,6 +232,8 @@ class Handler(BaseHTTPRequestHandler):
             return
         if urlsplit(self.path).path == "/api/account":
             handle_account(self)
+        elif urlsplit(self.path).path == "/api/contributions":
+            handle_contributions(self)
         elif self.path == "/":
             self.reply(200, (radar.ROOT / "web.html").read_bytes(), "text/html; charset=utf-8")
         elif self.path == "/account-ui.mjs":
@@ -252,6 +255,10 @@ class Handler(BaseHTTPRequestHandler):
         if urlsplit(self.path).path == "/api/account":
             if self.local_request():
                 handle_account(self)
+            return
+        if urlsplit(self.path).path == "/api/contributions":
+            if self.local_request():
+                handle_contributions(self)
             return
         if not self.local_request(mutation=True):
             return

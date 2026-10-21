@@ -5,6 +5,10 @@ from email.parser import BytesParser
 import json
 from pathlib import Path
 import tempfile
+from unittest.mock import patch
+
+import contribution_tracking
+from test_contribution_tracking import ContributionRedis
 
 from manual_delivery import ManualDelivery
 import radar
@@ -50,6 +54,25 @@ def main():
         assert store.confirm_sent(digest, today='2026-10-21') is True
         assert store.confirm_sent(digest, today='2026-10-21') is False
         assert prepare() == []
+        assert store.db.execute('SELECT COUNT(*) FROM delivery_outbox').fetchone()[0] == 1
+        def unavailable(**payload):
+            raise RuntimeError('모의 DB 장애')
+        try:
+            store.sync_deliveries(unavailable)
+        except RuntimeError:
+            pass
+        else:
+            raise AssertionError('동기화 실패를 성공 처리했습니다')
+        assert store.db.execute('SELECT synced_at FROM delivery_outbox').fetchone()[0] is None
+        published = []
+        assert store.sync_deliveries(lambda **payload: published.append(payload)) == 1
+        assert published[0]['user_id'] == 'alice'
+        assert published[0]['digest_id'] == digest
+        assert published[0]['state'] == 'operator_confirmed'
+        assert 'email' not in published[0]
+        assert set(published[0]['items'][0]) == {'repo', 'number', 'url', 'title'}
+        assert store.sync_deliveries(lambda **payload: published.append(payload)) == 0
+        assert len(published) == 1
         assert store.db.execute('SELECT COUNT(*) FROM sent_issues').fetchone()[0] == 3
         # 재시작 후에도 이미 보낸 이슈를 다음 날 다시 담지 않는다.
         store.close()
@@ -84,6 +107,16 @@ def main():
             pass
         else:
             raise AssertionError('최신성 검사에서 무효화한 초안을 내보냈습니다')
+        # 수신 주소가 바뀐 초안을 이전 ID로 발송 확인할 수 없다.
+        old = prepare(subscribers=bob)[0]['id']
+        changed = prepare(subscribers=[{**bob[0], 'email': 'changed@example.test'}])[0]['id']
+        assert old != changed
+        try:
+            store.confirm_sent(old, today='2026-10-21')
+        except ValueError:
+            pass
+        else:
+            raise AssertionError('주소 변경 전 초안을 발송 확인했습니다')
         # 수신 거부 계정은 다음 준비에서 사라지고 이전 자동 생성 메일도 제거한다.
         new = prepare(subscribers=bob)
         store.export_prepared(new, root / 'export')
@@ -95,6 +128,30 @@ def main():
         assert (root / 'export' / 'operator-note.eml').exists()
         assert store.db.execute("SELECT COUNT(*) FROM digests WHERE state='prepared'").fetchone()[0] == 0
         assert store.db.execute('SELECT COUNT(*) FROM sent_issues').fetchone()[0] == 3
+        store.close()
+    # 실제 C -> E 함수 계약을 사용하고, 원격 성공 응답 유실 뒤에도 한 번만 저장한다.
+    with tempfile.TemporaryDirectory() as directory:
+        store = ManualDelivery(Path(directory) / 'delivery.sqlite')
+        draft = store.prepare(rows, [{**subscribers[0], 'user_id': '10'}], day='2026-10-21',
+                              refresh=refresh, public_check=lambda repo: True)[0]
+        store.confirm_sent(draft['id'], today='2026-10-21')
+        db = ContributionRedis()
+        def lost_response(**payload):
+            contribution_tracking.record_delivery(**payload)
+            raise RuntimeError('원격 저장 후 응답 유실')
+        with patch.object(contribution_tracking.community, 'redis', db):
+            try:
+                store.sync_deliveries(lost_response)
+            except RuntimeError:
+                pass
+            assert store.sync_deliveries(contribution_tracking.record_delivery) == 1
+            deliveries = contribution_tracking.user_deliveries('10')
+            assert len(deliveries) == 1
+            assert deliveries[0]['id'] == draft['id']
+            assert deliveries[0]['provider_delivery_verified'] is False
+            assert all(set(item) == {'repo', 'number'} for item in deliveries[0]['items'])
+            assert contribution_tracking.user_deliveries('20') == []
+            assert store.sync_deliveries(contribution_tracking.record_delivery) == 0
         store.close()
     print('통과: 하루 3건·구독 격리·최신성·공개 검증·초안/발송 분리·재시작·중복 방지')
 

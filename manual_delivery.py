@@ -49,6 +49,8 @@ class ManualDelivery:
             CREATE TABLE IF NOT EXISTS sent_issues (
                 user_id TEXT NOT NULL, repo TEXT NOT NULL, number INTEGER NOT NULL,
                 digest_id TEXT NOT NULL, PRIMARY KEY(user_id, repo, number));
+            CREATE TABLE IF NOT EXISTS delivery_outbox (
+                digest_id TEXT PRIMARY KEY, payload TEXT NOT NULL, synced_at TEXT);
         ''')
         self.db.row_factory = sqlite3.Row
 
@@ -107,7 +109,12 @@ class ManualDelivery:
                     if current:
                         self.db.execute('DELETE FROM digests WHERE id=?', (current['id'],))
                     continue
-                digest_id = hashlib.sha256((user_id + ':' + day).encode()).hexdigest()
+                # 받는 주소나 실제 메일 내용이 달라지면 이전 초안 ID는 무효가 된다.
+                content = [user_id, day, email, [
+                    [item['repo'], item['number'], item['url'], item['title'],
+                     item['grade']['reason'].replace('\r', ' ').replace('\n', ' ')[:40]]
+                    for item in selected]]
+                digest_id = hashlib.sha256(json.dumps(content, ensure_ascii=False).encode()).hexdigest()
                 self.db.execute('''INSERT INTO digests VALUES (?,?,?,?,?,?,NULL)
                     ON CONFLICT(user_id,day) DO UPDATE SET
                     email=excluded.email,items=excluded.items,state=excluded.state''',
@@ -172,13 +179,39 @@ class ManualDelivery:
                 repo, number = radar.issue_key(item)
                 self.db.execute('INSERT INTO sent_issues VALUES (?,?,?,?)',
                                 (row['user_id'], repo, number, digest_id))
+            confirmed_at = datetime.now(timezone.utc).isoformat()
             self.db.execute('UPDATE digests SET state=?,confirmed_at=? WHERE id=?',
-                            ('operator_confirmed', datetime.now(timezone.utc).isoformat(), digest_id))
+                            ('operator_confirmed', confirmed_at, digest_id))
+            self.queue_delivery(dict(row), confirmed_at)
             self.db.commit()
             return True
         except Exception:
             self.db.rollback()
             raise
+
+
+    def queue_delivery(self, row, confirmed_at):
+        payload = {'user_id': row['user_id'], 'digest_id': row['id'], 'day': row['day'],
+                   'items': [{key: item[key] for key in ('repo', 'number', 'url', 'title')}
+                             for item in json.loads(row['items'])],
+                   'confirmed_at': confirmed_at, 'state': 'operator_confirmed'}
+        self.db.execute('INSERT OR IGNORE INTO delivery_outbox VALUES (?,?,NULL)',
+                        (row['id'], json.dumps(payload, ensure_ascii=False)))
+
+    def sync_deliveries(self, publish):
+        # 이전 버전에서 기록한 발송 확인도 동일 ID로 한 번만 대기열에 넣는다.
+        for row in self.db.execute("SELECT * FROM digests WHERE state='operator_confirmed'"):
+            self.queue_delivery(dict(row), row['confirmed_at'])
+        self.db.commit()
+        count = 0
+        for row in self.db.execute('SELECT * FROM delivery_outbox WHERE synced_at IS NULL').fetchall():
+            publish(**json.loads(row['payload']))
+            # 원격 성공 뒤에만 ACK한다. 중간 중단 시 서버 idempotency로 중복 처리한다.
+            self.db.execute('UPDATE delivery_outbox SET synced_at=? WHERE digest_id=?',
+                            (datetime.now(timezone.utc).isoformat(), row['digest_id']))
+            self.db.commit()
+            count += 1
+        return count
 
 
 def main():
@@ -191,6 +224,7 @@ def main():
     prepare.add_argument('--output', type=Path, required=True)
     confirm = commands.add_parser('confirm-sent')
     confirm.add_argument('digest_id')
+    commands.add_parser('sync', help='발송 재전송 없이 운영자 확인 기록만 공유 DB로 재시도')
     args = parser.parse_args()
     store = ManualDelivery(args.state)
     try:
@@ -202,8 +236,16 @@ def main():
                 print(f"초안 {item['id']} - {item['count']}건")
             print('초안만 생성했습니다. 메일을 보내지 않았습니다.')
         else:
-            changed = store.confirm_sent(args.digest_id)
-            print('운영자 발송 확인을 기록했습니다.' if changed else '이미 확인한 발송입니다.')
+            if args.command == 'confirm-sent':
+                changed = store.confirm_sent(args.digest_id)
+                print('운영자 발송 확인을 로컬에 기록했습니다.' if changed else '이미 확인한 발송입니다.')
+            from contribution_tracking import record_delivery, StateConflict
+            try:
+                count = store.sync_deliveries(record_delivery)
+            except (OSError, ValueError, RuntimeError, KeyError, TypeError, StateConflict):
+                print('공유 DB 동기화 대기: 로컬 발송 확인은 보존했습니다. 메일 재발송 없이 sync 명령으로 재시도하세요.', file=sys.stderr)
+                return 1
+            print(f'공유 DB 발송 확인 동기화: {count}건')
         return 0
     except (OSError, ValueError, RuntimeError, sqlite3.Error, KeyError, TypeError):
         print('처리 실패: 입력·계정 DB·운영자 전용 저장 경로를 확인하세요.', file=sys.stderr)
