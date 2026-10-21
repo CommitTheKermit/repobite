@@ -15,10 +15,83 @@ from api.repos import handler
 import community
 import community_batch
 import radar
+from public_feed import public_items
 from test_radar import ISSUE, GOOD, rejects
 
 
+def test_snapshot_recovery():
+    """실패 후 공개 재조회, 중간 등록, 빈 결과와 재실행의 계약을 검사한다."""
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        (root / "repos.txt").write_text("a/b\n", encoding="utf-8")
+        submitted = [{"repo": "Owner/Repo", "description": "소개", "added_at": "first"}]
+        previous = {"items": [{"title": "이전 결과"}], "collected_repos": ["a/b"],
+                    "collected_at": "previous"}
+        saved = json.dumps(previous)
+        fail_publish = False
+
+        def redis(command, key, *values):
+            nonlocal saved
+            if (command, key) == ("HVALS", community.REPOS_KEY):
+                return [json.dumps(row) for row in submitted]
+            if (command, key) == ("GET", community.SNAPSHOT_KEY):
+                return saved
+            assert (command, key) == ("SET", community.SNAPSHOT_KEY)
+            if fail_publish:
+                raise RuntimeError("공개 결과 저장 실패")
+            saved = values[0]
+            return "OK"
+
+        issue = radar.normalize_issue("Owner/Repo", ISSUE)
+        graded = {**issue, "grade": GOOD, "criteria_version": radar.CRITERIA_VERSION}
+        late = {"repo": "Late/Repo", "description": "중간 등록", "added_at": "later"}
+
+        def batch(args):
+            submitted.append(late)
+            args.issues.write_text(json.dumps(issue) + "\n", encoding="utf-8")
+            args.grades.write_text(json.dumps(graded) + "\n", encoding="utf-8")
+            return 0
+
+        with (patch.object(community, "redis", side_effect=redis),
+              patch.object(radar, "gh_json", return_value={"private": False}),
+              patch.object(radar, "batch", side_effect=batch), redirect_stdout(io.StringIO())):
+            fail_publish = True
+            try:
+                community_batch.run(root)
+            except RuntimeError:
+                pass
+            else:
+                raise AssertionError("공개 저장 실패를 성공으로 처리했습니다")
+            assert community.feed()["snapshot"] == previous
+            # 실패 중 들어온 등록은 보존한다. 다음 실행 시작 이후의 등록만 대기다.
+            submitted[:] = submitted[:1]
+            fail_publish = False
+            assert community_batch.run(root) == 0
+            feed = community.feed()
+            assert len(feed["repos"]) == 2
+            assert feed["snapshot"]["collected_repos"] == ["a/b", "owner/repo"]
+            assert "late/repo" not in feed["snapshot"]["collected_repos"]
+            assert feed["snapshot"]["items"][0]["criteria_version"] == 2
+            assert "body" not in feed["snapshot"]["items"][0]
+
+            def empty_batch(args):
+                args.issues.write_text("", encoding="utf-8")
+                args.grades.write_text("", encoding="utf-8")
+                return 0
+
+            with patch.object(radar, "batch", side_effect=empty_batch):
+                assert community_batch.run(root) == 0
+                assert community.feed()["snapshot"]["items"] == []
+                assert set(community.feed()["snapshot"]["collected_repos"]) == {
+                    "a/b", "owner/repo", "late/repo"}
+                assert community_batch.run(root) == 0
+                assert len(community.feed()["repos"]) == 2
+        assert public_items([issue], [{**issue, "grade": GOOD}])[0]["criteria_version"] is None
+        assert public_items([issue], [{**graded, "body": "바뀐 본문"}])[0]["grade"] is None
+
+
 def main():
+    test_snapshot_recovery()
     assert community.normalize_repo(" https://github.com/Owner/Repo/ ") == "Owner/Repo"
     for value in (None, [], "https://evil.test/a/b", "a/b?x=1", "a/..", "a/b/issues/1",
                   "https://github.com/a/b#x", "a/реро", "-a/b", "a/b\nInjected"):

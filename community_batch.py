@@ -9,7 +9,7 @@ import tempfile
 
 import community
 import radar
-from web import public_items
+from public_feed import public_items
 
 
 def run(root=radar.ROOT, since="24h"):
