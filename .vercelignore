@@ -6,3 +6,9 @@
 !repos.txt
 !api
 !api/repos.py
+!accounts.py
+!contribution_tracking.py
+!api/account.py
+!api/contributions.py
+!account-ui.mjs
+!contribution-ui.mjs

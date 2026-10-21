@@ -1,0 +1,478 @@
+{
+  "version": 1,
+  "method": "github_trending_and_cumulative_stars",
+  "requested_total": 30,
+  "actual_total": 29,
+  "generated_at": "2026-10-21T02:15:12+00:00",
+  "selection_order": [
+    "trend",
+    "famous"
+  ],
+  "quota": {
+    "trend": 15,
+    "famous": 15
+  },
+  "trend": {
+    "status": "partial",
+    "items": [
+      {
+        "id": 1209966933,
+        "repo": "morluto/rea",
+        "stars": 348654,
+        "observed_at": "2026-10-21T02:14:50+00:00",
+        "source": "https://api.github.com/repos/morluto/rea",
+        "selection_basis": "github_trending",
+        "rank": 1,
+        "period_stars": 157631,
+        "ranking_source": "https://github.com/trending?since=weekly",
+        "ranking_observed_at": "2026-10-21T02:14:49+00:00",
+        "period": "weekly"
+      },
+      {
+        "id": 1185389803,
+        "repo": "MadsLorentzen/ai-job-search",
+        "stars": 60783,
+        "observed_at": "2026-10-21T02:14:50+00:00",
+        "source": "https://api.github.com/repos/MadsLorentzen/ai-job-search",
+        "selection_basis": "github_trending",
+        "rank": 2,
+        "period_stars": 12848,
+        "ranking_source": "https://github.com/trending?since=weekly",
+        "ranking_observed_at": "2026-10-21T02:14:49+00:00",
+        "period": "weekly"
+      },
+      {
+        "id": 1100776768,
+        "repo": "anthropics/claude-plugins-official",
+        "stars": 43427,
+        "observed_at": "2026-10-21T02:14:51+00:00",
+        "source": "https://api.github.com/repos/anthropics/claude-plugins-official",
+        "selection_basis": "github_trending",
+        "rank": 3,
+        "period_stars": 5650,
+        "ranking_source": "https://github.com/trending?since=weekly",
+        "ranking_observed_at": "2026-10-21T02:14:49+00:00",
+        "period": "weekly"
+      },
+      {
+        "id": 173228436,
+        "repo": "NationalSecurityAgency/ghidra",
+        "stars": 92180,
+        "observed_at": "2026-10-21T02:14:52+00:00",
+        "source": "https://api.github.com/repos/NationalSecurityAgency/ghidra",
+        "selection_basis": "github_trending",
+        "rank": 5,
+        "period_stars": 6184,
+        "ranking_source": "https://github.com/trending?since=weekly",
+        "ranking_observed_at": "2026-10-21T02:14:49+00:00",
+        "period": "weekly"
+      },
+      {
+        "id": 1079456184,
+        "repo": "K-Dense-AI/scientific-agent-skills",
+        "stars": 53289,
+        "observed_at": "2026-10-21T02:14:53+00:00",
+        "source": "https://api.github.com/repos/K-Dense-AI/scientific-agent-skills",
+        "selection_basis": "github_trending",
+        "rank": 6,
+        "period_stars": 4549,
+        "ranking_source": "https://github.com/trending?since=weekly",
+        "ranking_observed_at": "2026-10-21T02:14:49+00:00",
+        "period": "weekly"
+      },
+      {
+        "id": 1177402105,
+        "repo": "heygen-com/hyperframes",
+        "stars": 68552,
+        "observed_at": "2026-10-21T02:14:53+00:00",
+        "source": "https://api.github.com/repos/heygen-com/hyperframes",
+        "selection_basis": "github_trending",
+        "rank": 7,
+        "period_stars": 5994,
+        "ranking_source": "https://github.com/trending?since=weekly",
+        "ranking_observed_at": "2026-10-21T02:14:49+00:00",
+        "period": "weekly"
+      },
+      {
+        "id": 1206390571,
+        "repo": "debpalash/VoiceStudio",
+        "stars": 79061,
+        "observed_at": "2026-10-21T02:14:53+00:00",
+        "source": "https://api.github.com/repos/debpalash/VoiceStudio",
+        "selection_basis": "github_trending",
+        "rank": 8,
+        "period_stars": 17057,
+        "ranking_source": "https://github.com/trending?since=weekly",
+        "ranking_observed_at": "2026-10-21T02:14:49+00:00",
+        "period": "weekly"
+      },
+      {
+        "id": 995029641,
+        "repo": "ruvnet/ruflo",
+        "stars": 77882,
+        "observed_at": "2026-10-21T02:14:54+00:00",
+        "source": "https://api.github.com/repos/ruvnet/ruflo",
+        "selection_basis": "github_trending",
+        "rank": 9,
+        "period_stars": 3143,
+        "ranking_source": "https://github.com/trending?since=weekly",
+        "ranking_observed_at": "2026-10-21T02:14:49+00:00",
+        "period": "weekly"
+      },
+      {
+        "id": 1183263320,
+        "repo": "android/skills",
+        "stars": 9062,
+        "observed_at": "2026-10-21T02:14:55+00:00",
+        "source": "https://api.github.com/repos/android/skills",
+        "selection_basis": "github_trending",
+        "rank": 10,
+        "period_stars": 1255,
+        "ranking_source": "https://github.com/trending?since=weekly",
+        "ranking_observed_at": "2026-10-21T02:14:49+00:00",
+        "period": "weekly"
+      },
+      {
+        "id": 1322250666,
+        "repo": "boykopovar/AnyPS5",
+        "stars": 45584,
+        "observed_at": "2026-10-21T02:14:55+00:00",
+        "source": "https://api.github.com/repos/boykopovar/AnyPS5",
+        "selection_basis": "github_trending",
+        "rank": 11,
+        "period_stars": 11169,
+        "ranking_source": "https://github.com/trending?since=weekly",
+        "ranking_observed_at": "2026-10-21T02:14:49+00:00",
+        "period": "weekly"
+      },
+      {
+        "id": 1140229822,
+        "repo": "cursor/plugins",
+        "stars": 13255,
+        "observed_at": "2026-10-21T02:14:56+00:00",
+        "source": "https://api.github.com/repos/cursor/plugins",
+        "selection_basis": "github_trending",
+        "rank": 12,
+        "period_stars": 2040,
+        "ranking_source": "https://github.com/trending?since=weekly",
+        "ranking_observed_at": "2026-10-21T02:14:49+00:00",
+        "period": "weekly"
+      },
+      {
+        "id": 1212769188,
+        "repo": "cathrynlavery/diagram-design",
+        "stars": 59025,
+        "observed_at": "2026-10-21T02:14:56+00:00",
+        "source": "https://api.github.com/repos/cathrynlavery/diagram-design",
+        "selection_basis": "github_trending",
+        "rank": 13,
+        "period_stars": 5473,
+        "ranking_source": "https://github.com/trending?since=weekly",
+        "ranking_observed_at": "2026-10-21T02:14:49+00:00",
+        "period": "weekly"
+      },
+      {
+        "id": 476507964,
+        "repo": "storytold/artcraft",
+        "stars": 34572,
+        "observed_at": "2026-10-21T02:14:57+00:00",
+        "source": "https://api.github.com/repos/storytold/artcraft",
+        "selection_basis": "github_trending",
+        "rank": 14,
+        "period_stars": 10287,
+        "ranking_source": "https://github.com/trending?since=weekly",
+        "ranking_observed_at": "2026-10-21T02:14:49+00:00",
+        "period": "weekly"
+      },
+      {
+        "id": 1025856648,
+        "repo": "wshobson/agents",
+        "stars": 41274,
+        "observed_at": "2026-10-21T02:14:57+00:00",
+        "source": "https://api.github.com/repos/wshobson/agents",
+        "selection_basis": "github_trending",
+        "rank": 15,
+        "period_stars": 665,
+        "ranking_source": "https://github.com/trending?since=weekly",
+        "ranking_observed_at": "2026-10-21T02:14:49+00:00",
+        "period": "weekly"
+      }
+    ],
+    "shortfall": 1
+  },
+  "famous": {
+    "status": "complete",
+    "items": [
+      {
+        "id": 132750724,
+        "repo": "codecrafters-io/build-your-own-x",
+        "stars": 554870,
+        "observed_at": "2026-10-21T02:15:03+00:00",
+        "source": "https://api.github.com/repos/codecrafters-io/build-your-own-x",
+        "selection_basis": "cumulative_stars",
+        "rank": 1,
+        "ranking_source": [
+          "https://api.github.com/search/repositories?q=stars%3A%3E%3D100000+is%3Apublic+archived%3Afalse+fork%3Atrue&sort=stars&order=desc&per_page=100&page=1",
+          "https://api.github.com/search/repositories?q=stars%3A%3E%3D100000+is%3Apublic+archived%3Afalse+fork%3Atrue&sort=stars&order=desc&per_page=100&page=2"
+        ],
+        "search_threshold": 100000
+      },
+      {
+        "id": 21737465,
+        "repo": "sindresorhus/awesome",
+        "stars": 521969,
+        "observed_at": "2026-10-21T02:15:03+00:00",
+        "source": "https://api.github.com/repos/sindresorhus/awesome",
+        "selection_basis": "cumulative_stars",
+        "rank": 2,
+        "ranking_source": [
+          "https://api.github.com/search/repositories?q=stars%3A%3E%3D100000+is%3Apublic+archived%3Afalse+fork%3Atrue&sort=stars&order=desc&per_page=100&page=1",
+          "https://api.github.com/search/repositories?q=stars%3A%3E%3D100000+is%3Apublic+archived%3Afalse+fork%3Atrue&sort=stars&order=desc&per_page=100&page=2"
+        ],
+        "search_threshold": 100000
+      },
+      {
+        "id": 54346799,
+        "repo": "public-apis/public-apis",
+        "stars": 490891,
+        "observed_at": "2026-10-21T02:15:03+00:00",
+        "source": "https://api.github.com/repos/public-apis/public-apis",
+        "selection_basis": "cumulative_stars",
+        "rank": 3,
+        "ranking_source": [
+          "https://api.github.com/search/repositories?q=stars%3A%3E%3D100000+is%3Apublic+archived%3Afalse+fork%3Atrue&sort=stars&order=desc&per_page=100&page=1",
+          "https://api.github.com/search/repositories?q=stars%3A%3E%3D100000+is%3Apublic+archived%3Afalse+fork%3Atrue&sort=stars&order=desc&per_page=100&page=2"
+        ],
+        "search_threshold": 100000
+      },
+      {
+        "id": 28457823,
+        "repo": "freeCodeCamp/freeCodeCamp",
+        "stars": 457592,
+        "observed_at": "2026-10-21T02:15:03+00:00",
+        "source": "https://api.github.com/repos/freeCodeCamp/freeCodeCamp",
+        "selection_basis": "cumulative_stars",
+        "rank": 4,
+        "ranking_source": [
+          "https://api.github.com/search/repositories?q=stars%3A%3E%3D100000+is%3Apublic+archived%3Afalse+fork%3Atrue&sort=stars&order=desc&per_page=100&page=1",
+          "https://api.github.com/search/repositories?q=stars%3A%3E%3D100000+is%3Apublic+archived%3Afalse+fork%3Atrue&sort=stars&order=desc&per_page=100&page=2"
+        ],
+        "search_threshold": 100000
+      },
+      {
+        "id": 13491895,
+        "repo": "EbookFoundation/free-programming-books",
+        "stars": 399687,
+        "observed_at": "2026-10-21T02:15:03+00:00",
+        "source": "https://api.github.com/repos/EbookFoundation/free-programming-books",
+        "selection_basis": "cumulative_stars",
+        "rank": 5,
+        "ranking_source": [
+          "https://api.github.com/search/repositories?q=stars%3A%3E%3D100000+is%3Apublic+archived%3Afalse+fork%3Atrue&sort=stars&order=desc&per_page=100&page=1",
+          "https://api.github.com/search/repositories?q=stars%3A%3E%3D100000+is%3Apublic+archived%3Afalse+fork%3Atrue&sort=stars&order=desc&per_page=100&page=2"
+        ],
+        "search_threshold": 100000
+      },
+      {
+        "id": 1103012935,
+        "repo": "openclaw/openclaw",
+        "stars": 392689,
+        "observed_at": "2026-10-21T02:15:03+00:00",
+        "source": "https://api.github.com/repos/openclaw/openclaw",
+        "selection_basis": "cumulative_stars",
+        "rank": 6,
+        "ranking_source": [
+          "https://api.github.com/search/repositories?q=stars%3A%3E%3D100000+is%3Apublic+archived%3Afalse+fork%3Atrue&sort=stars&order=desc&per_page=100&page=1",
+          "https://api.github.com/search/repositories?q=stars%3A%3E%3D100000+is%3Apublic+archived%3Afalse+fork%3Atrue&sort=stars&order=desc&per_page=100&page=2"
+        ],
+        "search_threshold": 100000
+      },
+      {
+        "id": 83222441,
+        "repo": "donnemartin/system-design-primer",
+        "stars": 374931,
+        "observed_at": "2026-10-21T02:15:03+00:00",
+        "source": "https://api.github.com/repos/donnemartin/system-design-primer",
+        "selection_basis": "cumulative_stars",
+        "rank": 7,
+        "ranking_source": [
+          "https://api.github.com/search/repositories?q=stars%3A%3E%3D100000+is%3Apublic+archived%3Afalse+fork%3Atrue&sort=stars&order=desc&per_page=100&page=1",
+          "https://api.github.com/search/repositories?q=stars%3A%3E%3D100000+is%3Apublic+archived%3Afalse+fork%3Atrue&sort=stars&order=desc&per_page=100&page=2"
+        ],
+        "search_threshold": 100000
+      },
+      {
+        "id": 85077558,
+        "repo": "nilbuild/developer-roadmap",
+        "stars": 369992,
+        "observed_at": "2026-10-21T02:15:03+00:00",
+        "source": "https://api.github.com/repos/nilbuild/developer-roadmap",
+        "selection_basis": "cumulative_stars",
+        "rank": 8,
+        "ranking_source": [
+          "https://api.github.com/search/repositories?q=stars%3A%3E%3D100000+is%3Apublic+archived%3Afalse+fork%3Atrue&sort=stars&order=desc&per_page=100&page=1",
+          "https://api.github.com/search/repositories?q=stars%3A%3E%3D100000+is%3Apublic+archived%3Afalse+fork%3Atrue&sort=stars&order=desc&per_page=100&page=2"
+        ],
+        "search_threshold": 100000
+      },
+      {
+        "id": 60493101,
+        "repo": "jwasham/coding-interview-university",
+        "stars": 363176,
+        "observed_at": "2026-10-21T02:15:03+00:00",
+        "source": "https://api.github.com/repos/jwasham/coding-interview-university",
+        "selection_basis": "cumulative_stars",
+        "rank": 9,
+        "ranking_source": [
+          "https://api.github.com/search/repositories?q=stars%3A%3E%3D100000+is%3Apublic+archived%3Afalse+fork%3Atrue&sort=stars&order=desc&per_page=100&page=1",
+          "https://api.github.com/search/repositories?q=stars%3A%3E%3D100000+is%3Apublic+archived%3Afalse+fork%3Atrue&sort=stars&order=desc&per_page=100&page=2"
+        ],
+        "search_threshold": 100000
+      },
+      {
+        "id": 1073224795,
+        "repo": "obra/superpowers",
+        "stars": 302636,
+        "observed_at": "2026-10-21T02:15:03+00:00",
+        "source": "https://api.github.com/repos/obra/superpowers",
+        "selection_basis": "cumulative_stars",
+        "rank": 10,
+        "ranking_source": [
+          "https://api.github.com/search/repositories?q=stars%3A%3E%3D100000+is%3Apublic+archived%3Afalse+fork%3Atrue&sort=stars&order=desc&per_page=100&page=1",
+          "https://api.github.com/search/repositories?q=stars%3A%3E%3D100000+is%3Apublic+archived%3Afalse+fork%3Atrue&sort=stars&order=desc&per_page=100&page=2"
+        ],
+        "search_threshold": 100000
+      },
+      {
+        "id": 1148788086,
+        "repo": "mattpocock/skills",
+        "stars": 298756,
+        "observed_at": "2026-10-21T02:15:03+00:00",
+        "source": "https://api.github.com/repos/mattpocock/skills",
+        "selection_basis": "cumulative_stars",
+        "rank": 11,
+        "ranking_source": [
+          "https://api.github.com/search/repositories?q=stars%3A%3E%3D100000+is%3Apublic+archived%3Afalse+fork%3Atrue&sort=stars&order=desc&per_page=100&page=1",
+          "https://api.github.com/search/repositories?q=stars%3A%3E%3D100000+is%3Apublic+archived%3Afalse+fork%3Atrue&sort=stars&order=desc&per_page=100&page=2"
+        ],
+        "search_threshold": 100000
+      },
+      {
+        "id": 88011908,
+        "repo": "practical-tutorials/project-based-learning",
+        "stars": 287420,
+        "observed_at": "2026-10-21T02:15:03+00:00",
+        "source": "https://api.github.com/repos/practical-tutorials/project-based-learning",
+        "selection_basis": "cumulative_stars",
+        "rank": 12,
+        "ranking_source": [
+          "https://api.github.com/search/repositories?q=stars%3A%3E%3D100000+is%3Apublic+archived%3Afalse+fork%3Atrue&sort=stars&order=desc&per_page=100&page=1",
+          "https://api.github.com/search/repositories?q=stars%3A%3E%3D100000+is%3Apublic+archived%3Afalse+fork%3Atrue&sort=stars&order=desc&per_page=100&page=2"
+        ],
+        "search_threshold": 100000
+      },
+      {
+        "id": 1136590548,
+        "repo": "affaan-m/ECC",
+        "stars": 284940,
+        "observed_at": "2026-10-21T02:15:03+00:00",
+        "source": "https://api.github.com/repos/affaan-m/ECC",
+        "selection_basis": "cumulative_stars",
+        "rank": 13,
+        "ranking_source": [
+          "https://api.github.com/search/repositories?q=stars%3A%3E%3D100000+is%3Apublic+archived%3Afalse+fork%3Atrue&sort=stars&order=desc&per_page=100&page=1",
+          "https://api.github.com/search/repositories?q=stars%3A%3E%3D100000+is%3Apublic+archived%3Afalse+fork%3Atrue&sort=stars&order=desc&per_page=100&page=2"
+        ],
+        "search_threshold": 100000
+      },
+      {
+        "id": 1024554267,
+        "repo": "NousResearch/hermes-agent",
+        "stars": 255610,
+        "observed_at": "2026-10-21T02:15:04+00:00",
+        "source": "https://api.github.com/repos/NousResearch/hermes-agent",
+        "selection_basis": "cumulative_stars",
+        "rank": 14,
+        "ranking_source": [
+          "https://api.github.com/search/repositories?q=stars%3A%3E%3D100000+is%3Apublic+archived%3Afalse+fork%3Atrue&sort=stars&order=desc&per_page=100&page=1",
+          "https://api.github.com/search/repositories?q=stars%3A%3E%3D100000+is%3Apublic+archived%3Afalse+fork%3Atrue&sort=stars&order=desc&per_page=100&page=2"
+        ],
+        "search_threshold": 100000
+      },
+      {
+        "id": 10270250,
+        "repo": "react/react",
+        "stars": 251592,
+        "observed_at": "2026-10-21T02:15:04+00:00",
+        "source": "https://api.github.com/repos/react/react",
+        "selection_basis": "cumulative_stars",
+        "rank": 15,
+        "ranking_source": [
+          "https://api.github.com/search/repositories?q=stars%3A%3E%3D100000+is%3Apublic+archived%3Afalse+fork%3Atrue&sort=stars&order=desc&per_page=100&page=1",
+          "https://api.github.com/search/repositories?q=stars%3A%3E%3D100000+is%3Apublic+archived%3Afalse+fork%3Atrue&sort=stars&order=desc&per_page=100&page=2"
+        ],
+        "search_threshold": 100000
+      }
+    ],
+    "shortfall": 0
+  },
+  "repos": [
+    "morluto/rea",
+    "MadsLorentzen/ai-job-search",
+    "anthropics/claude-plugins-official",
+    "NationalSecurityAgency/ghidra",
+    "K-Dense-AI/scientific-agent-skills",
+    "heygen-com/hyperframes",
+    "debpalash/VoiceStudio",
+    "ruvnet/ruflo",
+    "android/skills",
+    "boykopovar/AnyPS5",
+    "cursor/plugins",
+    "cathrynlavery/diagram-design",
+    "storytold/artcraft",
+    "wshobson/agents",
+    "codecrafters-io/build-your-own-x",
+    "sindresorhus/awesome",
+    "public-apis/public-apis",
+    "freeCodeCamp/freeCodeCamp",
+    "EbookFoundation/free-programming-books",
+    "openclaw/openclaw",
+    "donnemartin/system-design-primer",
+    "nilbuild/developer-roadmap",
+    "jwasham/coding-interview-university",
+    "obra/superpowers",
+    "mattpocock/skills",
+    "practical-tutorials/project-based-learning",
+    "affaan-m/ECC",
+    "NousResearch/hermes-agent",
+    "react/react"
+  ],
+  "source": {
+    "trending": {
+      "url": "https://github.com/trending?since=weekly",
+      "period": "weekly",
+      "fetched_at": "2026-10-21T02:14:49+00:00",
+      "rows": 15,
+      "sha256": "5e66647c8ff10a694f0bc099df7d0d65514502a199cc503613a52fc6c0aed521",
+      "bytes": 636528
+    },
+    "famous_searches": [
+      {
+        "query": "stars:>=100000 is:public archived:false fork:true",
+        "threshold": 100000,
+        "total_count": 133,
+        "returned_count": 133,
+        "incomplete_results": false,
+        "urls": [
+          "https://api.github.com/search/repositories?q=stars%3A%3E%3D100000+is%3Apublic+archived%3Afalse+fork%3Atrue&sort=stars&order=desc&per_page=100&page=1",
+          "https://api.github.com/search/repositories?q=stars%3A%3E%3D100000+is%3Apublic+archived%3Afalse+fork%3Atrue&sort=stars&order=desc&per_page=100&page=2"
+        ]
+      }
+    ],
+    "excluded": {
+      "issues_disabled": 14
+    },
+    "rank_scope": "공개·미보관·활성·이슈 허용 저장소, Trending 우선 중복 제외",
+    "consistency": "검색 인덱스 전체 결과와 개별 API 관측을 사용하며 원자적 글로벌 스냅샷은 아님"
+  }
+}

@@ -228,9 +228,58 @@ def test_personal_subscriptions_join_collection():
             assert community_batch.run(root) == 0
             snapshot = json.loads(publish.call_args.args[-1])
             assert snapshot['collected_repos'] == ['a/b', 'personal/repo']
-            assert set(snapshot) == {'items', 'collected_repos', 'collected_at'}
+            assert set(snapshot) == {'items', 'collected_repos', 'collected_at', 'discovered_repos'}
+
+
+def test_discovery_contract():
+    trend = [{"repo": f"trend{n}/repo", "period": "weekly"} for n in range(14)]
+    famous = [{"repo": f"famous{n}/repo"} for n in range(15)]
+    names = [row["repo"] for row in trend + famous]
+    result = {"method": "github_trending_and_cumulative_stars", "requested_total": 30,
+              "quota": {"trend": 15, "famous": 15}, "actual_total": 29, "repos": names,
+              "trend": {"items": trend, "status": "partial", "shortfall": 1},
+              "famous": {"items": famous, "status": "complete", "shortfall": 0}}
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        (root / "repos.txt").write_text("base/repo\n", encoding="utf-8")
+        with patch.object(community_batch.repository_discovery, "run_github_trending", return_value=result) as discover:
+            assert community_batch.discovered_repositories(root) == names
+            assert discover.call_args.kwargs["allow_partial_trend"] is True
+            assert discover.call_args.kwargs["period"] == "weekly"
+        for bad in ({**result, "actual_total": 30}, {**result, "repos": names + [names[0]]},
+                    {**result, "trend": {**result["trend"], "status": "complete"}}):
+            with patch.object(community_batch.repository_discovery, "run_github_trending", return_value=bad):
+                rejects(community_batch.discovered_repositories, root)
+        def batch(args):
+            assert args.repos.read_text(encoding="utf-8").splitlines() == ["base/repo", "manual/repo", "personal/repo"] + names
+            args.issues.write_text("", encoding="utf-8")
+            args.grades.write_text("", encoding="utf-8")
+            return 0
+        with (patch.object(community, "registrations", return_value=[{"repo": "manual/repo"}]),
+              patch.object(community_batch.accounts, "subscription_repositories", return_value=["personal/repo", "BASE/REPO"]),
+              patch.object(community_batch.repository_discovery, "run_github_trending", return_value=result),
+              patch.object(radar, "gh_json", return_value={"private": False}),
+              patch.object(radar, "batch", side_effect=batch) as grading,
+              patch.object(community, "redis") as publish, redirect_stdout(io.StringIO())):
+            assert community_batch.run(root) == 0
+            assert (root / "repos.txt").read_text(encoding="utf-8") == "base/repo\n"
+            snapshot = json.loads(publish.call_args.args[-1])
+            assert snapshot["collected_repos"] == ["base/repo", "manual/repo", "personal/repo"] + names
+            assert snapshot["discovered_repos"] == names
+            publish.reset_mock(); grading.reset_mock()
+            with patch.object(community_batch.repository_discovery, "run_github_trending", side_effect=RuntimeError("API unavailable")):
+                try:
+                    community_batch.run(root)
+                except RuntimeError:
+                    pass
+                else:
+                    raise AssertionError("발굴 API 실패를 성공으로 처리했습니다")
+            publish.assert_not_called()
+            grading.assert_not_called()
 
 
 if __name__ == "__main__":
-    with patch.object(community_batch.accounts, "subscription_repositories", return_value=[]):
+    test_discovery_contract()
+    with (patch.object(community_batch.accounts, "subscription_repositories", return_value=[]),
+          patch.object(community_batch, "discovered_repositories", return_value=[])):
         main()

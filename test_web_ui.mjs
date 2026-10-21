@@ -100,6 +100,11 @@ runInNewContext(functions + `
 `, {assert, state:{items:[{repo:'a/b',description:'base',categories:[],created_at:'2026-09-16'}]},
     submitted:[{repo:'new/pending',description:''},{repo:'new/empty',description:''}],
     collected:new Set(['new/empty']),tags:[],query:'',sort:'recommended',good:()=>false});
+runInNewContext(functions + `
+  assert.equal(allRepos().length,1);
+  assert.equal(allRepos()[0].repo,'found/repo');
+  assert.equal(repoStatus(allRepos()[0]),'수집 완료 · 조건에 맞는 이슈 없음');
+`, {assert,state:{items:[],discovered_repos:['found/repo']},submitted:[],collected:new Set(['found/repo']),query:'',tags:[],sort:'recommended'});
 console.log('통과: 공용/기본 구분·대기/빈 결과 구분·대소문자 중복 병합·검색·정렬');
 
 // 검색은 저장하지 않고 선택한 정식 이름만 기존 등록 입력란에 전달한다.
