@@ -29,10 +29,10 @@ def handle_contributions(request):
             respond(request, 409, {"error": "로그인 계정이 변경됐습니다. 기록을 다시 확인하세요.",
                                    "code": "account_changed"})
             return
-        if set(payload) - {"expected_user_id", "event_id", "repo", "number", "pr_url"}:
+        if set(payload) - {"expected_user_id", "event_id", "repo", "number", "pr_url", "delivery_id"}:
             raise ValueError("지원하지 않는 입력이 있습니다.")
         result = contributions.record_event(user["id"], params.get("action", [""])[0],
-            payload.get("repo"), payload.get("number"), payload.get("event_id"), payload.get("pr_url"))
+            payload.get("repo"), payload.get("number"), payload.get("event_id"), payload.get("pr_url"), payload.get("delivery_id"))
         respond(request, 200, result)
     except accounts.AuthenticationRequired:
         respond(request, 401, {"error": "GitHub 로그인이 필요합니다. 입력을 유지하고 다시 시도하세요.",

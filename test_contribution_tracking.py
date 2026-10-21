@@ -34,6 +34,11 @@ class ContributionRedis(MemoryRedis):
         self.fail_after_commit = False
 
     def __call__(self, command, *args):
+        if command == "HSETNX":
+            key, field, value = args
+            if self("HGET", key, field) is not None:
+                return 0
+            return self("HSET", key, field, value)
         if command != "EVAL" or args[0] != tracking.COMMIT_EVENT:
             return super().__call__(command, *args)
         _, count, records, receipts, event_id, fingerprint, issue_key, expected, record, receipt = args
@@ -72,6 +77,8 @@ class Fixture:
         self.addCleanup(self.github.stop)
         self.repo_info = deepcopy(REPO)
         self.pr_info = pull_request()
+        self.issue_changes = {}
+        self.issue_error = None
         self.event_number = 0
 
     def github_response(self, request):
@@ -79,13 +86,19 @@ class Fixture:
         self.assertIsNone(request.get_header("Authorization"))
         if request.full_url == "https://api.github.com/repos/owner/project":
             return deepcopy(self.repo_info)
+        if "/issues/" in request.full_url:
+            if self.issue_error:
+                raise self.issue_error
+            number = int(request.full_url.rsplit("/", 1)[1])
+            return {"number": number, "html_url": f"https://github.com/owner/project/issues/{number}",
+                    "state": "open", **deepcopy(self.issue_changes)}
         self.assertEqual(request.full_url, "https://api.github.com/repos/owner/project/pulls/50")
         return deepcopy(self.pr_info)
 
-    def event(self, action, *, user="10", number=7, event_id=None, pr_url=None):
+    def event(self, action, *, user="10", number=7, event_id=None, pr_url=None, delivery_id=None):
         self.event_number += 1
         return tracking.record_event(user, action, "Owner/Project", number,
-                                     event_id or f"fixture-event-{self.event_number}", pr_url)
+                                     event_id or f"fixture-event-{self.event_number}", pr_url, delivery_id)
 
     def saved(self, user="10"):
         return tracking.user_contributions(user)
@@ -106,7 +119,7 @@ class ContributionTests(Fixture, unittest.TestCase):
         self.assertEqual(record["delivery_linkage"], {"status": "not_connected", "delivery_id": None})
         self.assertFalse(self.saved()["summary"]["delivery_conversion_measured"])
         self.assertFalse(self.saved()["summary"]["automatic_level_expansion"])
-        self.github_mock.assert_called_once()
+        self.assertEqual(self.github_mock.call_count, 2)
 
     def test_invalid_transitions_preserve_prior_state(self):
         for action in ("cancel", "resume", "verify_pr"):
@@ -197,6 +210,33 @@ class ContributionTests(Fixture, unittest.TestCase):
                     self.event(action, pr_url=PR_URL if action == "submit_pr" else None)
                 self.assertEqual(self.saved()["records"], [])
 
+    def test_first_start_and_pr_report_require_a_real_issue_instead_of_a_pr_or_wrong_number(self):
+        for changes in ({"number": 999}, {"html_url": "https://github.com/other/project/issues/7"},
+                        {"html_url": "https://github.com/owner/project/pull/7"},
+                        {"pull_request": {"url": "https://api.github.com/repos/owner/project/pulls/7"}},
+                        {"pull_request": None}):
+            self.issue_changes = changes
+            for action in ("start", "submit_pr"):
+                with self.subTest(changes=changes, action=action), self.assertRaises(ValueError):
+                    self.event(action, pr_url=PR_URL if action == "submit_pr" else None)
+                self.assertEqual(self.saved()["records"], [])
+
+    def test_nonexistent_issue_and_issue_api_failure_preserve_existing_records(self):
+        self.event("start")
+        before = self.saved()
+        for failure in (RuntimeError("fixture GitHub 404"), OSError("fixture timeout")):
+            self.issue_error = failure
+            for action in ("start", "submit_pr"):
+                with self.subTest(action=action), self.assertRaises((RuntimeError, OSError)):
+                    self.event(action, number=8, pr_url=PR_URL if action == "submit_pr" else None)
+                self.assertEqual(self.saved(), before)
+
+    def test_closed_real_issue_allows_historical_contribution_record(self):
+        self.issue_changes = {"state": "closed"}
+        record = self.event("submit_pr", pr_url=PR_URL)["record"]
+        self.assertEqual(record["activity"], "not_started")
+        self.assertTrue(record["issue_existence_verified_at"])
+
     def test_external_or_mismatched_pr_url_is_never_fetched(self):
         for url in ("https://evil.test/owner/project/pull/50", "http://github.com/owner/project/pull/50",
                     "https://github.com@evil.test/owner/project/pull/50", PR_URL + "?secret=value",
@@ -258,7 +298,7 @@ class ContributionTests(Fixture, unittest.TestCase):
         self.event("resume", event_id="outer-resume")
         self.assertEqual([event["type"] for event in self.saved()["records"][0]["events"]], ["started", "cancelled", "resumed"])
 
-class ContributionHTTPTests(Fixture, unittest.TestCase):
+class HTTPFixture(Fixture):
     def setUp(self):
         super().setUp()
         self.server = ThreadingHTTPServer(("127.0.0.1", 0), handler)
@@ -293,6 +333,8 @@ class ContributionHTTPTests(Fixture, unittest.TestCase):
     def payload(self, **changes):
         return {"expected_user_id": "10", "event_id": "http-event-start", "repo": "owner/project", "number": 7, **changes}
 
+
+class ContributionHTTPTests(HTTPFixture, unittest.TestCase):
     def test_session_canonical_origin_and_expected_account_are_write_preconditions(self):
         self.assertEqual(self.request()[0], 401)
         for origin in (None, "https://evil.test", "https://repobite.vercel.app.evil.test"):
@@ -315,8 +357,9 @@ class ContributionHTTPTests(Fixture, unittest.TestCase):
         self.assertEqual(self.request(secret=self.secret)[1]["records"][0]["activity"], "active")
 
     def test_unknown_fields_fake_delivery_links_and_bad_json_cannot_mutate(self):
-        for payload in (self.payload(user_id="20"), self.payload(delivery_id="fake-delivery"), self.payload(number=True)):
+        for payload in (self.payload(user_id="20"), self.payload(number=True)):
             self.assertEqual(self.request(action="start", method="POST", payload=payload, secret=self.secret)[0], 400)
+        self.assertEqual(self.request(action="start", method="POST", payload=self.payload(delivery_id="fake-delivery"), secret=self.secret)[0], 409)
         for raw in (b"{", b"[]", b"\xff", b"{}" * 1500):
             self.assertEqual(self.request(action="start", method="POST", secret=self.secret, raw=raw)[0], 400)
         self.assertEqual(self.saved()["records"], [])
@@ -329,6 +372,99 @@ class ContributionHTTPTests(Fixture, unittest.TestCase):
         self.assertEqual((status, body["code"]), (503, "service_unavailable"))
         self.assertNotIn("private-provider-error", str(body))
         self.assertEqual(self.saved(), before)
+
+
+class DeliveryLinkTests(Fixture, unittest.TestCase):
+    def delivery(self, *, user="10", digest="fixture-digest-001", number=7, **changes):
+        return tracking.record_delivery(user, digest, changes.get("day", "2026-10-21"),
+            changes.get("items", [{"repo": "Owner/Project", "number": number, "email": "not-stored@example.com"}]),
+            changes.get("confirmed_at", "2026-10-21T02:10:00Z"), changes.get("state", "operator_confirmed"))
+
+    def test_server_import_is_idempotent_operator_attestation_with_minimal_private_payload(self):
+        imported = self.delivery()
+        self.assertTrue(imported["created"])
+        replay = self.delivery()
+        self.assertFalse(replay["created"])
+        self.assertEqual(imported["delivery"], replay["delivery"])
+        saved, = self.saved()["deliveries"]
+        self.assertEqual(saved["state"], "operator_confirmed")
+        self.assertEqual(saved["attestation_basis"], "operator_confirmation")
+        self.assertFalse(saved["provider_delivery_verified"])
+        self.assertEqual(saved["items"], [{"repo": "owner/project", "number": 7}])
+        self.assertNotIn("email", json.dumps(saved))
+        self.assertNotIn("user_id", json.dumps(saved))
+        self.assertEqual(self.saved("20")["deliveries"], [])
+        self.assertEqual(self.saved()["summary"]["operator_confirmed_digest_count"], 1)
+        self.assertFalse(self.saved()["summary"]["delivery_conversion_measured"])
+        self.github_mock.assert_not_called()
+
+    def test_server_import_cannot_replace_existing_digest_or_record_prepared_provider_success(self):
+        self.delivery()
+        before = self.saved()
+        with self.assertRaises(tracking.StateConflict):
+            self.delivery(number=8)
+        for changes in ({"state": "prepared"}, {"state": "provider_sent"}, {"day": "20261021"},
+                        {"confirmed_at": "2026-10-21"}, {"items": []},
+                        {"items": [{"repo": "owner/project", "number": 7}] * 2}):
+            with self.subTest(changes=changes), self.assertRaises(ValueError):
+                self.delivery(digest="another-digest-id", **changes)
+        self.assertEqual(self.saved(), before)
+
+    def test_actions_link_only_server_verified_current_user_and_matching_issue_digest(self):
+        self.delivery()
+        self.delivery(user="20", digest="other-user-digest", number=8)
+        for digest, number in (("other-user-digest", 8), ("fixture-digest-001", 8), ("unknown-digest-id", 7)):
+            with self.subTest(digest=digest, number=number), self.assertRaises(tracking.StateConflict):
+                self.event("start", number=number, delivery_id=digest)
+        self.assertEqual(self.saved()["records"], [])
+        record = self.event("start", delivery_id="fixture-digest-001")["record"]
+        self.assertEqual(record["delivery_linkage"]["delivery_ids"], ["fixture-digest-001"])
+        self.assertFalse(record["delivery_linkage"]["provider_delivery_verified"])
+        self.assertTrue(all(event["delivery_id"] == "fixture-digest-001" for event in record["events"]))
+        self.assertEqual(self.saved()["summary"]["merged_pr_count"], 0)
+
+    def test_linking_a_noop_action_records_attestation_without_duplicating_start(self):
+        self.event("start")
+        self.delivery()
+        linked = self.event("start", event_id="attach-delivery-event", delivery_id="fixture-digest-001")
+        self.assertTrue(linked["changed"])
+        replay = self.event("start", event_id="attach-delivery-event", delivery_id="fixture-digest-001")
+        self.assertTrue(replay["replayed"])
+        self.assertFalse(self.event("start", delivery_id="fixture-digest-001")["changed"])
+        events = self.saved()["records"][0]["events"]
+        self.assertEqual([event["type"] for event in events], ["started", "delivery_linked"])
+        with self.assertRaises(tracking.StateConflict):
+            self.event("start", event_id="attach-delivery-event")
+
+    def test_delivery_storage_failure_can_be_retried_without_forged_success(self):
+        def unavailable(command, *args):
+            if command == "HSETNX":
+                raise RuntimeError("fixture unavailable")
+            return self.db(command, *args)
+        with patch.object(tracking.community, "redis", side_effect=unavailable):
+            with self.assertRaises(RuntimeError):
+                self.delivery()
+        self.assertEqual(self.saved()["deliveries"], [])
+        self.assertTrue(self.delivery()["created"])
+        self.assertFalse(self.delivery()["created"])
+
+
+class DeliveryLinkHTTPTests(HTTPFixture, unittest.TestCase):
+    def test_browser_can_link_its_digest_but_cannot_create_or_modify_deliveries(self):
+        tracking.record_delivery("10", "http-digest-owner", "2026-10-21",
+            [{"repo": "owner/project", "number": 7}], "2026-10-21T02:10:00Z")
+        status, response, _ = self.request(action="start", method="POST",
+            payload=self.payload(delivery_id="http-digest-owner"), secret=self.secret)
+        self.assertEqual(status, 200)
+        self.assertEqual(response["record"]["delivery_linkage"]["status"], "operator_confirmed")
+        other = self.payload(expected_user_id="20", delivery_id="http-digest-owner")
+        self.assertEqual(self.request(action="start", method="POST", payload=other, secret=self.other_secret)[0], 409)
+        self.assertEqual(self.request(action="record_delivery", method="POST", payload=self.payload(), secret=self.secret)[0], 400)
+        self.assertEqual(self.request(secret=self.other_secret)[1]["deliveries"], [])
+        body = self.request(secret=self.secret)[1]
+        self.assertEqual(len(body["deliveries"]), 1)
+        self.assertNotIn("email", json.dumps(body))
+        self.assertNotIn("user_id", json.dumps(body))
 
 
 if __name__ == "__main__":

@@ -5,7 +5,7 @@ PR 응답 근거: https://docs.github.com/en/rest/pulls/pulls#get-a-pull-request
 """
 
 from copy import deepcopy
-from datetime import datetime
+from datetime import date, datetime
 import hashlib
 import json
 import re
@@ -74,6 +74,17 @@ def public_repository(repo):
     return info
 
 
+def verified_issue(repo, number):
+    """닫힌 이슈도 허용하되 존재하지 않는 번호나 PR 번호를 이슈로 저장하지 않는다."""
+    info = accounts.github_json(Request(f"https://api.github.com/repos/{repo}/issues/{number}", headers={
+        "Accept": "application/vnd.github+json", "User-Agent": "RepoBite"}))
+    url = info.get("html_url")
+    if (type(info.get("number")) is not int or info["number"] != number
+            or not isinstance(url, str) or url.lower() != f"https://github.com/{repo}/issues/{number}"
+            or "pull_request" in info):
+        raise ValueError("해당 레포의 실제 GitHub 이슈 번호인지 확인하세요. PR 번호는 사용할 수 없습니다.")
+
+
 def verified_pull_request(user_id, issue_repo, value):
     repo, number, url = pull_request_identity(value)
     if repo != issue_repo:
@@ -118,11 +129,12 @@ def verified_pull_request(user_id, issue_repo, value):
 
 def new_record(repo, number, checked_at):
     return {"repo": repo, "number": number, "activity": "not_started", "pull_requests": {}, "events": [],
-            "repository_public_verified_at": checked_at, "created_at": checked_at, "updated_at": checked_at,
+            "repository_public_verified_at": checked_at, "issue_existence_verified_at": checked_at,
+            "created_at": checked_at, "updated_at": checked_at,
             "delivery_linkage": {"status": "not_connected", "delivery_id": None}}
 
 
-def apply_action(existing, action, repo, number, event_id, checked_at, pull_request):
+def apply_action(existing, action, repo, number, event_id, checked_at, pull_request, delivery_id=None):
     record = deepcopy(existing) if existing else new_record(repo, number, checked_at)
     transitions = {"start": {"not_started": "active", "active": "active"},
                    "cancel": {"active": "cancelled", "cancelled": "cancelled"},
@@ -149,14 +161,83 @@ def apply_action(existing, action, repo, number, event_id, checked_at, pull_requ
             events.append({"type": "pr_verified", "pr_url": url})
         if pull_request["merged_at"] and (previous is None or not previous["merged_at"]):
             events.append({"type": "pr_merged", "pr_url": url, "merged_at": pull_request["merged_at"]})
+    if delivery_id is not None:
+        linked = set(record["delivery_linkage"].get("delivery_ids", []))
+        if delivery_id not in linked:
+            linked.add(delivery_id)
+            record["delivery_linkage"] = {"status": "operator_confirmed", "delivery_id": delivery_id,
+                "delivery_ids": sorted(linked), "attestation_basis": "operator_confirmation",
+                "provider_delivery_verified": False}
+            events.append({"type": "delivery_linked", "delivery_id": delivery_id})
     for event in events:
+        if delivery_id is not None:
+            event["delivery_id"] = delivery_id
         record["events"].append({**event, "event_id": event_id, "occurred_at": checked_at})
     if events:
         record["updated_at"] = checked_at
     return record, bool(events)
 
 
-def record_event(user_id, action, repo, number, event_id, pr_url=None):
+def delivery_key(user_id):
+    user_keys(user_id)
+    return "repobite:contributions:{" + user_id + "}:deliveries"
+
+
+def validate_delivery_id(value):
+    if not isinstance(value, str) or not re.fullmatch(r"[A-Za-z0-9_-]{8,128}", value):
+        raise ValueError("전달 식별자를 확인하세요.")
+
+
+def record_delivery(user_id, digest_id, day, items, confirmed_at, state="operator_confirmed"):
+    """서버 outbox 전용. 운영자 확인만 저장하며 공개 API에서는 호출하지 않는다."""
+    key = delivery_key(user_id)
+    validate_delivery_id(digest_id)
+    try:
+        if (not isinstance(day, str) or date.fromisoformat(day).isoformat() != day
+                or not isinstance(confirmed_at, str) or datetime.fromisoformat(confirmed_at).utcoffset() is None):
+            raise ValueError()
+    except (TypeError, ValueError):
+        raise ValueError("운영자 확인 날짜와 시각을 확인하세요.") from None
+    if state != "operator_confirmed":
+        raise ValueError("운영자가 발송을 확인한 기록만 동기화할 수 있습니다.")
+    if not isinstance(items, list) or not 0 < len(items) <= accounts.DAILY_LIMIT:
+        raise ValueError("수동 발송 항목을 확인하세요.")
+    identities = set()
+    for item in items:
+        if not isinstance(item, dict):
+            raise ValueError("수동 발송 항목을 확인하세요.")
+        repo, _ = issue_identity(item.get("repo"), item.get("number"))
+        identity = repo, item["number"]
+        if identity in identities:
+            raise ValueError("수동 발송 항목에 중복 이슈가 있습니다.")
+        identities.add(identity)
+    normalized = [{"repo": repo, "number": number} for repo, number in sorted(identities)]
+    record = {"id": digest_id, "day": day, "items": normalized, "confirmed_at": confirmed_at,
+              "state": state, "attestation_basis": "operator_confirmation", "provider_delivery_verified": False}
+    value = json.dumps(record, ensure_ascii=False, sort_keys=True)
+    created = community.redis("HSETNX", key, digest_id, value)
+    if not created:
+        previous = community.redis("HGET", key, digest_id)
+        if not previous or json.loads(previous) != record:
+            raise StateConflict("기존 전달 식별자의 수신자 또는 항목을 바꿀 수 없습니다.")
+    return {"delivery": record, "created": bool(created)}
+
+
+def user_deliveries(user_id):
+    records = [json.loads(value) for value in community.redis("HVALS", delivery_key(user_id)) or []]
+    return sorted(records, key=lambda record: (record["day"], record["id"]), reverse=True)
+
+
+def require_issue_delivery(user_id, digest_id, repo, number):
+    validate_delivery_id(digest_id)
+    saved = community.redis("HGET", delivery_key(user_id), digest_id)
+    record = json.loads(saved) if saved else None
+    if (not record or record.get("state") != "operator_confirmed"
+            or not any(item["repo"] == repo and item["number"] == number for item in record["items"])):
+        raise StateConflict("현재 계정과 이슈에 해당하는 운영자 확인 전달 기록이 없습니다.")
+
+
+def record_event(user_id, action, repo, number, event_id, pr_url=None, delivery_id=None):
     records_key, receipts_key = user_keys(user_id)
     repo, key = issue_identity(repo, number)
     if action not in ACTIONS:
@@ -167,7 +248,10 @@ def record_event(user_id, action, repo, number, event_id, pr_url=None):
         _, _, pr_url = pull_request_identity(pr_url)
     elif pr_url is not None:
         raise ValueError("착수 기록에는 PR 주소가 필요하지 않습니다.")
-    fingerprint = hashlib.sha256(json.dumps([action, repo, number, pr_url]).encode()).hexdigest()
+    request_identity = [action, repo, number, pr_url]
+    if delivery_id is not None:
+        request_identity.append(delivery_id)
+    fingerprint = hashlib.sha256(json.dumps(request_identity).encode()).hexdigest()
     receipt = community.redis("HGET", receipts_key, event_id)
     if receipt:
         saved = json.loads(receipt)
@@ -176,6 +260,8 @@ def record_event(user_id, action, repo, number, event_id, pr_url=None):
         return {**saved["result"], "replayed": True}
     existing_raw = community.redis("HGET", records_key, key)
     existing = json.loads(existing_raw) if existing_raw else None
+    if delivery_id is not None:
+        require_issue_delivery(user_id, delivery_id, repo, number)
     if action == "verify_pr" and (not existing or pr_url not in existing["pull_requests"]):
         raise StateConflict("먼저 해당 PR을 신고하세요.")
     pull_request = verified_pull_request(user_id, repo, pr_url) if pr_url else None
@@ -184,10 +270,12 @@ def record_event(user_id, action, repo, number, event_id, pr_url=None):
         if action != "start":
             raise StateConflict("먼저 이슈에 착수하세요.")
         public_repository(repo)
+    if not existing:
+        verified_issue(repo, number)
         checked_at = community.timestamp()
     for _ in range(4):
         existing = json.loads(existing_raw) if existing_raw else None
-        record, changed = apply_action(existing, action, repo, number, event_id, checked_at, pull_request)
+        record, changed = apply_action(existing, action, repo, number, event_id, checked_at, pull_request, delivery_id)
         result = {"record": record, "changed": changed}
         receipt = {"fingerprint": fingerprint, "result": result}
         response = json.loads(community.redis(
@@ -206,7 +294,10 @@ def user_contributions(user_id):
     records = [json.loads(value) for value in community.redis("HVALS", records_key) or []]
     records.sort(key=lambda row: (row["repo"], row["number"]))
     merged = {pr["url"] for record in records for pr in record["pull_requests"].values() if pr["merged_at"]}
-    return {"records": records, "summary": {"tracked_issues": len(records), "merged_pr_count": len(merged),
+    deliveries = user_deliveries(user_id)
+    return {"records": records, "deliveries": deliveries,
+            "summary": {"tracked_issues": len(records), "merged_pr_count": len(merged),
+            "operator_confirmed_digest_count": len(deliveries), "provider_delivery_verified": False,
             "success_basis": "verified_github_author_id_and_merged_at_unique_pr_url",
             "issue_link_basis": "user_declared", "delivery_conversion_measured": False,
             "automatic_level_expansion": False}}
