@@ -27,7 +27,7 @@ jobs:
           package-manager-cache: false
       - name: Python regression tests without external API calls
         run: |
-          foreach ($test in @('radar', 'freshness', 'vertex', 'web', 'community', 'home_status', 'accounts', 'manual_delivery', 'quality_measurement', 'contribution_tracking', 'repository_discovery')) {
+          foreach ($test in @('radar', 'freshness', 'vertex', 'web', 'community', 'home_status', 'accounts', 'manual_delivery', 'quality_measurement', 'contribution_tracking', 'repository_discovery', 'quality_evaluation')) {
             python "test_$test.py"
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           }
@@ -36,6 +36,8 @@ jobs:
           node test_web_ui.mjs
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           node --test test_account_ui.mjs
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          node --test test_contribution_ui.mjs
       - name: Windows PowerShell scripts
         shell: powershell
         run: .\test_windows.ps1
