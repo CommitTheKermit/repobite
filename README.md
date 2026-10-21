@@ -1,6 +1,9 @@
 # RepoBite MVP
 
-GitHub 이슈 본문을 읽고 난이도(1/2/3)와 준비도(ready/needs_info/undecided)를 독립적으로 판정하는 CLI.
+GitHub 이슈 본문의 재현·원인·수정 제안이 얼마나 구체적인지 판정하는 CLI.
+현행 판정 기준은 `criteria_version=2`이며 구현 난이도와 별개다.
+Lv.1은 본문 충분(`ready`), Lv.2는 추가 정보 필요(`needs_info`), Lv.3은 판단 보류(`undecided`)다.
+`readiness`는 각 등급에 대응하는 값이며 독립된 두 번째 평가 축이 아니다.
 Python 3.14 표준 라이브러리만 사용한다. 로컬 수집·판정과 공개 탐색 화면을 지원한다.
 공용 레포 등록은 Upstash Redis 연결이 필요하며, 설치 패키지와 알림 발송은 없다.
 
@@ -177,6 +180,12 @@ python3 radar.py report
 본문 null은 빈 문자열로, labels는 이름 배열로, user는 login 문자열로 정규화한다.
 `grades.jsonl`은 원본 필드에 `model, reasoning_effort, criteria_version, graded_at, grade`를 추가한다.
 `grade` 안에 `difficulty, readiness, reason, exclude, exclude_reason`이 있다.
+필드명 `difficulty`는 호환성을 위해 유지한다. v2의 값 1/2/3은 구현량·기술 분야·저장소 규모가 아니라
+본문의 구체성만 나타낸다. 1은 재현·원인·수정 제안이 모두 구체적인 경우, 2는 일부가 빠졌지만
+문제와 다음 조사 방향이 분명한 경우, 3은 핵심 정보가 부족해 원인 조사부터 필요한 경우다.
+공개 화면은 항목의 `criteria_version`이 숫자 `2`인 경우에만 이 의미를 표시하고 집계한다.
+버전이 없거나 다른 과거 판정은 기존 Lv.숫자를 보존하고 **기준 미확인**으로 구분한다.
+모델 이름만으로 판정 기준을 추정하지 않는다. 공개 API와 정적 데이터에도 항목별 버전 전파가 필요하다.
 Lv.1 × ready 후보에는 `freshness` 확인 결과를 추가하고 `eligible=true`인 건만 추천한다.
 판정 실패는 `grade: null`과 `error` 오류 분류로 남기며 명령은 종료 코드 1을 반환한다.
 실패를 성공으로 간주하거나 통계에서 숨기지 않는다.
@@ -197,6 +206,7 @@ Lv.1 × ready 후보에는 `freshness` 확인 결과를 추가하고 `eligible=t
 수집 실패 없는 일반 실행은 전체 수집을 저장한다. 표본 모드는 조회 가능한 일부도 저장하고 실패를 알린다.
 원문과 판정 결과인 `*.jsonl`은 로컬에서 확인하고 Git에는 넣지 않는다.
 표본 실측 요약은 [기획서 20절](docs/기획서.md)에 기록한다.
+2026-09-10 Luna 표본은 과거의 독립된 난이도·준비도 2축 측정이다. 그 수치를 현행 v2의 품질이나 공급률로 해석하지 않는다.
 
 ## 판정 실행과 제약
 

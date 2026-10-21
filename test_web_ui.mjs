@@ -14,8 +14,8 @@ assert.doesNotMatch(html, /selected=selected===r\.repo\?'':r\.repo;cards\(\)/);
 assert.match(html, /a\.href=x\.url/);
 assert.match(html, /x\.user\?'@'\+x\.user:'작성자 미상'/);
 assert.match(html, /x\.created_at\.slice\(5,10\)\.replace\('-','\.'\)/);
-assert.match(html, /x\.grade\?\.difficulty\?'난이도 '\+x\.grade\.difficulty:'난이도 미정'/);
-assert.match(html, /ready:'바로 착수',needs_info:'확인 필요',undecided:'판단 보류'/);
+assert.match(html, /make\('span','',gradeLabel\(x\)\)/);
+assert.doesNotMatch(html, /난이도 미정|'쉬움 '|ready:'바로 착수'/);
 assert.match(html, /if\(x\.error\)return'판정 실패'/);
 assert.match(html, /if\(!x\.grade\)return'미판정'/);
 assert.match(html, /if\(x\.grade\.exclude\)return'제외'/);
@@ -40,6 +40,49 @@ assert.doesNotMatch(html, /\/api\/run/);
 assert.doesNotMatch(html, /id="collect"/);
 assert.doesNotMatch(html, /id="grade"/);
 console.log('통과: 탐색·검색·정렬·레포 선택·원본 이슈 이동과 운영 기능 비노출');
+
+const gradeFunctions = html.slice(html.indexOf('function gradeLabel('),html.indexOf('function renderCards('))
+  + html.slice(html.indexOf('function verdict('),html.indexOf('function issues('));
+runInNewContext(gradeFunctions + `
+  const current = difficulty=>({criteria_version:2,grade:{difficulty,readiness:'ready',exclude:false}});
+  assert.equal(gradeLabel(current(1)),'Lv.1');
+  assert.equal(verdict(current(1)),'본문 충분');
+  assert.equal(verdict(current(2)),'추가 정보 필요');
+  assert.equal(verdict(current(3)),'판단 보류');
+  const legacy={grade:{difficulty:2,readiness:'ready',exclude:false},model:'gpt-5.6-luna'};
+  assert.equal(gradeLabel(legacy),'Lv.2');
+  assert.equal(verdict(legacy),'기준 미확인');
+  assert.equal(verdict({...legacy,criteria_version:1}),'기준 미확인');
+  assert.equal(verdict({...legacy,criteria_version:'2'}),'기준 미확인');
+  assert.equal(verdict({...legacy,grade:{...legacy.grade,exclude:true}}),'제외 · 기준 미확인');
+  assert.equal(verdict({...current(1),grade:{...current(1).grade,exclude:true}}),'제외');
+  assert.equal(verdict({error:'TransportError',criteria_version:2}),'판정 실패');
+  assert.equal(verdict({criteria_version:2}),'미판정');
+  assert.equal(gradeLabel({}),'등급 미정');
+  const mixed=[current(1),current(2),current(3),legacy,{...legacy,criteria_version:1},{...legacy,criteria_version:'2'},{}];
+  assert.equal(JSON.stringify(gradeCounts(mixed)),JSON.stringify([1,1,1]));
+  assert.equal(unverifiedCount(mixed),3);
+  assert.equal(JSON.stringify(gradeCounts([legacy])),JSON.stringify([0,0,0]));
+`,{assert});
+console.log('통과: v2 의미·대응 등급·과거 숫자 보존·기준 미확인·버전별 집계 분리');
+
+// 실제 카드 통계에도 과거 항목의 숫자를 v2로 합산하지 않는다.
+const cardFunctions=html.slice(html.indexOf('function gradeLabel('),html.indexOf('function verdict('));
+const rendered=[];
+runInNewContext(cardFunctions+`
+  const legacy={grade:{difficulty:1,readiness:'ready'}};
+  const items=[legacy,{criteria_version:2,grade:{difficulty:2,readiness:'needs_info'}}];
+  renderCards([{repo:'owner/project',description:'example',issues:items}],feed);
+`,{cardCache:new Map,selected:'',feed:{replaceChildren(){},append(node){rendered.push(node)}},
+  document:{createTextNode:text=>({textContent:String(text)})},
+  make:(tag,cls,text)=>({tag,className:cls,textContent:text,dataset:{},children:[],attributes:{},
+    append(...children){this.children.push(...children)},
+    setAttribute(key,value){this.attributes[key]=value}})});
+const stats=rendered[0].children[0].children.find(node=>node.className==='stats');
+assert.equal(stats.attributes['aria-label'],'현행 v2: 본문 충분 0, 추가 정보 필요 1, 판단 보류 0, 기준 미확인 1');
+assert.equal(stats.title,stats.attributes['aria-label']);
+assert.deepEqual(stats.children.filter(node=>!node.className).map(node=>node.textContent),['0','1','0',' · 기준 미확인 1']);
+console.log('통과: 실제 카드의 v2 통계·접근성 설명·과거 건수 표시');
 
 const functions = html.slice(html.indexOf('function allRepos()'), html.indexOf('function cards()'));
 runInNewContext(functions + `

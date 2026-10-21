@@ -1,4 +1,7 @@
-"""GitHub 이슈 수집, 독립된 두 축 판정, 표본 리포트. Python 3.14 표준 라이브러리."""
+"""GitHub 이슈 수집, v2 본문 구체성 판정, 표본 리포트. Python 3.14 표준 라이브러리.
+
+difficulty는 구현 난이도가 아닌 본문 구체성 1/2/3이고 readiness는 이에 대응한다.
+"""
 
 import argparse
 from collections import Counter
