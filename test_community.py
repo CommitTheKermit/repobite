@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 import tempfile
 import threading
+import subprocess
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 from unittest.mock import patch
@@ -91,6 +92,8 @@ def test_snapshot_recovery():
 
 
 def main():
+    test_unavailable_repositories_do_not_block_public_collection()
+    test_repository_check_failure_preserves_snapshot()
     test_snapshot_recovery()
     test_personal_subscriptions_join_collection()
     assert community.normalize_repo(" https://github.com/Owner/Repo/ ") == "Owner/Repo"
@@ -200,12 +203,95 @@ def main():
             assert community_batch.run(root) == 1
             publish.assert_not_called()
         with (patch.object(community, "registrations", return_value=[row]),
-              patch.object(radar, "gh_json", return_value={"private": True}),
+              patch.object(radar, "gh_json", return_value={}),
               patch.object(radar, "batch") as batch, patch.object(community, "redis") as publish):
             rejects(community_batch.run, root)
             batch.assert_not_called()
             publish.assert_not_called()
     print("통과: 등록 검증·중복·요청 제한·HTTP 경계·목록 병합·정기 반영·실패 시 이전 공개 결과 보존")
+
+
+def test_unavailable_repositories_do_not_block_public_collection():
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        base = "Base/Good\nBase/Private\n"
+        (root / "repos.txt").write_text(base, encoding="utf-8")
+        registrations = [{"repo": "Gone/Repo"}]
+        private = {"base/private", "personal/private"}
+        gone = {"gone/repo", "trend/gone"}
+        checked = []
+
+        def github(endpoint, *, include_status):
+            assert include_status is True
+            name = endpoint.removeprefix("repos/").lower()
+            checked.append(name)
+            if name in gone:
+                raise radar.GitHubAPIError(404)
+            return {"private": name in private}
+
+        def batch(args):
+            expected = ["Base/Good", "Trend/Good"] if private else [
+                "Base/Good", "Base/Private", "Personal/Private", "Trend/Good"]
+            assert args.repos.read_text(encoding="utf-8").splitlines() == expected
+            # 이전 캐시 행이 남아도 이번 실행에서 제외한 저장소를 공개하지 않는다.
+            issues = [radar.normalize_issue(name, ISSUE) for name in ["Base/Good", "Base/Private", "Gone/Repo"]]
+            args.issues.write_text("\n".join(json.dumps(row) for row in issues), encoding="utf-8")
+            args.grades.write_text("", encoding="utf-8")
+            return 0
+
+        with (patch.object(community, "registrations", return_value=registrations),
+              patch.object(community_batch.accounts, "subscription_repositories", return_value=["Personal/Private"]),
+              patch.object(community_batch, "discovered_repositories", return_value=["Trend/Good", "Trend/Gone"]),
+              patch.object(radar, "gh_json", side_effect=github),
+              patch.object(radar, "batch", side_effect=batch) as collect,
+              patch.object(community, "redis") as publish, redirect_stdout(io.StringIO())):
+            assert community_batch.run(root) == 0
+            snapshot = json.loads(publish.call_args.args[-1])
+            assert snapshot["collected_repos"] == ["base/good", "trend/good"]
+            assert snapshot["discovered_repos"] == ["Trend/Good"]
+            assert [row["repo"] for row in snapshot["items"]] == ["Base/Good"]
+            assert registrations == [{"repo": "Gone/Repo"}]
+            assert (root / "repos.txt").read_text(encoding="utf-8") == base
+            private.clear()
+            assert community_batch.run(root) == 0
+            assert "base/private" in json.loads(publish.call_args.args[-1])["collected_repos"]
+            assert checked.count("base/private") == 2
+            # 전부 제외된 실행은 이전 파일을 읽거나 판정하지 않고 빈 공개 결과를 만든다.
+            collect.reset_mock()
+            with patch.object(radar, "gh_json", return_value={"private": True}):
+                assert community_batch.run(root) == 0
+            collect.assert_not_called()
+            snapshot = json.loads(publish.call_args.args[-1])
+            assert snapshot["items"] == snapshot["collected_repos"] == snapshot["discovered_repos"] == []
+
+
+def test_repository_check_failure_preserves_snapshot():
+    failures = [radar.GitHubAPIError(code) for code in (401, 403, 429, 500, 503)]
+    failures += [RuntimeError("HTTP 404 is only text"), subprocess.TimeoutExpired("gh", 180),
+                 ValueError("broken JSON")]
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        (root / "repos.txt").write_text("a/public\nb/unknown\n", encoding="utf-8")
+        for failure in failures:
+            previous = json.dumps({"items": [{"title": "이전 결과"}]})
+            saved = previous
+
+            def publish(*args):
+                nonlocal saved
+                saved = args[-1]
+
+            with (patch.object(community, "registrations", return_value=[]),
+                  patch.object(radar, "gh_json", side_effect=[{"private": False}, failure]),
+                  patch.object(radar, "batch") as batch,
+                  patch.object(community, "redis", side_effect=publish)):
+                try:
+                    community_batch.run(root)
+                except (RuntimeError, ValueError, subprocess.TimeoutExpired):
+                    pass
+                else:
+                    raise AssertionError("GitHub 장애를 저장소 제외로 숨겼습니다")
+                batch.assert_not_called()
+                assert saved == previous
 
 
 def test_personal_subscriptions_join_collection():

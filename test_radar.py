@@ -9,6 +9,7 @@ import json
 from pathlib import Path
 import tempfile
 import threading
+from subprocess import CompletedProcess
 from urllib.error import HTTPError
 from unittest.mock import patch
 
@@ -28,6 +29,37 @@ def rejects(function, *args):
     except ValueError:
         return
     raise AssertionError("잘못된 입력이 통과했습니다")
+
+
+def test_github_http_status_is_separate_from_error_text():
+    for line in ("HTTP/2.0 200 OK\nX-Test: fixture\n\n", "HTTP/1.1 200 OK\r\n\r\n"):
+        with patch.object(radar.subprocess, "run", return_value=CompletedProcess(
+                [], 0, line + '{"private":false}', "")) as command:
+            assert radar.gh_json("repos/a/b", include_status=True) == {"private": False}
+            assert "--include" in command.call_args.args[0]
+    for status in (401, 403, 404, 429, 500, 503):
+        response = f'HTTP/2.0 {status} Error\n\n{{"message":"private diagnostic"}}'
+        with patch.object(radar.subprocess, "run", return_value=CompletedProcess([], 1, response, "secret")):
+            try:
+                radar.gh_json("repos/a/b", include_status=True)
+            except radar.GitHubAPIError as error:
+                assert error.status == status
+                assert "private diagnostic" not in str(error) and "secret" not in str(error)
+            else:
+                raise AssertionError("HTTP 실패를 성공으로 처리했습니다")
+    for response in ('{"status":"404"}', 'HTTP/2.0 200 OK\n\n{"private":false}'):
+        with patch.object(radar.subprocess, "run", return_value=CompletedProcess([], 1, response, "HTTP 404")):
+            try:
+                radar.gh_json("repos/a/b", include_status=True)
+            except radar.GitHubAPIError:
+                raise AssertionError("오류 문자열에서 HTTP 상태를 추측했습니다")
+            except RuntimeError:
+                pass
+            else:
+                raise AssertionError("CLI 실패를 성공으로 처리했습니다")
+    with patch.object(radar.subprocess, "run", return_value=CompletedProcess([], 0, '{"ok":true}', "")) as command:
+        assert radar.gh_json("repos/a/b") == {"ok": True}
+        assert "--include" not in command.call_args.args[0]
 
 
 def test_filters_and_collection():
@@ -315,6 +347,7 @@ def test_candidates_and_batch():
 
 if __name__ == "__main__":
     with redirect_stderr(io.StringIO()):
+        test_github_http_status_is_separate_from_error_text()
         test_filters_and_collection()
         test_schema_and_grading()
         test_grading_parallelism()

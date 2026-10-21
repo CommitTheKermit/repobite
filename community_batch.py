@@ -38,6 +38,23 @@ def discovered_repositories(root):
     return names
 
 
+def public_repositories(names):
+    """이번 실행에서 공개인 저장소만 수집한다. 등록과 구독 자체는 보존한다."""
+    public = {}
+    for key, name in names.items():
+        try:
+            info = radar.gh_json(f"repos/{name}", include_status=True)
+        except radar.GitHubAPIError as error:
+            if error.status == 404:
+                continue
+            raise
+        if not isinstance(info, dict) or type(info.get("private")) is not bool:
+            raise ValueError("저장소의 공개 상태를 확인하지 못했습니다.")
+        if not info["private"]:
+            public[key] = name
+    return public
+
+
 def run(root=radar.ROOT, since="24h"):
     root = Path(root)
     submitted = community.registrations()
@@ -57,22 +74,25 @@ def run(root=radar.ROOT, since="24h"):
     for value in discovered:
         name = community.normalize_repo(value)
         names.setdefault(name.lower(), name)
-    # gh가 비공개 레포 권한을 갖고 있어도 공개 피드에 그 내용을 올리지 않는다.
-    for name in names.values():
-        if radar.gh_json(f"repos/{name}").get("private") is not False:
-            raise ValueError("공개 상태를 확인할 수 없는 레포가 있습니다.")
+    # gh가 비공개 레포 권한을 갖고 있어도 수집하거나 공개하지 않는다.
+    names = public_repositories(names)
+    discovered = [name for name in discovered if name.lower() in names]
     data = root / ".radar-community"
     data.mkdir(exist_ok=True)
     # ponytail: 기존 스케줄러처럼 동시에 한 배치만 실행. 여러 실행기가 생기면 DB 잠금 추가.
-    with tempfile.TemporaryDirectory(dir=data) as directory:
-        repos = Path(directory) / "repos.txt"
-        repos.write_text("\n".join(names.values()) + "\n", encoding="utf-8")
-        args = argparse.Namespace(repos=repos, since=since, issues=data / "issues.jsonl",
-                                  grades=data / "grades.jsonl", candidates=data / "candidates.jsonl",
-                                  model=radar.MODEL)
-        if result := radar.batch(args):
-            return result
-    snapshot = {"items": public_items(radar.read_jsonl(args.issues), radar.read_jsonl(args.grades)),
+    items = []
+    if names:
+        with tempfile.TemporaryDirectory(dir=data) as directory:
+            repos = Path(directory) / "repos.txt"
+            repos.write_text("\n".join(names.values()) + "\n", encoding="utf-8")
+            args = argparse.Namespace(repos=repos, since=since, issues=data / "issues.jsonl",
+                                      grades=data / "grades.jsonl", candidates=data / "candidates.jsonl",
+                                      model=radar.MODEL)
+            if result := radar.batch(args):
+                return result
+        issues = [row for row in radar.read_jsonl(args.issues) if row["repo"].lower() in names]
+        items = public_items(issues, radar.read_jsonl(args.grades))
+    snapshot = {"items": items,
                 "collected_repos": list(names), "collected_at": community.timestamp(),
                 "discovered_repos": discovered}
     # 등록 목록은 건드리지 않는다. 배치 도중 추가된 레포는 다음 실행까지 대기로 남는다.

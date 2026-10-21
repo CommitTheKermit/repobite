@@ -138,14 +138,31 @@ def normalize_issue(repo, issue, repository_image=""):
             "repository_image": repository_image}
 
 
-def gh_json(endpoint, *options):
-    result = subprocess.run(["gh", "api", "--hostname", "github.com", endpoint, *options],
+class GitHubAPIError(RuntimeError):
+    def __init__(self, status):
+        self.status = status
+        super().__init__(f"GitHub API 실패 (HTTP {status})")
+
+
+def gh_json(endpoint, *options, include_status=False):
+    result = subprocess.run(["gh", "api", "--hostname", "github.com", endpoint, *options,
+                             *(["--include"] if include_status else [])],
                             capture_output=True, text=True, encoding="utf-8", timeout=180)
+    body = result.stdout
+    if include_status:
+        headers, separator, body = body.replace("\r\n", "\n").partition("\n\n")
+        status_line = headers.split("\n", 1)[0]
+        match = re.fullmatch(r"HTTP/\d+(?:\.\d+)? ([1-5][0-9]{2})(?: .*)?", status_line)
+        if not separator or not match:
+            raise RuntimeError("GitHub HTTP 상태를 확인하지 못했습니다")
+        status = int(match[1])
+        if not 200 <= status < 300:
+            raise GitHubAPIError(status)
     if result.returncode:
         # 외부 stderr에는 인증값 또는 이슈 본문이 섞일 수 있어 그대로 출력하지 않는다.
         raise RuntimeError(f"gh api 실패 (종료 코드 {result.returncode})")
     try:
-        return json.loads(result.stdout)
+        return json.loads(body)
     except ValueError:
         raise ValueError("gh api가 잘못된 JSON을 반환했습니다") from None
 
