@@ -524,6 +524,8 @@ async function mutate(action, body, verify, method = 'POST') {
   if (busy) return false;
   const revision = accountRevision;
   busy = true; render();
+  const saving = document.querySelector('#save-loading');
+  saving.showPopover();
   try {
     const fresh = await client.save(action, body, verify, method);
     if (revision !== accountRevision) return false;
@@ -541,7 +543,7 @@ async function mutate(action, body, verify, method = 'POST') {
     accountError = error.message;
     notify('ACCOUNT', 'SAVE', `<p>${esc(error.message)}</p><button class="ghost" data-login>GitHub 로그인</button>`);
     return false;
-  } finally { busy = false; render(); }
+  } finally { saving.hidePopover(); busy = false; render(); }
 }
 async function savePersonalization() {
   const {level, experience} = state, topics = [...state.topics].sort();
@@ -623,6 +625,8 @@ async function initialize() {
   } catch { accountError = '계정 연결을 확인하지 못했습니다. 입력을 저장하려면 다시 로그인하세요.'; }
   try { await loadFeed(); } catch (error) { accountError = error.message; }
   busy = false; render();
+  document.querySelector('.shell').inert = false;
+  document.querySelector('#page-loading').hidden = true;
   await collectionStatus();
   pollTimer = setInterval(collectionStatus, 5000);
 }

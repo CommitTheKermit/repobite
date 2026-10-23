@@ -6,12 +6,14 @@ export function mountRepositorySearchDialog(dialog, {fetcher = fetch, onSelect, 
   const input = dialog.querySelector('input');
   const status = dialog.querySelector('[data-search-status]');
   const results = dialog.querySelector('[data-search-results]');
+  const loading = dialog.querySelector('[data-search-loading]');
   let timer, controller, revision = 0, composing = false;
   function cancel() {
     clearTimeout(timer); controller?.abort(); revision++;
+    loading.hidden = true; results.setAttribute('aria-busy', 'false');
   }
   function clearResults(message) {
-    results.replaceChildren(); status.textContent = message;
+    loading.hidden = true; results.replaceChildren(); status.textContent = message;
     results.setAttribute('aria-busy', 'false');
   }
   async function search(ticket) {
@@ -46,7 +48,8 @@ export function mountRepositorySearchDialog(dialog, {fetcher = fetch, onSelect, 
     cancel();
     if (composing) { clearResults('검색어를 입력해 주세요.'); return; }
     if (input.value.trim().length < 2) { clearResults('저장소 이름을 두 글자 이상 입력해 주세요.'); return; }
-    clearResults('GitHub에서 공개 저장소를 찾고 있습니다.');
+    clearResults('');
+    loading.hidden = false;
     results.setAttribute('aria-busy', 'true');
     const ticket = revision;
     timer = setTimeout(() => search(ticket), immediate ? 0 : delay);

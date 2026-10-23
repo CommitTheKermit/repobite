@@ -370,7 +370,10 @@ svg {flex-shrink:0;vertical-align:middle}
 .repository-not-found { margin: 0 0 28px; }
 .repository-not-found h2 { font-size: 20px; margin: 0 0 8px; }
 .repository-not-found p { color: var(--muted); margin: 0 0 18px; }
-.repository-search { color: var(--text); width: min(640px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); padding: 0; overflow: auto; }
+.repository-search { height: min(680px, calc(100dvh - 32px)); color: var(--text); width: min(640px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); padding: 0; overflow: hidden; }
+.repository-search[open] { display: flex; flex-direction: column; }
+.repository-search > .win-bar { flex: none; }
+.repository-search > .win-body { display: flex; flex-direction: column; min-height: 0; flex: 1; }
 .repository-search::backdrop { background: #000b; }
 .repository-search .win-bar { align-items: center; }
 .repository-search .win-bar button { width: 32px; height: 32px; border: 0; background: none; color: var(--ink); font-size: 24px; line-height: 1; }
@@ -385,3 +388,16 @@ svg {flex-shrink:0;vertical-align:middle}
 .repository-search-result b, .repository-search-result small { display: block; overflow-wrap: anywhere; }
 .repository-search-result b { font: 14px/1.5 var(--mono); }
 .repository-search-result small { color: var(--muted); font-size: 13px; margin-top: 4px; }
+
+/* 시안의 창과 막대를 재사용하되 실제 응답 전까지 완료율을 표시하지 않는다. */
+.dialog[popover] { margin: 0; padding: 0; width: 100%; height: 100%; max-width: none; max-height: none; border: 0; color: var(--text); }
+.dialog[popover]:not(:popover-open) { display: none; }
+.progress.indeterminate { overflow: hidden; }
+.progress.indeterminate span { width: 35%; min-width: 0; padding: 0; animation: loading-sweep 1.2s ease-in-out infinite alternate; }
+@keyframes loading-sweep { from { left: 0; } to { left: 65%; } }
+@media (prefers-reduced-motion: reduce) { .progress.indeterminate span { animation: none; left: 32.5%; } }
+.repository-search [data-search-status] { min-height: 42px; margin: 12px 0; flex: none; }
+.repository-search-content { position: relative; flex: 1; min-height: 0; }
+.repository-search [data-search-results] { height: 100%; overflow-y: auto; scrollbar-gutter: stable; }
+.search-loading { position: absolute; inset: 0; display: grid; place-items: center; }
+.search-loading .progress { width: min(280px, 80%); margin: 0; }
