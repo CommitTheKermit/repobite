@@ -49,6 +49,10 @@ function field(x, y, ar) {
   return Math.pow(Math.max(0, v), 0.9) * 0.95;
 }
 
+// 24칸 이하 아이콘은 디더 대신 실루엣으로 그린다. 작은 격자에서는 점 밀도로 회색을 만들 수 없어 윤곽이 흩어진다.
+// 레이더는 옅은 탐침 부채꼴이 고리와 엉기지 않도록 진한 부분(고리, 가운데 점)만 남긴다.
+const ICONS = { radar: 0.5, bite: 0, block: 0 };
+
 function paint(canvas) {
   if (canvas.dataset.dither === 'field') {
     canvas.width = Math.max(1, Math.round(canvas.clientWidth / 3));
@@ -56,13 +60,13 @@ function paint(canvas) {
   }
   const ctx = canvas.getContext('2d'), { width: w, height: h } = canvas;
   const next = hash(canvas.dataset.seed || ''), rnd = [0.3 + next() * 0.4, 0.3 + next() * 0.4, 1.8 + next() * 0.8];
-  const unit = Math.min(w, h), kind = canvas.dataset.dither;
+  const unit = Math.min(w, h), kind = canvas.dataset.dither, solid = kind in ICONS && unit <= 24;
   ctx.clearRect(0, 0, w, h);
   ctx.fillStyle = getComputedStyle(document.body).getPropertyValue(canvas.dataset.color || '--text');
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
     const value = kind === 'field' ? field(x / w, y / h, w / h)
       : shapes[kind]((x - w / 2) / unit + 0.5, (y - h / 2) / unit + 0.5, rnd);
-    if (value > BAYER[(y % 4) * 4 + (x % 4)]) ctx.fillRect(x, y, 1, 1);
+    if (solid ? value > ICONS[kind] : value > BAYER[(y % 4) * 4 + (x % 4)]) ctx.fillRect(x, y, 1, 1);
   }
 }
 
