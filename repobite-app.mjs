@@ -141,7 +141,7 @@ const screens = {
     const inline = state.searchOpen ? `<div class="inline-search"><label class="search-box">${icon('search')}<input class="search" id="explore-search-m" type="search" placeholder="수집된 저장소에서 검색" aria-label="수집된 저장소 검색" value="${esc(state.search)}"></label><button class="ghost" data-search-close>닫기</button></div>` : '';
     return `<div class="explore"><button class="search-toggle" data-search-open aria-label="저장소 검색" aria-expanded="${state.searchOpen}">${icon('search')}</button>${inline}
       <div class="bar"><select class="sort" id="sort" aria-label="정렬"><option value="recommended">추천순</option><option value="name" ${state.sort === 'name' ? 'selected' : ''}>레포 이름순</option></select><div class="chips" data-fold="groups">${chips}${moreChip('groups')}</div></div>
-      <div class="section-head"><span class="eyebrow">REPOSITORIES / ${listedRepos().length}</span><button class="ghost invert" data-go="${state.onboarded ? 'subs' : 'topics'}">${state.onboarded ? '내 구독 보기' : '레포바이트 이용하기'}</button></div>
+      <div class="section-head"><div class="repository-heading"><span class="eyebrow">REPOSITORIES / ${listedRepos().length}</span><button class="repository-search-cta" data-external-search>GitHub에서 다른 저장소 찾기 ↗</button></div><button class="ghost invert" data-go="${state.onboarded ? 'subs' : 'topics'}">${state.onboarded ? '내 구독 보기' : '레포바이트 이용하기'}</button></div>
       <section id="repository-not-found" class="repository-not-found win" hidden><div class="win-body"><h2>찾으시는 레포지토리가 없나요?</h2><p>수집 범위 밖의 저장소는 GitHub에서 찾아 구독할 수 있습니다.</p><button class="ghost invert" data-external-search>GitHub에서 레포지토리 찾기</button></div></section>
       <section class="feed-section" id="subscribed-section"><div class="feed-title"><h2>구독된 레포 <span class="pix" id="subscribed-count"></span></h2><p>사용자가 구독한 저장소입니다.</p></div><div class="masonry" id="subscribed-feed"></div></section>
       <section class="feed-section"><div class="feed-title"><h2>POPULAR <span class="pix" id="popular-count"></span></h2></div><div class="masonry" id="popular-feed"></div></section></div>`;
@@ -222,7 +222,7 @@ const screens = {
 
 function renderSide() {
   stack.classList.remove('stack');
-  stack.innerHTML = `<label class="search-box">${icon('search')}<input class="search" id="explore-search" type="search" placeholder="수집된 저장소에서 검색" aria-label="수집된 저장소 검색" value="${esc(state.search)}"></label><button class="external-search-link" data-external-search>GitHub에서 다른 저장소 찾기 ↗</button>
+  stack.innerHTML = `<label class="search-box">${icon('search')}<input class="search" id="explore-search" type="search" placeholder="수집된 저장소에서 검색" aria-label="수집된 저장소 검색" value="${esc(state.search)}"></label>
     <section class="win dots"><div class="win-bar"><span>RECENT</span><span>${issues(recentIssues().length)}</span></div><div class="win-body"><div class="issue-list">${recentIssues().slice(0, 6).map(i => `<button class="issue-row with-owner" data-detail="${esc(i.repo)}" aria-haspopup="dialog">${owner(i.repo)}<span class="inv">Lv.${i.lv} ${LEVELS[i.lv - 1]}</span><span class="pix">${esc(short(i.repo))}</span><b>${esc(i.t)}</b></button>`).join('')}</div></div></section>`;
 }
 
@@ -238,6 +238,7 @@ const repositorySearch = mountRepositorySearchDialog(document.querySelector('#re
   onSelect(repo) {
     const selected = ensureRepo(repo.full_name, repo.description || '');
     state.detail = selected.name; state.dlv = 0;
+    if (route() !== 'explore') return go('explore');
     render();
   },
 });

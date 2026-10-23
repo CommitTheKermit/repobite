@@ -34,7 +34,11 @@ const {chromium} = require(process.env.REPOBITE_PLAYWRIGHT || 'playwright');
     for(const width of [1440,1000,390]) {
       await page.setViewportSize({width,height:900});
       assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth),width);
+      assert(await page.locator('.repository-search-cta').isVisible());
+      assert(await page.locator('.rail [data-external-search]').isVisible());
     }
+    await page.locator('.repository-search-cta').click();
+    await page.locator('#repository-search [data-search-dismiss]').click();
     await page.locator('[data-detail="owner/repo"]').first().click();
     assert(await page.locator('#detail').isVisible());
     assert.equal(await page.getByText('노출 금지 이유').count(),0);
@@ -102,6 +106,14 @@ const {chromium} = require(process.env.REPOBITE_PLAYWRIGHT || 'playwright');
     assert.equal(await page.getByText('3회 시도 후 수집 실패').count(),0);
     stage='failed';attempts=3;
     await page.waitForFunction(()=>document.querySelector('#toasts').textContent.includes('3회 시도 후 수집 실패'),{timeout:10000});
+    await page.locator('[data-close]').click();
+    await page.locator('[data-nav="subs"]').click();
+    await page.waitForFunction(()=>location.hash==='#/subs');
+    await page.locator('.rail [data-external-search]').click();
+    await page.locator('#repository-search').getByRole('searchbox').fill('new');
+    await page.locator('[data-search-repository="new/repo"]').click();
+    await page.waitForFunction(()=>location.hash==='#/explore');
+    assert(await page.locator('#detail').isVisible());
     assert.deepEqual(errors,[]);
     console.log('통과: 1440/1000/390 넘침 없음, 상세·구독·2단계 저장, 이유 비노출, 수집 범위 검색 격리·외부 검색 대화상자·빈 결과·검색 제한·상세 선택, 재시도 후 실패 표시');
   } finally {await browser.close();}
