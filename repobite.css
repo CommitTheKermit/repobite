@@ -183,7 +183,7 @@ button:disabled { cursor: not-allowed; opacity: .35; }
 
 /* 탐색 메인: 메인 구조(필터 바, 3열 masonry, 오른쪽 패널) + TypeSafe 창 카드 */
 .explore { padding: 0 32px 40px; }
-.bar { display: flex; gap: 8px; padding: 56px 0 16px; position: sticky; top: 0; z-index: 2; background: linear-gradient(var(--bg) 85%, transparent); }
+.bar { display: flex; gap: 8px; padding: 56px 0 16px; position: sticky; top: var(--rail-header, 0px); z-index: 2; background: linear-gradient(var(--bg) 85%, transparent); }
 /* 칩을 정렬 상자 뒤로 이어 흐르게 해 첫 줄을 최대한 채운다 */
 .bar { flex-wrap: wrap; }
 .bar .chips { display: contents; }
@@ -305,9 +305,9 @@ html:has(dialog[open]) { overflow: hidden; }
   .masonry { columns: 2; }
 }
 @media (max-width: 767px) {
-  :root { --rail-header: 86px; }
+  :root { --rail-header: 110px; }
   .shell { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 1fr; }
-  .rail { height: var(--rail-header); flex-direction: row; justify-content: flex-start; padding: 8px 16px; border-right: 0; border-bottom: 1px solid var(--rule); gap: 8px; }
+  .rail { height: var(--rail-header); flex-direction: row; justify-content: flex-start; padding: 8px 16px 32px; border-right: 0; border-bottom: 1px solid var(--rule); gap: 8px; }
   .rail .mark { margin: 0 8px 0 0; }
   .os-tag { display: none; }
   .toasts[popover] { inset: auto 12px 12px 12px; width: auto; }
@@ -349,11 +349,9 @@ html:has(dialog[open]) { overflow: hidden; }
 
 .account-strip { margin-top: auto; }
 .account-strip button { padding: 8px 2px; border: 0; background: none; color: var(--muted); font-size: 11px; }
-.explore-header { display: flex; justify-content: flex-end; align-items: center; min-height: 56px; padding: 8px 0; position: sticky; top: var(--rail-header, 0px); z-index: 3; background: var(--bg); }
-.explore-header ~ .bar { padding-top: 0; top: calc(var(--rail-header, 0px) + 56px); }
 .card-meta small,.repo-head p,.detail-name {overflow-wrap:anywhere}
 svg {flex-shrink:0;vertical-align:middle}
-@media(max-width:767px){.account-strip{display:none}}
+@media(max-width:767px){.account-strip{position:absolute;left:16px;bottom:4px;margin:0}.account-strip button{padding:0 2px;line-height:20px}}
 
 /* 수집된 저장소 검색과 별개인 GitHub 저장소 찾기 */
 /* GitHub 검색 진입점은 배경 없이 밝은 색과 굵기로 강조한다. */
@@ -373,6 +371,7 @@ svg {flex-shrink:0;vertical-align:middle}
 @media (max-width: 360px) {
   .rail { padding-inline: 12px; gap: 6px; }
   .rail .mark { margin-right: 2px; }
+  .account-strip { left: 12px; }
   .rail .nav-item, .rail .rail-add { width: 48px; }
 }
 .repository-not-found { margin: 0 0 28px; }

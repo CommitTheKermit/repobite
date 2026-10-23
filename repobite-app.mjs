@@ -40,7 +40,7 @@ function ensureRepo(name, description = '', categories = []) {
   return repo;
 }
 
-const state = { obStep: '', collected: new Set(), collecting: new Map(), searchOpen: false, open: new Set(), detail: '', dlv: 0, group: '', sort: 'recommended', search: '', onboarded: false, topics: new Set(), subs: new Set(), experience: 'new', level: 1, email: '', consent: false, mail: null, active: '', filter: 1, query: '', error: '' };
+const state = { obStep: '', collected: new Set(), collecting: new Map(), searchOpen: false, open: new Set(), detail: '', dlv: 0, group: '', sort: 'recommended', search: '', onboarded: false, topics: new Set(), subs: new Set(), selection: null, experience: 'new', level: 1, email: '', consent: false, mail: null, active: '', filter: 1, query: '', error: '' };
 const view = document.querySelector('#view'), stack = document.querySelector('#stack');
 const esc = value => String(value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const short = name => name.split('/')[1];
@@ -76,7 +76,9 @@ const foldAll = () => document.querySelectorAll('[data-fold]').forEach(box => bo
 const issues = n => `${n} issue${n === 1 ? '' : 's'}`;
 window.lucide = {createIcons() { document.querySelectorAll('[data-lucide]').forEach(n => { n.outerHTML = icon(n.dataset.lucide); }); }};
 const recentIssues = () => window.ISSUES.filter(i => repos.get(i.repo).collected);
-const subIssues = () => [...state.subs].flatMap(name => repos.get(name).issues);
+// 온보딩에서 고른 저장소와 서버에 저장된 구독을 구분한다.
+const onboardingRepositories = () => state.obStep ? state.subs : (state.selection ?? state.subs);
+const subIssues = () => [...onboardingRepositories()].flatMap(name => repos.get(name).issues);
 const route = () => location.hash.replace('#/', '') || 'explore';
 const levelTags = list => [1, 2, 3].map(n => [n, list.filter(i => i.lv === n).length]).filter(([, c]) => c).map(([n, c]) => `<span class="tag">Lv.${n} ${LEVELS[n - 1]} ${c}</span>`).join('');
 const issueRow = i => `<a class="issue-row" href="https://github.com/${esc(i.repo)}/issues/${i.n}" target="_blank" rel="noopener noreferrer"><span class="inv">Lv.${i.lv} ${LEVELS[i.lv - 1]}</span><span class="pix">#${i.n}</span><b>${esc(i.t)}</b></a>`;
@@ -130,9 +132,11 @@ function updateFeeds() {
   document.querySelector('#repository-not-found').hidden = !state.search.trim() || list.length > 0;
 }
 function repoRows() {
-  const list = listedRepos().filter(r => (state.subs.has(r.name) || !state.topics.size || [...r.topics].some(t => state.topics.has(t))) && matches(r, state.query))
-    .concat(githubMatches(state.query));
-  return list.map(r => `<button class="repo" data-repo="${esc(r.name)}" aria-pressed="${state.subs.has(r.name)}">${repoMedia(r.name, 'thumb')}<span><b>${esc(r.name)}</b><small>${esc(r.description)}</small>${r.collected ? '' : `<small class="collect-hint">${state.collecting.has(r.name) ? '수집 중' : 'RepoBite에 아직 없음 · 구독하면 바로 수집'}</small>`}</span><span class="pix">${r.collected ? issues(r.issues.length) : 'new'}</span><span class="check">${icon('check')}</span></button>`).join('') || '<p class="empty">일치하는 저장소가 없습니다.</p>';
+  const selected = onboardingRepositories();
+  const local = [...new Set([...listedRepos(), ...[...selected].map(n => ensureRepo(n))])]
+    .filter(r => (selected.has(r.name) || !state.topics.size || [...r.topics].some(t => state.topics.has(t))) && matches(r, state.query));
+  const list = [...new Set([...local, ...githubMatches(state.query)])];
+  return list.map(r => `<button class="repo" data-repo="${esc(r.name)}" aria-pressed="${selected.has(r.name)}">${repoMedia(r.name, 'thumb')}<span><b>${esc(r.name)}</b><small>${esc(r.description)}</small>${r.collected ? '' : `<small class="collect-hint">${state.collecting.has(r.name) ? '수집 중' : 'RepoBite에 아직 없음 · 구독하면 바로 수집'}</small>`}</span><span class="pix">${r.collected ? issues(r.issues.length) : 'new'}</span><span class="check">${icon('check')}</span></button>`).join('') || '<p class="empty">일치하는 저장소가 없습니다.</p>';
 }
 
 const screens = {
@@ -140,7 +144,7 @@ const screens = {
     const chips = [['전체', '']].concat(GROUPS).map(([label, value]) => `<button class="chip" data-group="${value}" aria-pressed="${state.group === value}">${label}${value ? '' : ` <span class="pix">${listedRepos().length}</span>`}</button>`).join('');
     // 오른쪽 패널이 숨는 좁은 화면에서는 돋보기 버튼으로 필터 바 위에 검색칸을 펼친다
     const inline = state.searchOpen ? `<div class="inline-search" id="collected-repository-search"><label class="search-box">${icon('search')}<input class="search" id="explore-search-m" type="search" placeholder="수집된 저장소에서 검색" aria-label="수집된 저장소 검색" value="${esc(state.search)}"></label><button class="ghost" data-search-close>닫기</button></div>` : '';
-    return `<div class="explore"><header class="explore-header" aria-label="계정"><div data-header-account></div></header>${inline}
+    return `<div class="explore">${inline}
       <div class="bar"><select class="sort" id="sort" aria-label="정렬"><option value="recommended">추천순</option><option value="name" ${state.sort === 'name' ? 'selected' : ''}>레포 이름순</option></select><div class="chips" data-fold="groups">${chips}${moreChip('groups')}</div></div>
       <div class="section-head"><div class="repository-heading"><span class="eyebrow">REPOSITORIES / ${listedRepos().length}</span><button class="repository-search-cta" data-external-search>GitHub에서 다른 레포 찾기 ↗</button></div><button class="ghost invert" data-go="${state.onboarded ? 'subs' : 'topics'}">${state.onboarded ? '내 구독 보기' : '레포바이트 이용하기'}</button></div>
       <section id="repository-not-found" class="repository-not-found win" hidden><div class="win-body"><h2>찾으시는 레포지토리가 없나요?</h2><p>수집 범위 밖의 저장소는 GitHub에서 찾아 구독할 수 있습니다.</p><button class="ghost invert" data-external-search>GitHub에서 레포지토리 찾기</button></div></section>
@@ -161,7 +165,7 @@ const screens = {
     return flow('repos', `<h1>어떤 저장소를<br>구독할까요?</h1><p class="sub">${[...state.topics].map(t => TOPIC_NAME[t]).join(', ') || '고른 분야'}의 저장소입니다.</p>
       <input class="search" id="query" type="search" placeholder="저장소 이름으로 찾기" aria-label="저장소 검색" value="${esc(state.query)}">
       <div class="repos">${repoRows()}</div>`,
-      `<button class="later" data-go="topics">분야 다시 고르기</button><button class="next" data-go="level" aria-label="난이도 선택으로" ${state.subs.size ? '' : 'disabled'}>${icon('arrow-right')}</button>`);
+      `<button class="later" data-go="topics">분야 다시 고르기</button><button class="next" data-go="level" aria-label="난이도 선택으로" ${onboardingRepositories().size ? '' : 'disabled'}>${icon('arrow-right')}</button>`);
   },
   level() {
     const all = subIssues(), matched = all.filter(i => i.lv === state.level);
@@ -188,7 +192,7 @@ const screens = {
   },
   mail() {
     return flow('mail', `<canvas class="art" data-dither="burst" width="84" height="60" aria-hidden="true"></canvas>
-      <h1>새 이슈를 메일로<br>받아 볼까요?</h1><p class="sub">구독한 저장소 ${state.subs.size}곳에서 Lv.${state.level} ${LEVELS[state.level - 1]} 이슈가 생기면 보내 드립니다.</p>
+      <h1>새 이슈를 메일로<br>받아 볼까요?</h1><p class="sub">선택한 저장소 ${onboardingRepositories().size}곳에서 Lv.${state.level} ${LEVELS[state.level - 1]} 이슈가 생기면 보내 드립니다.</p>
       <div class="slots" aria-hidden="true"><span class="on">1</span><span class="on">2</span><span class="on">3</span></div>
       <div class="slots-cap">하루 최대 3개, 조건에 맞는 이슈가 없으면 보내지 않습니다</div>
       <label class="field-label">알림 이메일<input class="search" id="email" type="email" autocomplete="email" placeholder="you@example.com" value="${esc(state.email)}"></label>
@@ -347,7 +351,7 @@ function renderStack(name) {
   const index = STEPS.findIndex(([key]) => key === name);
   const detail = {
     topics: ['관심 분야', [...state.topics].map(t => TOPIC_NAME[t])],
-    repos: [`${state.subs.size}개 저장소 구독`, [...state.subs].map(short)],
+    repos: [`${onboardingRepositories().size}개 저장소 선택`, [...onboardingRepositories()].map(short)],
     level: [`Lv.${state.level} ${LEVELS[state.level - 1]}`, [EXPERIENCES.find(([key]) => key === state.experience)[1]]],
     mail: [state.consent ? (state.email || '이메일 입력 전') : '알림 없이 구독', ['하루 최대 3개']],
   };
@@ -367,7 +371,8 @@ function render() {
     a.toggleAttribute('aria-current', current);
     a.querySelector('canvas').dataset.color = current ? '--text' : '--muted';
   });
-  if ((name === 'level' || name === 'mail') && !state.subs.size) return go(state.topics.size ? 'repos' : 'topics');
+  if (STEPS.some(([key]) => key === name) && state.selection === null) state.selection = new Set(state.subs);
+  if ((name === 'level' || name === 'mail') && !onboardingRepositories().size) return go(state.topics.size ? 'repos' : 'topics');
   if (name !== 'explore') state.detail = '';
   renderDetail();
   view.innerHTML = screens[name]();
@@ -379,7 +384,7 @@ function render() {
   foldAll();
   renderOnboard();
   renderAccount();
-  if (busy) document.querySelectorAll('[data-subscribe], [data-repo], [data-unsub], [data-finish], .next').forEach(button => button.disabled = true);
+  if (busy || completingOnboarding) document.querySelectorAll('[data-subscribe], [data-repo], [data-unsub], [data-finish], .next').forEach(button => button.disabled = true);
 }
 
 // 상세에서 처음 구독할 때 여는 온보딩 다이얼로그. 전체 화면 온보딩과 같은 단계 화면을 쓰되 페이지는 탐색에 머문다.
@@ -416,8 +421,7 @@ document.addEventListener('click', async event => {
   const d = b.dataset, inOnboard = !!b.closest('#onboard');
   if ('login' in d) return login();
   if ('logout' in d) return logout();
-  if (busy) return;
-  if (d.go === 'mail' && !(await savePersonalization())) return;
+  if (busy || completingOnboarding) return;
   if (d.go && inOnboard) {
     if (!DIALOG_STEPS.some(([key]) => key === d.go)) return closeOnboard();
     state.obStep = d.go;
@@ -434,13 +438,17 @@ document.addEventListener('click', async event => {
   if ('dlv' in d) state.dlv = Number(d.dlv);
   if (d.subscribe) {
     if (!(await changeSubscription(d.subscribe, false))) return;
+    state.selection = null;
     repos.get(d.subscribe).topics.forEach(t => state.topics.add(t));
     // 처음 구독이면 상세를 닫고 같은 자리에서 난이도·알림 두 단계 온보딩 다이얼로그를 연다
     if (!state.onboarded) { closeDetail(); state.obStep = 'level'; return render(); }
     state.active = d.subscribe;
   }
   if (d.topic) state.topics.has(d.topic) ? state.topics.delete(d.topic) : state.topics.add(d.topic);
-  if (d.repo && !(await changeSubscription(d.repo, state.subs.has(d.repo)))) return;
+  if (d.repo) {
+    state.selection ??= new Set(state.subs);
+    state.selection.has(d.repo) ? state.selection.delete(d.repo) : state.selection.add(d.repo);
+  }
   if (d.exp) { state.experience = d.exp; state.level = EXPERIENCES.find(([key]) => key === d.exp)[2]; }
   if (d.level) state.level = Number(d.level);
   if ('consent' in d) state.consent = !state.consent;
@@ -453,10 +461,16 @@ document.addEventListener('click', async event => {
     if (d.finish === 'mail' && !state.consent) { state.error = '이메일로 받으려면 수신 동의를 켜 주세요.'; return render(); }
     if (d.finish === 'mail' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { state.error = '알림을 받을 이메일 주소를 확인해 주세요.'; return render(); }
     state.error = '';
-    if (!(await savePersonalization())) return;
-    const enabled = d.finish === 'mail';
-    if (!(await mutate('onboarding', {email, delivery_enabled: enabled}, fresh =>
-      fresh.preferences.onboarding_completed && fresh.preferences.email === email && fresh.preferences.delivery_enabled === enabled))) return;
+    if (!requireLogin()) return;
+    const enabled = d.finish === 'mail', revision = accountRevision;
+    completingOnboarding = true;
+    try {
+      if (!(await saveSelectedSubscriptions(revision)) || revision !== accountRevision) return;
+      if (!(await savePersonalization()) || revision !== accountRevision) return;
+      if (!(await mutate('onboarding', {email, delivery_enabled: enabled}, fresh =>
+        fresh.preferences.onboarding_completed && fresh.preferences.email === email && fresh.preferences.delivery_enabled === enabled)) || revision !== accountRevision) return;
+    } finally { completingOnboarding = false; render(); }
+    state.selection = null;
     state.mail = enabled ? email : null;
     state.onboarded = true;
     state.filter = state.level;
@@ -507,23 +521,27 @@ const savingIndicator = mountLoadingIndicator(savingBox, {
   show: () => savingBox.showPopover(),
   hide: () => { if (savingBox.matches(':popover-open')) savingBox.hidePopover(); },
 });
-let busy = false, accountError = '', searchResults = [], searchTimer, searchRevision = 0, searchController;
+let busy = false, completingOnboarding = false, accountError = '', searchResults = [], searchTimer, searchRevision = 0, searchController;
 let pollTimer, composingSearch = false, accountRevision = 0;
 const DRAFT = 'repobite:redesign-draft:v1';
 function rememberDraft(pendingRepo = '') {
   try { sessionStorage.setItem(DRAFT, JSON.stringify({owner: client.session?.user?.id || null, pendingRepo,
+    selection: state.selection ? [...state.selection] : null, obStep: state.obStep,
     topics: [...state.topics], level: state.level, experience: state.experience, email: state.email, consent: state.consent, route: route()})); } catch {}
 }
 function login() { rememberDraft(state.detail); location.href = '/api/account?action=start'; }
+function requireLogin() {
+  if (client.session?.authenticated) return true;
+  login();
+  return false;
+}
 function renderAccount() {
   const user = client.session?.user;
-  const button = `<button title="${esc(accountError || user?.login || 'GitHub 로그인')}" ${user ? 'data-logout' : 'data-login'}>${user ? '로그아웃' : 'GitHub 로그인'}</button>`;
+  const button = `<button title="${esc(accountError || user?.login || '로그인')}" ${user ? 'data-logout' : 'data-login'}>${user ? '로그아웃' : '로그인'}</button>`;
   document.querySelector('#account-strip').innerHTML = button;
-  const header = document.querySelector('[data-header-account]');
-  if (header) header.innerHTML = button.replace('<button ', '<button class="ghost" ');
 }
 function clearPrivate() {
-  state.subs.clear(); state.topics.clear(); state.email = ''; state.mail = null; state.consent = false; state.onboarded = false;
+  state.subs.clear(); state.selection = null; state.topics.clear(); state.email = ''; state.mail = null; state.consent = false; state.onboarded = false;
   state.obStep = ''; state.active = ''; state.level = 1; state.experience = 'new';
   progressToasts.forEach(t => t.remove()); progressToasts.clear(); terminalStages.clear(); state.collecting.clear(); showToasts();
 }
@@ -541,11 +559,7 @@ async function logout() {
   } catch (error) { accountError = error.message; renderAccount(); }
 }
 async function mutate(action, body, verify, method = 'POST') {
-  if (!client.session?.authenticated) {
-    rememberDraft(state.detail); accountError = 'GitHub 로그인 후 저장할 수 있습니다. 입력은 유지됩니다.'; renderAccount();
-    notify('ACCOUNT', 'SAVE', `<p>${accountError}</p><button class="ghost" data-login>GitHub 로그인</button>`);
-    return false;
-  }
+  if (!requireLogin()) return false;
   if (busy) return false;
   const revision = accountRevision;
   busy = true; render();
@@ -560,14 +574,30 @@ async function mutate(action, body, verify, method = 'POST') {
     if (revision !== accountRevision) return false;
     if (error.status === 401 || error.status === 409) {
       rememberDraft(state.detail);
-      client.session = null;
+      client.invalidate(); accountRevision++;
       // 저장되지 않은 입력은 같은 계정으로 재로그인할 때만 복원한다.
       clearPrivate();
+      location.href = '/api/account?action=start';
+      return false;
     }
     accountError = error.message;
-    notify('ACCOUNT', 'SAVE', `<p>${esc(error.message)}</p><button class="ghost" data-login>GitHub 로그인</button>`);
+    notify('ACCOUNT', 'SAVE', `<p>${esc(error.message)}</p>`);
     return false;
   } finally { await savingIndicator.finish(); busy = false; render(); }
+}
+async function saveSelectedSubscriptions(revision) {
+  if (state.obStep || state.selection === null) return true;
+  const selected = new Set(state.selection);
+  // 새 구독을 먼저 저장한다. 부분 실패 시 선택은 남겨 재시도할 수 있게 한다.
+  for (const name of selected) {
+    if (revision !== accountRevision) return false;
+    if (!state.subs.has(name) && !(await changeSubscription(name, false))) return false;
+  }
+  for (const name of [...state.subs]) {
+    if (revision !== accountRevision) return false;
+    if (!selected.has(name) && !(await changeSubscription(name, true))) return false;
+  }
+  return revision === accountRevision;
 }
 async function savePersonalization() {
   const {level, experience} = state, topics = [...state.topics].sort();
@@ -642,6 +672,12 @@ async function initialize() {
       if (draft && (!draft.owner || draft.owner === session.user.id)) {
         state.topics = new Set(draft.topics); state.level = draft.level; state.experience = draft.experience;
         state.email = draft.email; state.consent = draft.consent;
+        if (Array.isArray(draft.selection)) {
+          // 익명으로 고른 목록은 로그인 계정의 기존 구독을 지우지 않고 합친다.
+          state.selection = new Set([...(draft.owner ? [] : state.subs), ...draft.selection]);
+          state.selection.forEach(n => ensureRepo(n));
+        }
+        if (DIALOG_STEPS.some(([key]) => key === draft.obStep)) state.obStep = draft.obStep;
         if (draft.pendingRepo) { ensureRepo(draft.pendingRepo); state.detail = draft.pendingRepo; location.hash = '#/explore'; }
         else if (draft.route) location.hash = '#/' + draft.route;
       }

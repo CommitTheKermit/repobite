@@ -1,0 +1,70 @@
+{
+  "base": "https://repobite.vercel.app",
+  "checks": [
+    {
+      "width": 1440,
+      "account": {
+        "x": 19.234375,
+        "y": 847.5,
+        "width": 32.53125,
+        "height": 32.5
+      },
+      "scrolled": {
+        "x": 19.234375,
+        "y": 847.5,
+        "width": 32.53125,
+        "height": 32.5
+      },
+      "scrollWidth": 1440
+    },
+    {
+      "width": 1000,
+      "account": {
+        "x": 19.234375,
+        "y": 847.5,
+        "width": 32.53125,
+        "height": 32.5
+      },
+      "scrolled": {
+        "x": 19.234375,
+        "y": 847.5,
+        "width": 32.53125,
+        "height": 32.5
+      },
+      "scrollWidth": 1000
+    },
+    {
+      "width": 390,
+      "account": {
+        "x": 16,
+        "y": 85,
+        "width": 32.53125,
+        "height": 20
+      },
+      "scrolled": {
+        "x": 16,
+        "y": 85,
+        "width": 32.53125,
+        "height": 20
+      },
+      "scrollWidth": 390
+    },
+    {
+      "width": 320,
+      "account": {
+        "x": 12,
+        "y": 85,
+        "width": 32.53125,
+        "height": 20
+      },
+      "scrolled": {
+        "x": 12,
+        "y": 85,
+        "width": 32.53125,
+        "height": 20
+      },
+      "scrollWidth": 320
+    }
+  ],
+  "errors": []
+}
