@@ -76,12 +76,20 @@ const levelTags = list => [1, 2, 3].map(n => [n, list.filter(i => i.lv === n).le
 const issueRow = i => `<a class="issue-row" href="https://github.com/${esc(i.repo)}/issues/${i.n}" target="_blank" rel="noopener noreferrer"><span class="inv">Lv.${i.lv} ${LEVELS[i.lv - 1]}</span><span class="pix">#${i.n}</span><b>${esc(i.t)}</b></a>`;
 const go = name => { location.hash = `#/${name}`; };
 
+// 상세에서 여는 온보딩 다이얼로그는 저장소가 정해져 있으므로 난이도와 알림 두 단계만 쓴다
+const DIALOG_STEPS = STEPS.filter(([key]) => key === 'level' || key === 'mail');
+let flowSteps = STEPS;
+// 첫 단계의 왼쪽 아래 링크: 이전 단계가 있으면 "이전", 없으면 닫기
+const prevOrLater = step => {
+  const index = flowSteps.findIndex(([key]) => key === step);
+  return index ? `<button class="later" data-go="${flowSteps[index - 1][0]}">이전</button>` : '<button class="later" data-go="explore">나중에 할게요</button>';
+};
 function flow(step, body, foot) {
-  const index = STEPS.findIndex(([key]) => key === step);
-  const back = index ? `<button data-go="${STEPS[index - 1][0]}" aria-label="이전">‹</button>` : '<span></span>';
+  const steps = flowSteps, index = steps.findIndex(([key]) => key === step);
+  const back = index ? `<button data-go="${steps[index - 1][0]}" aria-label="이전">‹</button>` : '<span></span>';
   return `<div class="flow">
-    <div class="flow-top">${back}<div class="dashes" aria-label="4단계 중 ${index + 1}단계">${STEPS.map((_, i) => `<span class="${i <= index ? 'on' : ''}"></span>`).join('')}</div><button data-go="explore" aria-label="닫기">×</button></div>
-    <div class="panel"><span class="eyebrow">STEP 0${index + 1} / 04</span>${body}</div>
+    <div class="flow-top">${back}<div class="dashes" aria-label="${steps.length}단계 중 ${index + 1}단계">${steps.map((_, i) => `<span class="${i <= index ? 'on' : ''}"></span>`).join('')}</div><button data-go="explore" aria-label="닫기">×</button></div>
+    <div class="panel"><span class="eyebrow">STEP 0${index + 1} / 0${steps.length}</span>${body}</div>
     <div class="flow-foot">${foot}</div></div>`;
 }
 
@@ -171,7 +179,7 @@ const screens = {
       <div class="bench" role="group" aria-label="받을 난이도">${rows}</div>
       <div class="bench-foot" style="width:100%"><div class="circles" aria-label="구독 이슈 ${all.length}건 중 ${matched.length}건">${all.map(i => `<span class="${i.lv === state.level ? 'on' : ''}"></span>`).join('')}</div><span class="pix">${matched.length} / ${issues(all.length)}</span></div>
       ${spec}`,
-      `<button class="later" data-go="repos">이전</button><button class="next" data-go="mail" aria-label="알림 설정으로">${icon('arrow-right')}</button>`);
+      `${prevOrLater('level')}<button class="next" data-go="mail" aria-label="알림 설정으로">${icon('arrow-right')}</button>`);
   },
   mail() {
     return flow('mail', `<canvas class="art" data-dither="burst" width="84" height="60" aria-hidden="true"></canvas>
@@ -364,8 +372,9 @@ function render() {
 const onboardBox = document.querySelector('#onboard');
 function renderOnboard() {
   if (!state.obStep) { if (onboardBox.open) onboardBox.close(); return; }
-  if ((state.obStep === 'level' || state.obStep === 'mail') && !state.subs.size) state.obStep = 'repos';
+  flowSteps = DIALOG_STEPS;
   onboardBox.innerHTML = screens[state.obStep]();
+  flowSteps = STEPS;
   // 새로 연 다이얼로그가 수집 토스트를 덮지 않도록 토스트를 다시 위로 올린다
   if (!onboardBox.open) { onboardBox.showModal(); showToasts(); }
   window.lucide.createIcons();
@@ -405,7 +414,7 @@ document.addEventListener('click', event => {
   if (!b || b.disabled) return;
   const d = b.dataset, inOnboard = !!b.closest('#onboard');
   if (d.go && inOnboard) {
-    if (!STEPS.some(([key]) => key === d.go)) return closeOnboard();
+    if (!DIALOG_STEPS.some(([key]) => key === d.go)) return closeOnboard();
     state.obStep = d.go;
     return renderOnboard();
   }
@@ -420,8 +429,8 @@ document.addEventListener('click', event => {
   if (d.subscribe) {
     subscribe(d.subscribe);
     repos.get(d.subscribe).topics.forEach(t => state.topics.add(t));
-    // 처음 구독이면 상세를 닫고 같은 자리에서 온보딩 다이얼로그를 2단계(저장소)부터 연다
-    if (!state.onboarded) { closeDetail(); state.obStep = 'repos'; return render(); }
+    // 처음 구독이면 상세를 닫고 같은 자리에서 난이도·알림 두 단계 온보딩 다이얼로그를 연다
+    if (!state.onboarded) { closeDetail(); state.obStep = 'level'; return render(); }
     state.active = d.subscribe;
   }
   if (d.topic) state.topics.has(d.topic) ? state.topics.delete(d.topic) : state.topics.add(d.topic);
