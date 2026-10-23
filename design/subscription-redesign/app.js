@@ -94,7 +94,7 @@ const screens = {
         <div><span class="lab">Issue</span><span class="val big">#${first.n}</span></div>
         <div class="right"><span class="outline">Output</span><div class="val" style="margin-top:8px">Lv.${first.lv}</div></div>
         <div class="full"><span class="lab">Repository</span><span class="val">${esc(first.repo)}</span></div>
-        <div class="full"><h3>${esc(first.t)}</h3><p style="margin-top:6px">${esc(first.why)}…</p></div>
+        <div class="full"><h3>${esc(first.t)}</h3></div>
         <div><span class="lab">Difficulty</span><span class="inv">${LEVELS[first.lv - 1]}</span></div>
         <div class="right"><span class="lab">Match</span><span class="val">${matched.length} / ${all.length}</span></div>
         <div class="full barcode" aria-hidden="true"></div></div>` : '<p class="empty">이 난이도의 이슈가 지금은 없습니다. 새 이슈가 판정되면 보내 드립니다.</p>';
@@ -124,7 +124,7 @@ const screens = {
     if (!state.subs.has(state.active)) state.active = [...state.subs][0];
     const repo = repos.get(state.active), items = repo.issues.filter(i => i.lv === state.filter);
     const cells = items.map(i => `<article><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><span class="inv">Lv.${i.lv} ${LEVELS[i.lv - 1]}</span><span class="pix">#${i.n}</span></div>
-      <h3 style="font-size:18px;line-height:1.35;margin:14px 0 8px;letter-spacing:-.01em">${esc(i.t)}</h3><p style="margin:0 0 12px;color:var(--muted);font-size:14px">${esc(i.why)}…</p>
+      <h3 style="font-size:18px;line-height:1.35;margin:14px 0 12px;letter-spacing:-.01em">${esc(i.t)}</h3>
       <a href="https://github.com/${esc(i.repo)}/issues/${i.n}" target="_blank" rel="noopener noreferrer" style="color:var(--muted);font-size:13px">GitHub에서 열기 ↗</a></article>`).join('');
     return `<div class="page">
       <header class="page-head"><span class="cross tr"></span><div><span class="eyebrow">MY SUBSCRIPTIONS</span><h1>내 구독</h1></div>
