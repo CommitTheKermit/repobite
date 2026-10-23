@@ -181,7 +181,10 @@ button:disabled { cursor: not-allowed; opacity: .35; }
 .bar { flex-wrap: wrap; }
 .bar .chips { display: contents; }
 .chip.more { border-style: dashed; color: var(--muted); }
-.sort { height: 40px; width: 128px; flex: none; border: 1px solid var(--rule-strong); border-radius: 20px; background: var(--bg); color: var(--text); padding: 0 14px; font: inherit; font-size: 14px; }
+.sort { height: 40px; width: 128px; flex: none; border: 1px solid var(--rule-strong); border-radius: 20px; color: var(--text); padding: 0 38px 0 16px; font: inherit; font-size: 14px; cursor: pointer;
+  /* 브라우저 기본 화살표는 padding을 무시하고 끝에 붙으므로 끄고, 같은 쉐브론을 오른쪽 14px 안쪽에 그린다 */
+  appearance: none; -webkit-appearance: none;
+  background: var(--bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 14px center; }
 .section-head { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin: 16px 0 24px; }
 .masonry { columns: 3; column-gap: 28px; }
 .card { break-inside: avoid; margin: 0 0 28px; display: block; }
