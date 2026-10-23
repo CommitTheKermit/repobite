@@ -46,9 +46,9 @@ const gradeFunctions = html.slice(html.indexOf('function gradeLabel('),html.inde
 runInNewContext(gradeFunctions + `
   const current = difficulty=>({criteria_version:2,grade:{difficulty,readiness:'ready',exclude:false}});
   assert.equal(gradeLabel(current(1)),'Lv.1');
-  assert.equal(verdict(current(1)),'본문 충분');
-  assert.equal(verdict(current(2)),'추가 정보 필요');
-  assert.equal(verdict(current(3)),'판단 보류');
+  assert.equal(verdict(current(1)),'쉬움');
+  assert.equal(verdict(current(2)),'보통');
+  assert.equal(verdict(current(3)),'어려움');
   const legacy={grade:{difficulty:2,readiness:'ready',exclude:false},model:'gpt-5.6-luna'};
   assert.equal(gradeLabel(legacy),'Lv.2');
   assert.equal(verdict(legacy),'기준 미확인');
@@ -79,7 +79,7 @@ runInNewContext(cardFunctions+`
     append(...children){this.children.push(...children)},
     setAttribute(key,value){this.attributes[key]=value}})});
 const stats=rendered[0].children[0].children.find(node=>node.className==='stats');
-assert.equal(stats.attributes['aria-label'],'현행 v2: 본문 충분 0, 추가 정보 필요 1, 판단 보류 0, 기준 미확인 1');
+assert.equal(stats.attributes['aria-label'],'현행 v2: 쉬움 0, 보통 1, 어려움 0, 기준 미확인 1');
 assert.equal(stats.title,stats.attributes['aria-label']);
 assert.deepEqual(stats.children.filter(node=>!node.className).map(node=>node.textContent),['0','1','0',' · 기준 미확인 1']);
 console.log('통과: 실제 카드의 v2 통계·접근성 설명·과거 건수 표시');

@@ -47,7 +47,8 @@ def main():
         assert email['X-Unsent'] == '1'
         body = email.get_body().get_content()
         assert '/issues/5' in body and '/issues/3' in body and '/issues/2' not in body
-        assert '본문의 정보 충실도' in body
+        assert 'Lv.1 쉬움' in body
+        assert '정보 충실도' not in body
         # 같은 날 재생성은 새 발송이나 새 수신자를 만들지 않는다.
         assert prepare()[0]['id'] == digest
         assert len(checked) == 2

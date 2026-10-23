@@ -123,7 +123,7 @@ class ManualDelivery:
                 # 받는 주소나 실제 메일 내용이 달라지면 이전 초안 ID는 무효가 된다.
                 content = [user_id, day, email, [
                     [item['repo'], item['number'], item['url'], item['title'],
-                     item['grade']['reason'].replace('\r', ' ').replace('\n', ' ')[:40]]
+                     item['grade']['difficulty']]
                     for item in selected]]
                 digest_id = hashlib.sha256(json.dumps(content, ensure_ascii=False).encode()).hexdigest()
                 self.db.execute('''INSERT INTO digests VALUES (?,?,?,?,?,?,NULL)
@@ -148,10 +148,11 @@ class ManualDelivery:
         message['X-Unsent'] = '1'
         items = json.loads(row['items'])
         lines = ['구독한 저장소의 기여 후보입니다.',
-                 '난이도는 이슈 본문의 정보 충실도를 기준으로 한 Lv.1/2/3입니다.', '']
+                 '난이도: Lv.1 쉬움 / Lv.2 보통 / Lv.3 어려움', '']
         for item in items:
-            reason = item['grade']['reason'].replace('\r', ' ').replace('\n', ' ')[:40]
-            lines += [item['title'], item['url'], reason, '']
+            level = item['grade']['difficulty']
+            label = {1: '쉬움', 2: '보통', 3: '어려움'}[level]
+            lines += [f"{item['repo']} #{item['number']} - Lv.{level} {label}", item['title'], item['url'], '']
         lines += ['실제 착수 전 담당자와 연결된 PR을 다시 확인해주세요.']
         message.set_content('\n'.join(lines))
         directory = Path(directory)

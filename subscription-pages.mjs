@@ -4,7 +4,7 @@ const main = document.querySelector('#main'), status = document.querySelector('#
 const screen = document.body.dataset.screen;
 const routes = ['repositories', 'difficulty', 'notifications'];
 const topicNames = {'ai-ml':'AI · 머신러닝','agents-automation':'에이전트 · 자동화','search-knowledge':'검색 · 지식','dev-tools':'개발 도구','web-framework':'웹 프레임워크','ui-design-system':'UI · 디자인 시스템','backend-api':'백엔드 · API','security-identity':'보안 · 인증','database':'데이터베이스','ide-terminal':'에디터 · 터미널','desktop-app':'데스크톱 앱','observability':'모니터링','infra-cloud':'인프라 · 클라우드','productivity':'생산성','media-creative':'미디어','mobile':'모바일'};
-const labels = ['본문 충분', '추가 정보 필요', '판단 보류'];
+const labels = ['쉬움', '보통', '어려움'];
 let rows = [], catalog = [], activeRepo = '', level = 1, experience = 'new', topics = [], busy = false;
 const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const badge = n => `<span class="level level-${n}">Lv.${n} ${labels[n-1]}</span>`;
@@ -13,7 +13,7 @@ const button = (text, attr, solid = true) => `<button class="button ${solid?'sol
 function message(text) { status.textContent = text; }
 function issueCard(item) {
   const url = `https://github.com/${encodeURI(item.repo)}/issues/${Number(item.number)}`;
-  return `<article class="issue"><div class="issue-meta">${badge(item.grade.difficulty)}<span>${escape(item.repo)} #${Number(item.number)}</span></div><h3><a href="${escape(url)}" target="_blank" rel="noopener noreferrer">${escape(item.title)}</a></h3><p>${escape(item.grade.reason)}</p></article>`;
+  return `<article class="issue"><div class="issue-meta">${badge(item.grade.difficulty)}<span>${escape(item.repo)} #${Number(item.number)}</span></div><h3><a href="${escape(url)}" target="_blank" rel="noopener noreferrer">${escape(item.title)}</a></h3></article>`;
 }
 function preview() {
   const selected = new Set(client.session.subscriptions.map(r=>r.toLowerCase()));
