@@ -94,7 +94,7 @@ const exploreCards = list => list.map(r => `<article class="card win"><button cl
         <span class="win-bar"><span>${esc(short(r.name))}</span><span>${r.collected ? issues(r.issues.length) : state.collecting.has(r.name) ? 'collecting' : 'queued'}</span></span>${repoMedia(r.name)}
         <span class="card-body"><span class="card-meta">${owner(r.name)}<span><b>${esc(r.name)}</b><small>${esc(r.description)}</small></span></span><span class="tags">${r.collected ? levelTags(r.issues) : collectStatus(r)}</span></span></button>
 </article>`).join('') || '<p class="empty">일치하는 저장소가 없습니다.</p>';
-// 사용자들이 담은 레포와 기본·자동 발굴 레포를 나눈 피드. 검색과 수집 상태 변경 때 이 부분만 다시 그린다.
+// 구독된 레포와 POPULAR를 나눈 피드. 검색과 수집 상태 변경 때 이 부분만 다시 그린다.
 function updateFeeds() {
   const list = exploreList(), community = list.filter(r => r.community), base = list.filter(r => !r.community);
   const section = document.querySelector('#community-section');
@@ -119,8 +119,8 @@ const screens = {
     return `<div class="explore"><button class="search-toggle" data-search-open aria-label="저장소 검색" aria-expanded="${state.searchOpen}">${icon('search')}</button>${inline}
       <div class="bar"><select class="sort" id="sort" aria-label="정렬"><option value="recommended">추천순</option><option value="name" ${state.sort === 'name' ? 'selected' : ''}>레포 이름순</option></select><div class="chips" data-fold="groups">${chips}${moreChip('groups')}</div></div>
       <div class="section-head"><span class="eyebrow">REPOSITORIES / ${repos.size}</span><button class="ghost invert" data-go="${state.onboarded ? 'subs' : 'topics'}">${state.onboarded ? '내 구독 보기' : '레포바이트 이용하기'}</button></div>
-      <section class="feed-section" id="community-section"><div class="feed-title"><h2>사용자들이 담은 레포 <span class="pix" id="community-count"></span></h2><p>다음 정기 수집 때 이슈를 가져옵니다. 구독하면 기다리지 않고 바로 수집합니다.</p></div><div class="masonry" id="community-feed"></div></section>
-      <section class="feed-section"><div class="feed-title"><h2>기본·자동 발굴 레포 <span class="pix" id="base-count"></span></h2></div><div class="masonry" id="base-feed"></div></section></div>`;
+      <section class="feed-section" id="community-section"><div class="feed-title"><h2>구독된 레포 <span class="pix" id="community-count"></span></h2><p>다음 정기 수집 때 이슈를 가져옵니다. 구독하면 기다리지 않고 바로 수집합니다.</p></div><div class="masonry" id="community-feed"></div></section>
+      <section class="feed-section"><div class="feed-title"><h2>POPULAR <span class="pix" id="base-count"></span></h2></div><div class="masonry" id="base-feed"></div></section></div>`;
   },
   topics() {
     const tiles = TOPICS.map(([key, name, glyph]) => {
@@ -208,7 +208,7 @@ const detailBox = document.querySelector('#detail');
 const collectNotice = repo => `<section class="win dots collect-notice"><div class="win-bar"><span>COLLECT</span><span>${state.collecting.has(repo.name) ? `${Math.round(state.collecting.get(repo.name))}%` : 'queued'}</span></div><div class="win-body">
   ${state.collecting.has(repo.name)
     ? '<p>지금 이 저장소의 이슈를 수집하고 있습니다. 끝나면 알림으로 알려 드립니다.</p>'
-    : '<p>사용자들이 담은 저장소라 아직 이슈를 수집하지 않았습니다. 다음 정기 수집 때 가져오며, <b>구독하면 기다리지 않고 바로 수집</b>합니다.</p>'}</div></section>`;
+    : '<p>아직 이슈를 수집하지 않은 저장소입니다. 다음 정기 수집 때 가져오며, <b>구독하면 기다리지 않고 바로 수집</b>합니다.</p>'}</div></section>`;
 
 function subscribe(name) {
   state.subs.add(name);
