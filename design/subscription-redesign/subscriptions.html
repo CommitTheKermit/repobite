@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>내 구독 | RepoBite 시안</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="shell">
+  <nav class="rail" aria-label="주요 메뉴">
+    <span class="mark" aria-label="RepoBite">◎</span>
+    <a href="#" aria-label="탐색"><span data-lucide="compass"></span></a>
+    <a href="subscriptions.html" aria-label="내 구독" aria-current="page"><span data-lucide="bookmark"></span></a>
+  </nav>
+
+  <main class="page">
+    <header class="page-head">
+      <div><h1>내 구독</h1><span class="pix">4 repos / Lv.1 / mail on</span></div>
+      <a class="ghost" href="#">저장소 탐색</a>
+    </header>
+    <nav class="mobile-subs" aria-label="구독 저장소">
+      <button class="chip" aria-pressed="true">astro</button>
+      <button class="chip" aria-pressed="false">hono</button>
+      <button class="chip" aria-pressed="false">reka-ui</button>
+      <button class="chip" aria-pressed="false">better-auth</button>
+    </nav>
+    <section class="repo-head">
+      <canvas data-dither="seed" data-seed="withastro/astro" width="16" height="16" aria-hidden="true"></canvas>
+      <div><h2>withastro/astro</h2><p>콘텐츠 중심 웹 프레임워크</p></div>
+      <button class="ghost">구독 해제</button>
+    </section>
+    <div class="chips" role="group" aria-label="난이도">
+      <button class="chip" aria-pressed="true">Lv.1 본문 충분 <span class="pix" style="color:inherit">1</span></button>
+      <button class="chip" aria-pressed="false">Lv.2 추가 정보 필요 <span class="pix">0</span></button>
+      <button class="chip" aria-pressed="false">Lv.3 판단 보류 <span class="pix">1</span></button>
+    </div>
+    <div class="rows">
+      <article class="issue">
+        <div class="issue-meta"><span>#17962</span></div>
+        <h3>@astrojs/node: trailing-slash redirect drops part of a query string that contains a second `?`</h3>
+        <p>원인이 <code>packages/integrations/node/src/serve-static.ts</code>의 <code>fullUrl.split('?')</code>로 명시되어 있고, 쿼리 안의 두 번째 <code>?</code>까지 보존하도록 수정하면 됩니다. 기대 결과와 curl 재현 절차가 있습니다.</p>
+        <a class="gh" href="https://github.com/withastro/astro/issues/17962" target="_blank" rel="noopener noreferrer">GitHub에서 열기 ↗</a>
+      </article>
+    </div>
+  </main>
+
+  <aside class="side" aria-label="구독 관리">
+    <section class="win">
+      <div class="win-bar"><span>SUBSCRIBED</span><span>4</span></div>
+      <div class="win-body">
+        <nav class="sub-list" aria-label="구독 저장소">
+          <a class="sub-row" href="#" aria-current="true"><canvas data-dither="seed" data-seed="withastro/astro" width="16" height="16"></canvas><span><b>astro</b><small>withastro</small></span><span class="pix">2</span></a>
+          <a class="sub-row" href="#"><canvas data-dither="seed" data-seed="honojs/hono" width="16" height="16"></canvas><span><b>hono</b><small>honojs</small></span><span class="pix">2</span></a>
+          <a class="sub-row" href="#"><canvas data-dither="seed" data-seed="unovue/reka-ui" width="16" height="16"></canvas><span><b>reka-ui</b><small>unovue</small></span><span class="pix">2</span></a>
+          <a class="sub-row" href="#"><canvas data-dither="seed" data-seed="better-auth/better-auth" width="16" height="16"></canvas><span><b>better-auth</b><small>better-auth</small></span><span class="pix">2</span></a>
+        </nav>
+      </div>
+    </section>
+    <section class="win">
+      <div class="win-bar"><span>MAIL</span><span>ON</span></div>
+      <div class="win-body dots">
+        <dl class="kv">
+          <dt>받는 난이도</dt><dd>Lv.1 본문 충분</dd>
+          <dt>받는 주소</dt><dd>dev@example.com</dd>
+          <dt>발송</dt><dd>하루 최대 3개</dd>
+        </dl>
+        <a class="ghost" href="3-difficulty.html" style="margin-top:16px">알림 설정 바꾸기</a>
+      </div>
+    </section>
+  </aside>
+</div>
+<script src="https://unpkg.com/lucide@0.453.0/dist/umd/lucide.min.js"></script>
+<script>lucide.createIcons();</script>
+<script src="dither.js"></script>
+</body>
+</html>

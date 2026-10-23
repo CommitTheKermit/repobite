@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>저장소 선택 | RepoBite 시안</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="shell">
+  <nav class="rail" aria-label="주요 메뉴">
+    <span class="mark" aria-label="RepoBite">◎</span>
+    <a href="#" aria-label="탐색"><span data-lucide="compass"></span></a>
+    <a href="subscriptions.html" aria-label="내 구독" aria-current="page"><span data-lucide="bookmark"></span></a>
+  </nav>
+
+  <main class="flow">
+    <div class="flow-top">
+      <a href="1-topics.html" aria-label="이전">‹</a>
+      <div class="dashes" aria-label="4단계 중 2단계"><span class="on"></span><span class="on"></span><span></span><span></span></div>
+      <a href="subscriptions.html" aria-label="닫기">×</a>
+    </div>
+    <div class="flow-body">
+      <h1>어떤 저장소를 구독할까요?</h1>
+      <p class="sub">웹 프레임워크, UI · 디자인, 보안 · 인증 분야의 저장소입니다. 선택하면 바로 저장됩니다.</p>
+      <input class="search" type="search" placeholder="저장소 이름으로 찾기" aria-label="저장소 검색">
+      <div class="repos">
+        <button class="repo" aria-pressed="true"><canvas class="avatar" data-dither="seed" data-seed="withastro/astro" width="16" height="16"></canvas><span><b>withastro/astro</b><small>콘텐츠 중심 웹 프레임워크</small></span><span class="check"><span data-lucide="check"></span></span></button>
+        <button class="repo" aria-pressed="true"><canvas class="avatar" data-dither="seed" data-seed="honojs/hono" width="16" height="16"></canvas><span><b>honojs/hono</b><small>웹 표준 기반 서버 프레임워크</small></span><span class="check"><span data-lucide="check"></span></span></button>
+        <button class="repo" aria-pressed="true"><canvas class="avatar" data-dither="seed" data-seed="unovue/reka-ui" width="16" height="16"></canvas><span><b>unovue/reka-ui</b><small>Vue용 접근성 UI 프리미티브</small></span><span class="check"><span data-lucide="check"></span></span></button>
+        <button class="repo" aria-pressed="true"><canvas class="avatar" data-dither="seed" data-seed="better-auth/better-auth" width="16" height="16"></canvas><span><b>better-auth/better-auth</b><small>인증 프레임워크</small></span><span class="check"><span data-lucide="check"></span></span></button>
+        <button class="repo" aria-pressed="false"><canvas class="avatar" data-dither="seed" data-seed="vbenjs/vue-vben-admin" width="16" height="16"></canvas><span><b>vbenjs/vue-vben-admin</b><small>Vue 관리자 화면 템플릿</small></span><span class="check"><span data-lucide="check"></span></span></button>
+        <button class="repo" aria-pressed="false"><canvas class="avatar" data-dither="seed" data-seed="mlc-ai/web-llm" width="16" height="16"></canvas><span><b>mlc-ai/web-llm</b><small>브라우저 LLM 추론 엔진</small></span><span class="check"><span data-lucide="check"></span></span></button>
+        <button class="repo" aria-pressed="false"><canvas class="avatar" data-dither="seed" data-seed="Tencent/AI-Infra-Guard" width="16" height="16"></canvas><span><b>Tencent/AI-Infra-Guard</b><small>AI 보안 스캔 플랫폼</small></span><span class="check"><span data-lucide="check"></span></span></button>
+      </div>
+    </div>
+    <div class="flow-foot">
+      <a class="later" href="1-topics.html">분야 다시 고르기</a>
+      <a class="next" href="3-difficulty.html" aria-label="난이도 선택으로"><span data-lucide="arrow-right"></span></a>
+    </div>
+  </main>
+
+  <aside class="side" aria-label="구독 미리보기">
+    <section class="win">
+      <div class="win-bar"><span>SUBSCRIBED</span><span>4</span></div>
+      <div class="win-body">
+        <div class="sub-list">
+          <div class="sub-row"><canvas data-dither="seed" data-seed="withastro/astro" width="16" height="16"></canvas><span><b>astro</b><small>withastro</small></span><span class="pix">2 issues</span></div>
+          <div class="sub-row"><canvas data-dither="seed" data-seed="honojs/hono" width="16" height="16"></canvas><span><b>hono</b><small>honojs</small></span><span class="pix">2 issues</span></div>
+          <div class="sub-row"><canvas data-dither="seed" data-seed="unovue/reka-ui" width="16" height="16"></canvas><span><b>reka-ui</b><small>unovue</small></span><span class="pix">2 issues</span></div>
+          <div class="sub-row"><canvas data-dither="seed" data-seed="better-auth/better-auth" width="16" height="16"></canvas><span><b>better-auth</b><small>better-auth</small></span><span class="pix">2 issues</span></div>
+        </div>
+      </div>
+    </section>
+    <section class="win">
+      <div class="win-bar"><span>NEXT</span><span>02 / 04</span></div>
+      <div class="win-body dots">
+        <p style="margin:0;font-size:14px;line-height:1.6">구독한 4개 저장소에서 지금 판정된 이슈는 <b>8건</b>입니다. 다음 화면에서 받을 난이도를 고릅니다.</p>
+      </div>
+    </section>
+  </aside>
+</div>
+<script src="https://unpkg.com/lucide@0.453.0/dist/umd/lucide.min.js"></script>
+<script>lucide.createIcons();</script>
+<script src="dither.js"></script>
+</body>
+</html>
