@@ -9,6 +9,7 @@ class Element {
     this.textContent = ''; this.value = ''; this.checked = false; this.hidden = false; this.disabled = false;
     this.open = false;
   }
+  removeAttribute(key) { this.attributes.delete(key); }
   set innerHTML(value) { throw new Error('HTML 문자열 삽입 금지'); }
   append(...nodes) { this.children.push(...nodes); }
   replaceChildren(...nodes) { this.children = nodes; }
@@ -30,7 +31,7 @@ class Element {
 function dom() {
   const elements = new Map();
   for (const id of ['status', 'login', 'dialog-login', 'open', 'dialog', 'close', 'message', 'email-form',
-    'email', 'delivery', 'repo-form', 'repo', 'subscriptions', 'logout']) {
+    'email', 'delivery', 'repo-form', 'repo', 'repo-results', 'repo-search-status', 'subscriptions', 'logout']) {
     elements.set('account-' + id, new Element());
   }
   for (const id of ['email-form', 'repo-form']) elements.get('account-' + id).append(new Element('button'));

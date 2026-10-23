@@ -1,3 +1,4 @@
+import { mountRepositoryAutocomplete } from './repository-autocomplete.mjs';
 /** 계정 UI는 공개 피드와 독립적으로 동작하고 저장 결과는 세션 재조회로 확인한다. */
 const DRAFT_KEY = 'repobite:account-draft:v1';
 const LOGIN_URL = '/api/account?action=start';
@@ -32,6 +33,7 @@ export function mountAccountUI({ document, fetch, storage = browserStorage(),
     if (!node) throw new Error('계정 UI 요소가 없습니다: account-' + id);
     return [id, node];
   }));
+  const autocomplete = mountRepositoryAutocomplete({ document, input: el.repo, fetch });
   let current = { authenticated: false, subscriptions: [] };
   let revision = 0, busy = false, destroyed = false, emailDirty = false, deliveryDirty = false, repoDirty = false;
   let draftOwnerId = null, draftRestored = false, stateUnknown = false, callbackNoticeShown = false;
@@ -82,6 +84,7 @@ export function mountAccountUI({ document, fetch, storage = browserStorage(),
   }
 
   function clearPrivateInputs() {
+    autocomplete.clear();
     el.email.value = ''; el.delivery.checked = false; el.repo.value = '';
     emailDirty = false; deliveryDirty = false; repoDirty = false; draftOwnerId = null;
     removeDraft();
@@ -151,6 +154,7 @@ export function mountAccountUI({ document, fetch, storage = browserStorage(),
     if (!el.dialog.open && typeof el.dialog.showModal === 'function') el.dialog.showModal();
   }
   function close() {
+    autocomplete.clear();
     if (typeof el.dialog.close === 'function' && el.dialog.open) el.dialog.close();
     else el.dialog.hidden = true;
   }
@@ -190,6 +194,7 @@ export function mountAccountUI({ document, fetch, storage = browserStorage(),
 
   async function confirmedMutation(action, method, payload, confirm, success) {
     if (!current.authenticated) return needLogin();
+    autocomplete.clear();
     const expectedUser = current.user.id, ticket = ++revision;
     busy = true; message('저장 결과를 확인하고 있습니다.'); render();
     try {
@@ -271,6 +276,6 @@ export function mountAccountUI({ document, fetch, storage = browserStorage(),
     getState: () => ({ authenticated: current.authenticated, user: current.user ? { ...current.user } : null,
       subscriptions: [...current.subscriptions], busy, stateUnknown }),
     toggleSubscription: repo => changeSubscription(repo, current.subscriptions.some(name => name.toLowerCase() === repo.toLowerCase())),
-    destroy() { destroyed = true; revision++; listeners.forEach(remove => remove()); clearPrivateInputs(); }
+    destroy() { autocomplete.destroy(); destroyed = true; revision++; listeners.forEach(remove => remove()); clearPrivateInputs(); }
   };
 }

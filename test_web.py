@@ -76,6 +76,7 @@ def main():
         assert request('/api/account?action=session', headers={'Host': 'attacker.example'})[0] == 403
         assert request('/api/account?action=preferences', {'email': 'x@example.test'})[0] == 403
         assert request('/account-ui.mjs')[0] == 200
+        assert request('/repository-autocomplete.mjs')[0] == 200
         assert request('/contribution-ui.mjs')[0] == 200
         assert request('/api/contributions')[0] == 401
         assert request('/api/contributions', headers={'Host': 'attacker.example'})[0] == 403

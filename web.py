@@ -236,7 +236,7 @@ class Handler(BaseHTTPRequestHandler):
             handle_contributions(self)
         elif self.path == "/":
             self.reply(200, (radar.ROOT / "web.html").read_bytes(), "text/html; charset=utf-8")
-        elif self.path in {"/account-ui.mjs", "/contribution-ui.mjs"}:
+        elif self.path in {"/account-ui.mjs", "/contribution-ui.mjs", "/repository-autocomplete.mjs"}:
             self.reply(200, (radar.ROOT / self.path.lstrip("/")).read_bytes(), "text/javascript; charset=utf-8")
         elif self.path == "/api/repos":
             try:
