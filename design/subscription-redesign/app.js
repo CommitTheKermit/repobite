@@ -25,8 +25,6 @@ for (const issue of window.ISSUES) {
 
 const state = { detail: '', dlv: 0, group: '', sort: 'recommended', search: '', onboarded: false, topics: new Set(), subs: new Set(), experience: 'new', level: 1, email: '', consent: true, mail: null, active: '', filter: 1, query: '', error: '' };
 const view = document.querySelector('#view'), stack = document.querySelector('#stack');
-// 서비스 아이콘 시안: ?icon=a|b|c (기본 a)
-document.querySelector('.mark canvas').dataset.dither = { a: 'radar', b: 'bite', c: 'block' }[new URLSearchParams(location.search).get('icon')] || 'radar';
 const esc = value => String(value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const short = name => name.split('/')[1];
 const avatar = (name, size = 16, cls = '') => `<canvas class="${cls}" data-dither="seed" data-seed="${esc(name)}" width="${size}" height="${size}" aria-hidden="true"></canvas>`;
