@@ -125,10 +125,8 @@ def main():
             assert request("/.env")[0] == request("/../radar.py")[0] == 404
             with patch.object(web.community, "feed", return_value={"repos": [], "snapshot": None}):
                 assert request("/api/repos")[0] == 200
-            with patch.object(web.community, "register", return_value={"created": True, "repo": {"repo": "a/b"}}) as register:
-                assert request("/api/repos", {"repo": "a/b"})[0] == 201
-                assert request("/api/repos", {"repo": "a/b"}, {"Origin": "https://attacker.example"})[0] == 403
-                register.assert_called_once_with("a/b")
+            assert request("/api/repos", {"repo": "a/b"})[0] == 405
+            assert request("/api/repos", {"repo": "a/b"}, {"Origin": "https://attacker.example"})[0] == 403
             assert request("/api/state", headers={"Host": "attacker.example"})[0] == 403
             for headers in ({"Origin": "https://attacker.example"}, {"Origin": ""},
                             {"Content-Type": "text/plain"}, {"X-Radar-Request": ""}):

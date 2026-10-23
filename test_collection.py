@@ -78,7 +78,8 @@ class CollectionTest(unittest.TestCase):
                           headers={'X-RepoBite-Signature': collection.signature(raw,secret) if signed else ''})
             try:
                 with urlopen(req) as response: return response.status
-            except HTTPError as error: return error.code
+            except HTTPError as error:
+                code = error.code; error.close(); return code
         try:
             with patch.dict(os.environ,REPOBITE_COLLECT_SECRET=secret), patch.object(community,'redis',side_effect=['OK',None]), patch.object(collection_server,'run_pending') as run:
                 now = json.dumps({'at':int(time.time()),'nonce':'a'*32}).encode()

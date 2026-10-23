@@ -1,4 +1,5 @@
 import json
+from contextlib import closing
 import tempfile
 import unittest
 from pathlib import Path
@@ -54,9 +55,7 @@ class OnboardingHTTPTest(AccountsHTTPTest):
 
 class NotificationLevelTest(unittest.TestCase):
     def test_each_selected_level_and_legacy_default(self):
-        with tempfile.TemporaryDirectory() as directory:
-            store=ManualDelivery(Path(directory)/'delivery.sqlite')
-            self.addCleanup(store.close)
+        with tempfile.TemporaryDirectory() as directory, closing(ManualDelivery(Path(directory)/'delivery.sqlite')) as store:
             rows=[{**radar.normalize_issue('Owner/Repo',ISSUE),'number':level,'grade':{**GOOD,'difficulty':level},
                    'criteria_version':radar.CRITERIA_VERSION,'model':radar.MODEL,'reasoning_effort':radar.REASONING_EFFORT} for level in [1,2,3]]
             for level in [1,2,3]:

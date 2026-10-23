@@ -77,21 +77,15 @@ def collect_repository(repo, root, progress):
 
 def merge_repository(repo, items, lock):
     lock.check()
-    # 잠금 만료와 쓰기 사이에도 소유권을 Redis 내부에서 확인한다.
-    result = community.redis('EVAL', """
-if redis.call('GET',KEYS[1])~=ARGV[1] then return 0 end
-local raw=redis.call('GET',KEYS[2]); local s=raw and cjson.decode(raw) or {}
-local items={}; for _,i in ipairs(s.items or {}) do
- if string.lower(i.repo)~=ARGV[2] then table.insert(items,i) end end
-for _,i in ipairs(cjson.decode(ARGV[3])) do table.insert(items,i) end
-local names={}; for _,r in ipairs(s.collected_repos or {}) do names[string.lower(r)]=true end
-names[ARGV[2]]=true; local repos={}; for r,_ in pairs(names) do table.insert(repos,r) end
-s.items=items; s.collected_repos=repos; s.collected_at=ARGV[4]
--- cjson은 빈 Lua 테이블을 object로 쓰므로 배열은 JSON 조각으로 보존한다.
-local encoded=cjson.encode(s); if #items==0 then encoded=string.gsub(encoded,'"items":{}','"items":[]') end
-redis.call('SET',KEYS[2],encoded); return 1
-""", 2, collection.LOCK_KEY, community.SNAPSHOT_KEY, lock.token, repo,
-        json.dumps(items, ensure_ascii=False), community.timestamp())
+    snapshot = json.loads(community.redis('GET', community.SNAPSHOT_KEY) or '{}')
+    snapshot['items'] = [item for item in snapshot.get('items', []) if item['repo'].lower() != repo] + items
+    snapshot['collected_repos'] = sorted({name.lower() for name in snapshot.get('collected_repos', [])} | {repo})
+    snapshot['collected_at'] = community.timestamp()
+    # JSON 배열은 Python에서 보존하고 잠금 소유권 확인과 쓰기는 Redis 안에서 함께 수행한다.
+    result = community.redis('EVAL', "if redis.call('GET',KEYS[1])~=ARGV[1] then return 0 end; "
+                             "redis.call('SET',KEYS[2],ARGV[2]); return 1", 2,
+                             collection.LOCK_KEY, community.SNAPSHOT_KEY, lock.token,
+                             json.dumps(snapshot, ensure_ascii=False))
     if not result:
         raise RuntimeError('수집 실행권을 잃었습니다.')
 

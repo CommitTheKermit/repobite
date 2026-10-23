@@ -236,12 +236,17 @@ class Handler(BaseHTTPRequestHandler):
             handle_contributions(self)
         elif self.path == "/":
             self.reply(200, (radar.ROOT / "web.html").read_bytes(), "text/html; charset=utf-8")
-        elif self.path in {'/onboarding-notifications.html', '/subscriptions.html', '/onboarding-repositories.html', '/onboarding-difficulty.html'}:
+        elif self.path in {'/onboarding-topics.html', '/onboarding-notifications.html', '/subscriptions.html', '/onboarding-repositories.html', '/onboarding-difficulty.html'}:
             self.reply(200, (radar.ROOT / self.path.lstrip("/")).read_bytes(), "text/html; charset=utf-8")
         elif self.path in {'/subscription-tokens.css', '/subscription-components.css'}:
             self.reply(200, (radar.ROOT / self.path.lstrip("/")).read_bytes(), "text/css; charset=utf-8")
         elif self.path in {"/account-ui.mjs", "/contribution-ui.mjs", "/repository-autocomplete.mjs", "/subscription-client.mjs", "/subscription-pages.mjs"}:
             self.reply(200, (radar.ROOT / self.path.lstrip("/")).read_bytes(), "text/javascript; charset=utf-8")
+        elif self.path in {"/repobite.css", "/repobite-app.mjs", "/repobite-dither.js", "/repobite-icons.mjs"}:
+            kind = "text/css" if self.path.endswith(".css") else "text/javascript"
+            self.reply(200, (radar.ROOT / self.path.lstrip("/")).read_bytes(), kind + "; charset=utf-8")
+        elif self.path in {"/assets/fonts/Pretendard-Regular.woff2", "/assets/fonts/VT323-Regular.ttf"}:
+            self.reply(200, (radar.ROOT / self.path.lstrip("/")).read_bytes(), "font/woff2" if self.path.endswith(".woff2") else "font/ttf")
         elif self.path == "/api/repos":
             try:
                 self.reply(200, community.feed())
@@ -267,21 +272,7 @@ class Handler(BaseHTTPRequestHandler):
         if not self.local_request(mutation=True):
             return
         if self.path == "/api/repos":
-            try:
-                length = int(self.headers.get("Content-Length", "0"))
-                if not 0 < length <= 1024:
-                    raise ValueError("입력이 너무 깁니다.")
-                payload = json.loads(self.rfile.read(length))
-                if not isinstance(payload, dict):
-                    raise ValueError("레포 주소를 입력하세요.")
-                result = community.register(payload.get("repo"))
-                self.reply(201 if result["created"] else 200, result)
-            except ValueError:
-                self.reply(400, {"error": "공개 GitHub 레포 주소와 이슈 기능 활성화 여부를 확인하세요."})
-            except OverflowError as error:
-                self.reply(429, {"error": str(error)})
-            except (OSError, RuntimeError, KeyError, TypeError):
-                self.reply(503, {"error": "등록하지 못했습니다. 잠시 후 다시 시도하세요."})
+            self.reply(405, {"error": "지원하지 않는 요청입니다."})
             return
         if self.path != "/api/run":
             self.reply(404, {"error": "작업 경로가 없습니다."})
@@ -320,10 +311,17 @@ if __name__ == "__main__":
     parser.add_argument("--status-port", type=int, help="상태 조회 전용 loopback 포트")
     args = parser.parse_args()
     status_server = None
+    collect_server = None
     if args.status_port:
         status_server = home_status.make_server(
             args.status_port, radar.ROOT, os.environ.get("HOME_STATUS_HOST", ""))
         threading.Thread(target=status_server.serve_forever, daemon=True).start()
+    if os.environ.get("REPOBITE_COLLECT_SECRET"):
+        from collection_server import Handler as CollectionHandler
+        collect_server = ThreadingHTTPServer(("127.0.0.1", 8768), CollectionHandler)
+        threading.Thread(target=collect_server.serve_forever, daemon=True).start()
+        from collection_server import run_pending
+        threading.Thread(target=run_pending, daemon=True).start()
     with make_server(args.port) as server:
         print(f"RepoBite: http://127.0.0.1:{server.server_port}", flush=True)
         try:
@@ -332,6 +330,9 @@ if __name__ == "__main__":
             pass
         finally:
             server.app.stop()
+            if collect_server:
+                collect_server.shutdown()
+                collect_server.server_close()
             if status_server:
                 status_server.shutdown()
                 status_server.server_close()

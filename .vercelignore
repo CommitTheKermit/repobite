@@ -21,3 +21,14 @@
 !subscription-components.css
 !subscription-client.mjs
 !subscription-pages.mjs
+
+!collection.py
+!repobite.css
+!repobite-app.mjs
+!repobite-dither.js
+!onboarding-topics.html
+!assets
+!assets/fonts
+!assets/fonts/*
+!repobite-icons.mjs
+!assets/lucide-LICENSE.txt

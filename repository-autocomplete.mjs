@@ -90,3 +90,13 @@ export function mountRepositoryAutocomplete({ document, input, fetch, delay = 45
   listen(input, 'blur', clear);
   return { clear, destroy() { clear(); listeners.forEach(remove => remove()); } };
 }
+
+/** 탐색과 온보딩에서 같은 공개 저장소 검색 검증을 사용한다. */
+export async function searchRepositories(fetcher, term, signal) {
+  const q = encodeURIComponent(term + ' in:name is:public archived:false');
+  const response = await fetcher('https://api.github.com/search/repositories?q=' + q + '&per_page=8', {signal, credentials: 'omit'});
+  if (!response.ok) throw Error(response.status === 403 || response.status === 429 ? 'GitHub 검색 한도에 도달했습니다. 잠시 후 다시 검색하세요.' : 'GitHub 검색 연결을 확인하세요.');
+  const result = await response.json();
+  if (!Array.isArray(result.items)) throw Error('검색 결과를 읽지 못했습니다.');
+  return result.items.filter(r => r.private === false && !r.archived && !r.disabled && r.has_issues && /^[A-Za-z0-9][A-Za-z0-9-]{0,38}\/[A-Za-z0-9_.-]{1,100}$/.test(r.full_name));
+}

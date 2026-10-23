@@ -27,3 +27,15 @@ test('only current nonexcluded matching grades display',()=>{
  assert.equal(issueMatches({...row,criteria_version:1},2),false);
  assert.equal(issueMatches({...row,error:'failed'},2),false);
 });
+
+test('로그아웃 뒤 늦은 저장 응답은 이전 계정을 복원하지 않는다',async()=>{
+ let finish; const client=new SubscriptionClient(async(url,opts)=>{
+   if(opts.method==='POST') {await new Promise(resolve=>finish=resolve);return ok({});}
+   return ok({...session('10'),subscriptions:['o/r']});
+ });
+ client.session=session('10');
+ const saving=client.save('subscriptions',{repo:'o/r'},()=>true);
+ client.invalidate(); finish();
+ await assert.rejects(saving,/계정 요청이 변경/);
+ assert.equal(client.session,null);
+});
