@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>구독 온보딩 | RepoBite 시안</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="shell">
+  <nav class="rail" aria-label="주요 메뉴">
+    <span class="mark" aria-label="RepoBite">◎</span>
+    <a href="#/topics" aria-label="탐색"><span data-lucide="compass"></span></a>
+    <a href="#/subs" aria-label="내 구독" aria-current="page"><span data-lucide="bookmark"></span></a>
+  </nav>
+  <main class="desk">
+    <canvas class="field" data-dither="field" data-color="--rule-strong" aria-hidden="true"></canvas>
+    <span class="os-tag" aria-hidden="true">RB.OS1</span>
+    <div id="view"></div>
+  </main>
+  <aside class="side" aria-label="진행 요약">
+    <div id="stack" class="stack"></div>
+    <div class="widgets" aria-hidden="true">
+      <section class="win clock"><div class="win-bar"><span>Clock Tool 1.1</span></div><div class="win-body" id="clock"></div></section>
+      <section class="win"><div class="win-bar"><span>Glider 1.1</span></div><div class="life" id="life"></div><div class="life-cap">Game of Life</div></section>
+    </div>
+  </aside>
+</div>
+<div class="dialog" id="dialog" role="status" aria-live="polite" hidden>
+  <section class="win">
+    <div class="win-bar"><span>RepoBite 1.0</span></div>
+    <div class="win-body"><div id="dialog-text"></div><div class="progress"><span id="dialog-bar"></span></div></div>
+  </section>
+</div>
+<script src="https://unpkg.com/lucide@0.453.0/dist/umd/lucide.min.js"></script>
+<script src="data.js"></script>
+<script src="dither.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
