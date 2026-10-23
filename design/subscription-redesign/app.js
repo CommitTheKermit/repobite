@@ -23,7 +23,7 @@ for (const issue of window.ISSUES) {
   repos.set(issue.repo, repo);
 }
 
-const state = { open: new Set(), detail: '', dlv: 0, group: '', sort: 'recommended', search: '', onboarded: false, topics: new Set(), subs: new Set(), experience: 'new', level: 1, email: '', consent: true, mail: null, active: '', filter: 1, query: '', error: '' };
+const state = { searchOpen: false, open: new Set(), detail: '', dlv: 0, group: '', sort: 'recommended', search: '', onboarded: false, topics: new Set(), subs: new Set(), experience: 'new', level: 1, email: '', consent: true, mail: null, active: '', filter: 1, query: '', error: '' };
 const view = document.querySelector('#view'), stack = document.querySelector('#stack');
 const esc = value => String(value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const short = name => name.split('/')[1];
@@ -72,22 +72,32 @@ function flow(step, body, foot) {
     <div class="flow-foot">${foot}</div></div>`;
 }
 
-const screens = {
-  explore() {
-    const query = state.search.toLowerCase(), groupTopics = state.group.split(' ');
-    let list = [...repos.values()].filter(r => (!state.group || [...r.topics].some(t => groupTopics.includes(t))) && (r.name + r.description).toLowerCase().includes(query));
-    if (state.sort === 'name') list = list.sort((a, b) => a.name.localeCompare(b.name));
-    const chips = [['전체', '']].concat(GROUPS).map(([label, value]) => `<button class="chip" data-group="${value}" aria-pressed="${state.group === value}">${label}${value ? '' : ` <span class="pix">${repos.size}</span>`}</button>`).join('');
-    const cards = list.map(r => {
-      return `<article class="card win"><button class="card-hit" data-detail="${esc(r.name)}" aria-haspopup="dialog">
+// 검색 결과 부분만 다시 그리는 조각들. 타이핑 중에 입력칸을 바꿔 끼우면 한글 조합이 끊기므로 입력칸은 건드리지 않는다.
+function exploreList() {
+  const query = state.search.toLowerCase(), groupTopics = state.group.split(' ');
+  const list = [...repos.values()].filter(r => (!state.group || [...r.topics].some(t => groupTopics.includes(t))) && (r.name + r.description).toLowerCase().includes(query));
+  return state.sort === 'name' ? list.sort((a, b) => a.name.localeCompare(b.name)) : list;
+}
+const exploreCards = list => list.map(r => `<article class="card win"><button class="card-hit" data-detail="${esc(r.name)}" aria-haspopup="dialog">
         <span class="win-bar"><span>${esc(short(r.name))}</span><span>${issues(r.issues.length)}</span></span>${repoMedia(r.name)}
         <span class="card-body"><span class="card-meta">${owner(r.name)}<span><b>${esc(r.name)}</b><small>${esc(r.description)}</small></span></span><span class="tags">${levelTags(r.issues)}</span></span></button>
-</article>`;
-    }).join('');
-    return `<div class="explore">
+</article>`).join('') || '<p class="empty">일치하는 저장소가 없습니다.</p>';
+function repoRows() {
+  const query = state.query.toLowerCase();
+  const list = [...repos.values()].filter(r => (state.subs.has(r.name) || [...r.topics].some(t => state.topics.has(t))) && r.name.toLowerCase().includes(query));
+  return list.map(r => `<button class="repo" data-repo="${esc(r.name)}" aria-pressed="${state.subs.has(r.name)}">${repoMedia(r.name, 'thumb')}<span><b>${esc(r.name)}</b><small>${esc(r.description)}</small></span><span class="pix">${issues(r.issues.length)}</span><span class="check">${icon('check')}</span></button>`).join('') || '<p class="empty">일치하는 저장소가 없습니다.</p>';
+}
+
+const screens = {
+  explore() {
+    const list = exploreList();
+    const chips = [['전체', '']].concat(GROUPS).map(([label, value]) => `<button class="chip" data-group="${value}" aria-pressed="${state.group === value}">${label}${value ? '' : ` <span class="pix">${repos.size}</span>`}</button>`).join('');
+    // 오른쪽 패널이 숨는 좁은 화면에서는 돋보기 버튼으로 필터 바 위에 검색칸을 펼친다
+    const inline = state.searchOpen ? `<div class="inline-search"><label class="search-box">${icon('search')}<input class="search" id="explore-search-m" type="search" placeholder="저장소 이름이나 설명으로 검색" aria-label="저장소 검색" value="${esc(state.search)}"></label><button class="ghost" data-search-close>닫기</button></div>` : '';
+    return `<div class="explore"><button class="search-toggle" data-search-open aria-label="저장소 검색" aria-expanded="${state.searchOpen}">${icon('search')}</button>${inline}
       <div class="bar"><select class="sort" id="sort" aria-label="정렬"><option value="recommended">추천순</option><option value="name" ${state.sort === 'name' ? 'selected' : ''}>레포 이름순</option></select><div class="chips" data-fold="groups">${chips}${moreChip('groups')}</div></div>
-      <div class="section-head"><span class="eyebrow">REPOSITORIES / ${list.length}</span><button class="ghost invert" data-go="${state.onboarded ? 'subs' : 'topics'}">${state.onboarded ? '내 구독 보기' : '레포바이트 이용하기'}</button></div>
-      <div class="masonry">${cards || '<p class="empty">일치하는 저장소가 없습니다.</p>'}</div></div>`;
+      <div class="section-head"><span class="eyebrow" id="repo-count">REPOSITORIES / ${list.length}</span><button class="ghost invert" data-go="${state.onboarded ? 'subs' : 'topics'}">${state.onboarded ? '내 구독 보기' : '레포바이트 이용하기'}</button></div>
+      <div class="masonry">${exploreCards(list)}</div></div>`;
   },
   topics() {
     const tiles = TOPICS.map(([key, name, glyph]) => {
@@ -100,12 +110,9 @@ const screens = {
       `<button class="later" data-go="explore">나중에 할게요</button><button class="next" data-go="repos" aria-label="저장소 선택으로" ${state.topics.size ? '' : 'disabled'}>${icon('arrow-right')}</button>`);
   },
   repos() {
-    const query = state.query.toLowerCase();
-    const list = [...repos.values()].filter(r => (state.subs.has(r.name) || [...r.topics].some(t => state.topics.has(t))) && r.name.toLowerCase().includes(query));
-    const rows = list.map(r => `<button class="repo" data-repo="${esc(r.name)}" aria-pressed="${state.subs.has(r.name)}">${repoMedia(r.name, 'thumb')}<span><b>${esc(r.name)}</b><small>${esc(r.description)}</small></span><span class="pix">${issues(r.issues.length)}</span><span class="check">${icon('check')}</span></button>`).join('');
     return flow('repos', `<h1>어떤 저장소를<br>구독할까요?</h1><p class="sub">${[...state.topics].map(t => TOPIC_NAME[t]).join(', ') || '고른 분야'}의 저장소입니다.</p>
       <input class="search" id="query" type="search" placeholder="저장소 이름으로 찾기" aria-label="저장소 검색" value="${esc(state.query)}">
-      <div class="repos">${rows || '<p class="empty">일치하는 저장소가 없습니다.</p>'}</div>`,
+      <div class="repos">${repoRows()}</div>`,
       `<button class="later" data-go="topics">분야 다시 고르기</button><button class="next" data-go="level" aria-label="난이도 선택으로" ${state.subs.size ? '' : 'disabled'}>${icon('arrow-right')}</button>`);
   },
   level() {
@@ -265,6 +272,8 @@ document.addEventListener('click', event => {
   if (!b || b.disabled) return;
   const d = b.dataset;
   if (d.go) return go(d.go);
+  if ('searchOpen' in d) { state.searchOpen = true; if (route() !== 'explore') return go('explore'); }
+  if ('searchClose' in d) { state.searchOpen = false; state.search = ''; }
   if ('group' in d) state.group = d.group;
   if (d.more) state.open.has(d.more) ? state.open.delete(d.more) : state.open.add(d.more);
   if (d.detail) { state.detail = d.detail; state.dlv = 0; }
@@ -298,17 +307,25 @@ document.addEventListener('click', event => {
     return dialog('Saving ...<br>Subscriptions, Mail', () => go('subs'));
   }
   render();
+  if ('searchOpen' in d) document.querySelector('#explore-search-m')?.focus();
 });
 document.addEventListener('change', event => { if (event.target.id === 'sort') { state.sort = event.target.value; render(); } });
 document.addEventListener('input', event => {
   const id = event.target.id;
   if (id === 'email') state.email = event.target.value;
-  if (id !== 'query' && id !== 'explore-search') return;
-  state[id === 'query' ? 'query' : 'search'] = event.target.value;
-  render();
-  const input = document.querySelector(`#${id}`);
-  input.focus();
-  input.setSelectionRange(input.value.length, input.value.length);
+  // 검색은 결과 목록만 다시 그린다. 입력칸을 다시 만들면 한글 자모 조합이 끊겨 'ㅇㅏㄴ'처럼 흩어진다.
+  if (id === 'query') {
+    state.query = event.target.value;
+    document.querySelector('.repos').innerHTML = repoRows();
+    window.lucide.createIcons();
+  }
+  if (id === 'explore-search' || id === 'explore-search-m') {
+    state.search = event.target.value;
+    const list = exploreList();
+    document.querySelector('.masonry').innerHTML = exploreCards(list);
+    document.querySelector('#repo-count').textContent = `REPOSITORIES / ${list.length}`;
+    document.querySelectorAll('#explore-search, #explore-search-m').forEach(input => { if (input !== event.target) input.value = state.search; });
+  }
 });
 // 카드 이미지가 깨지면 소셜 미리보기, 그것도 실패하면 저장소 이름을 보여 준다 (error는 버블링되지 않아 캡처 단계에서 받는다)
 document.addEventListener('error', event => {

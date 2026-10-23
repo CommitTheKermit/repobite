@@ -78,6 +78,10 @@ button:disabled { cursor: not-allowed; opacity: .35; }
 .search-box .search { padding-left: 46px; border-color: var(--dim); box-shadow: 4px 4px 0 #000; }
 .search-box .search::placeholder { color: var(--muted); }
 .search-box .search:focus { border-color: var(--active); outline: none; }
+/* 오른쪽 패널이 숨는 좁은 화면의 검색: 오른쪽 위 돋보기 버튼과 필터 바 위 펼침 검색칸 */
+.search-toggle, .rail-search, .inline-search { display: none; }
+.search-toggle, .rail-search { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--dim); background: var(--raised); color: var(--text); box-shadow: 3px 3px 0 #000; place-items: center; padding: 0; }
+.search-toggle svg, .rail-search svg { width: 18px; height: 18px; }
 .repos { width: 100%; text-align: left; margin-top: 8px; }
 .repo { width: 100%; display: grid; grid-template-columns: 96px minmax(0, 1fr) auto 32px; gap: 14px; align-items: center; padding: 14px 4px; background: none; border: 0; border-bottom: 1px solid var(--rule); text-align: left; }
 .repo b { display: block; font: 500 15px var(--mono); letter-spacing: -0.01em; overflow: hidden; text-overflow: ellipsis; }
@@ -256,6 +260,10 @@ html:has(dialog[open]) { overflow: hidden; }
 
 @media (max-width: 1199px) {
   .shell { grid-template-columns: var(--rail) minmax(0, 1fr); }
+  .search-toggle { display: grid; position: absolute; top: 12px; right: 24px; z-index: 3; }
+  .inline-search { display: flex; gap: 8px; align-items: center; padding-top: 64px; }
+  .inline-search .search-box { flex: 1; }
+  .inline-search + .bar { padding-top: 16px; }
   .side { display: none; }
   .masonry { columns: 2; }
 }
@@ -264,6 +272,9 @@ html:has(dialog[open]) { overflow: hidden; }
   .rail { flex-direction: row; justify-content: flex-start; padding: 8px 16px; border-right: 0; border-bottom: 1px solid var(--rule); gap: 8px; }
   .rail .mark { margin: 0 8px 0 0; }
   .os-tag { display: none; }
+  .search-toggle { display: none; }
+  .rail-search { display: grid; margin-left: auto; }
+  .inline-search { padding-top: 12px; }
   .explore { padding: 0 16px 32px; }
   .bar { padding-top: 12px; }
   .masonry { columns: 1; }
