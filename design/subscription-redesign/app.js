@@ -168,7 +168,7 @@ const screens = {
 
 function renderSide() {
   stack.classList.remove('stack');
-  stack.innerHTML = `<input class="search" id="explore-search" type="search" placeholder="저장소 검색" aria-label="저장소 검색" value="${esc(state.search)}">
+  stack.innerHTML = `<label class="search-box">${icon('search')}<input class="search" id="explore-search" type="search" placeholder="저장소 이름이나 설명으로 검색" aria-label="저장소 검색" value="${esc(state.search)}"></label>
     <section class="win dots"><div class="win-bar"><span>RECENT</span><span>${issues(window.ISSUES.length)}</span></div><div class="win-body"><div class="issue-list">${window.ISSUES.slice(0, 6).map(i => `<button class="issue-row with-owner" data-detail="${esc(i.repo)}" aria-haspopup="dialog">${owner(i.repo)}<span class="inv">Lv.${i.lv} ${LEVELS[i.lv - 1]}</span><span class="pix">${esc(short(i.repo))}</span><b>${esc(i.t)}</b></button>`).join('')}</div></div></section>`;
 }
 
