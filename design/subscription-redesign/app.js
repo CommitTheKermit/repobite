@@ -29,6 +29,12 @@ const esc = value => String(value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<'
 const short = name => name.split('/')[1];
 const avatar = (name, size = 16, cls = '') => `<canvas class="${cls}" data-dither="seed" data-seed="${esc(name)}" width="${size}" height="${size}" aria-hidden="true"></canvas>`;
 const owner = name => `<img class="owner" src="https://avatars.githubusercontent.com/${esc(name.split('/')[0])}?v=4&s=64" alt="" loading="lazy">`;
+// 메인과 같은 순서로 저장소 이미지를 고른다: README 대표 이미지 > GitHub 소셜 미리보기 > 저장소 이름
+const repoMedia = (name, cls = '') => {
+  const social = `https://opengraph.githubassets.com/1/${name}`, image = window.REPO_IMAGES[name] || social;
+  return `<span class="card-media ${cls}"><img class="card-art${image === social ? ' social' : ''}" src="${esc(image)}" data-social="${esc(social)}" alt="${esc(name)} 대표 이미지" loading="lazy"><span class="card-fallback" hidden>${esc(name)}</span></span>`;
+};
+const issues = n => `${n} issue${n === 1 ? '' : 's'}`;
 const icon = name => `<span data-lucide="${name}"></span>`;
 const subIssues = () => [...state.subs].flatMap(name => repos.get(name).issues);
 const route = () => location.hash.replace('#/', '') || 'explore';
@@ -52,12 +58,9 @@ const screens = {
     if (state.sort === 'name') list = list.sort((a, b) => a.name.localeCompare(b.name));
     const chips = [['전체', '']].concat(GROUPS).map(([label, value]) => `<button class="chip" data-group="${value}" aria-pressed="${state.group === value}">${label}${value ? '' : ` <span class="pix">${repos.size}</span>`}</button>`).join('');
     const cards = list.map(r => {
-      // 메인과 같은 순서: README 대표 이미지 > GitHub 소셜 미리보기 > 저장소 이름
-      const social = `https://opengraph.githubassets.com/1/${r.name}`, image = window.REPO_IMAGES[r.name] || social;
-      const art = `<span class="card-media"><img class="card-art${image === social ? ' social' : ''}" src="${esc(image)}" data-social="${esc(social)}" alt="${esc(r.name)} 대표 이미지" loading="lazy"><span class="card-fallback" hidden>${esc(r.name)}</span></span>`;
       const open = state.selected === r.name;
       return `<article class="card win" aria-current="${open}"><button class="card-hit" data-select="${esc(r.name)}" aria-expanded="${open}">
-        <span class="win-bar"><span>${esc(short(r.name))}</span><span>${r.issues.length} ISS</span></span>${art}
+        <span class="win-bar"><span>${esc(short(r.name))}</span><span>${issues(r.issues.length)}</span></span>${repoMedia(r.name)}
         <span class="card-body"><span class="card-meta">${owner(r.name)}<span><b>${esc(r.name)}</b><small>${esc(r.description)}</small></span></span><span class="tags">${levelTags(r.issues)}</span></span></button>
         ${open ? `<div class="card-issues">${r.issues.map(issueRow).join('')}</div>` : ''}</article>`;
     }).join('');
@@ -79,7 +82,7 @@ const screens = {
   repos() {
     const query = state.query.toLowerCase();
     const list = [...repos.values()].filter(r => (state.subs.has(r.name) || [...r.topics].some(t => state.topics.has(t))) && r.name.toLowerCase().includes(query));
-    const rows = list.map(r => `<button class="repo" data-repo="${esc(r.name)}" aria-pressed="${state.subs.has(r.name)}">${avatar(r.name, 16, 'avatar')}<span><b>${esc(r.name)}</b><small>${esc(r.description)}</small></span><span class="pix">${r.issues.length} ISS</span><span class="check">${icon('check')}</span></button>`).join('');
+    const rows = list.map(r => `<button class="repo" data-repo="${esc(r.name)}" aria-pressed="${state.subs.has(r.name)}">${repoMedia(r.name, 'thumb')}<span><b>${esc(r.name)}</b><small>${esc(r.description)}</small></span><span class="pix">${issues(r.issues.length)}</span><span class="check">${icon('check')}</span></button>`).join('');
     return flow('repos', `<h1>어떤 저장소를<br>구독할까요?</h1><p class="sub">${[...state.topics].map(t => TOPIC_NAME[t]).join(', ') || '고른 분야'}의 저장소입니다.</p>
       <input class="search" id="query" type="search" placeholder="저장소 이름으로 찾기" aria-label="저장소 검색" value="${esc(state.query)}">
       <div class="repos">${rows || '<p class="empty">일치하는 저장소가 없습니다.</p>'}</div>`,
@@ -93,6 +96,7 @@ const screens = {
     }).join('');
     const first = matched[0];
     const spec = first ? `<div class="spec" style="margin-top:28px;width:100%"><span class="cross tl"></span><span class="cross br"></span>
+        <div class="full">${repoMedia(first.repo, 'spec-media')}</div>
         <div><span class="lab">Issue</span><span class="val big">#${first.n}</span></div>
         <div class="right"><span class="outline">Output</span><div class="val" style="margin-top:8px">Lv.${first.lv}</div></div>
         <div class="full"><span class="lab">Repository</span><span class="val">${esc(first.repo)}</span></div>
@@ -103,7 +107,7 @@ const screens = {
     return flow('level', `<h1>오픈 소스 기여는<br>얼마나 해 보셨어요?</h1><p class="sub">경험에 맞춰 난이도를 추천합니다. 추천은 아래에서 직접 바꿀 수 있습니다.</p>
       <div class="pills" role="group" aria-label="개발 경험">${EXPERIENCES.map(([key, text]) => `<button class="pill" data-exp="${key}" aria-pressed="${state.experience === key}">${text}</button>`).join('')}</div>
       <div class="bench" role="group" aria-label="받을 난이도">${rows}</div>
-      <div class="bench-foot" style="width:100%"><div class="circles" aria-label="구독 이슈 ${all.length}건 중 ${matched.length}건">${all.map(i => `<span class="${i.lv === state.level ? 'on' : ''}"></span>`).join('')}</div><span class="pix">${matched.length} / ${all.length} ISSUES</span></div>
+      <div class="bench-foot" style="width:100%"><div class="circles" aria-label="구독 이슈 ${all.length}건 중 ${matched.length}건">${all.map(i => `<span class="${i.lv === state.level ? 'on' : ''}"></span>`).join('')}</div><span class="pix">${matched.length} / ${issues(all.length)}</span></div>
       ${spec}`,
       `<button class="later" data-go="repos">이전</button><button class="next" data-go="mail" aria-label="알림 설정으로">${icon('arrow-right')}</button>`);
   },
@@ -115,7 +119,6 @@ const screens = {
       <label class="field-label">알림 이메일<input class="search" id="email" type="email" autocomplete="email" placeholder="you@example.com" value="${esc(state.email)}"></label>
       <div class="toggle-row"><span>선택한 조건의 이슈를 이메일로 받는 데 동의합니다.</span><button class="toggle" data-consent role="switch" aria-checked="${state.consent}" aria-label="이메일 수신 동의"></button></div>
       ${state.error ? `<p class="error" role="alert">${state.error}</p>` : ''}
-      <p class="note">지금은 운영자가 확인한 뒤 수동으로 발송합니다.</p>
       <div style="margin-top:28px;display:grid;justify-items:center;gap:4px"><button class="cta" data-finish="mail">알림받기</button><button class="text-btn" data-finish="skip">알림 없이 구독하기</button></div>`, '');
   },
   subs() {
@@ -145,12 +148,12 @@ const screens = {
 
 function renderSide(name) {
   const repo = repos.get(state.selected);
-  const pick = repo ? `<section class="win"><div class="win-bar"><span>REPO</span><span>${repo.issues.length} ISSUES</span></div><div class="win-body">
+  const pick = repo ? `<section class="win"><div class="win-bar"><span>REPO</span><span>${issues(repo.issues.length)}</span></div><div class="win-body">
       <span class="wordmark sm">${esc(short(repo.name))}</span><p class="caption">${esc(repo.description)}</p>
       <div class="tags">${[...repo.topics].map(t => `<span class="tag">${esc(TOPIC_NAME[t] || t)}</span>`).join('')}</div>
       <div class="issue-list">${repo.issues.map(issueRow).join('')}</div>
       ${state.subs.has(repo.name) ? '<button class="ghost" data-go="subs" style="margin-top:16px">구독 중 · 내 구독 보기</button>' : `<button class="solid-btn" data-subscribe="${esc(repo.name)}" style="margin-top:16px">이 저장소 구독하기 ${icon('arrow-right')}</button>`}</div></section>`
-    : `<section class="win dots"><div class="win-bar"><span>RECENT</span><span>${window.ISSUES.length} ISSUES</span></div><div class="win-body"><div class="issue-list">${window.ISSUES.slice(0, 6).map(i => `<button class="issue-row with-owner" data-select="${esc(i.repo)}">${owner(i.repo)}<span class="inv">Lv.${i.lv} ${LEVELS[i.lv - 1]}</span><span class="pix">${esc(short(i.repo))}</span><b>${esc(i.t)}</b></button>`).join('')}</div></div></section>`;
+    : `<section class="win dots"><div class="win-bar"><span>RECENT</span><span>${issues(window.ISSUES.length)}</span></div><div class="win-body"><div class="issue-list">${window.ISSUES.slice(0, 6).map(i => `<button class="issue-row with-owner" data-select="${esc(i.repo)}">${owner(i.repo)}<span class="inv">Lv.${i.lv} ${LEVELS[i.lv - 1]}</span><span class="pix">${esc(short(i.repo))}</span><b>${esc(i.t)}</b></button>`).join('')}</div></div></section>`;
   stack.classList.remove('stack');
   stack.innerHTML = `<input class="search" id="explore-search" type="search" placeholder="저장소 검색" aria-label="저장소 검색" value="${esc(state.search)}">${pick}`;
 }

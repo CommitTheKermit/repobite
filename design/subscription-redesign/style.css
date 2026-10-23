@@ -73,7 +73,7 @@ button:disabled { cursor: not-allowed; opacity: .35; }
 .search { width: 100%; height: 48px; border-radius: 24px; border: 1px solid var(--rule-strong); background: var(--raised); color: var(--text); padding: 0 20px; font: inherit; }
 .search::placeholder { color: var(--dim); }
 .repos { width: 100%; text-align: left; margin-top: 8px; }
-.repo { width: 100%; display: grid; grid-template-columns: 40px minmax(0, 1fr) auto 32px; gap: 14px; align-items: center; padding: 14px 4px; background: none; border: 0; border-bottom: 1px solid var(--rule); text-align: left; }
+.repo { width: 100%; display: grid; grid-template-columns: 96px minmax(0, 1fr) auto 32px; gap: 14px; align-items: center; padding: 14px 4px; background: none; border: 0; border-bottom: 1px solid var(--rule); text-align: left; }
 .repo b { display: block; font: 500 15px var(--mono); letter-spacing: -0.01em; overflow: hidden; text-overflow: ellipsis; }
 .repo small { color: var(--muted); font-size: 13px; }
 .repo .pix { font-size: 18px; }
@@ -180,6 +180,11 @@ button:disabled { cursor: not-allowed; opacity: .35; }
 .card-media > * { grid-area: 1 / 1; }
 .card-art { display: block; width: 100%; max-height: 280px; object-fit: cover; align-self: center; }
 .card-art.social { object-fit: contain; align-self: center; }
+.thumb { width: 96px; height: 56px; min-height: 0; border: 1px solid var(--rule-strong); }
+.thumb .card-art, .thumb .card-art.social { height: 100%; max-height: none; object-fit: cover; }
+.thumb .card-fallback { font-size: 10px; font-weight: 600; }
+.spec-media { min-height: 0; border: 1px solid var(--rule); }
+.spec-media .card-art { max-height: 220px; }
 .card-fallback { align-self: center; justify-self: center; max-width: 80%; color: var(--muted); font-size: 18px; font-weight: 700; overflow-wrap: anywhere; text-align: center; }
 .card-meta { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 10px; align-items: start; }
 .card-meta > span { display: grid; gap: 2px; min-width: 0; }
@@ -245,7 +250,8 @@ button:disabled { cursor: not-allowed; opacity: .35; }
   .topics { gap: 18px 4px; }
   .topic i { width: 56px; height: 56px; }
   .topic { font-size: 12px; }
-  .repo { grid-template-columns: 40px minmax(0, 1fr) 32px; }
+  .repo { grid-template-columns: 72px minmax(0, 1fr) 32px; gap: 12px; }
+  .thumb { width: 72px; height: 44px; }
   .repo .pix { display: none; }
   .spec { padding: 16px; }
   .spec-3 { grid-template-columns: 1fr auto; }
