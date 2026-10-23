@@ -1,7 +1,8 @@
 import { icon } from './repobite-icons.mjs';
 import { SubscriptionClient } from './subscription-client.mjs';
+import { mountRepositorySearchDialog } from './repository-search-dialog.mjs';
 import { searchRepositories } from './repository-autocomplete.mjs';
-// RepoBite 연결 프로토타입: 탐색 메인, 4단계 구독 온보딩(분야 > 저장소 > 난이도 > 알림), 내 구독. 저장은 화면 상태로만 흉내 낸다.
+// 공개 저장소 탐색, 계정별 구독과 온보딩을 실제 API에 연결한다.
 const TOPICS = [
   ['ai-ml', 'AI · 머신러닝', 'brain'], ['agents-automation', '에이전트', 'bot'], ['search-knowledge', '검색 · 지식', 'search'],
   ['dev-tools', '개발 도구', 'wrench'], ['web-framework', '웹 프레임워크', 'globe'], ['ui-design-system', 'UI · 디자인', 'palette'],
@@ -104,7 +105,7 @@ const matches = (r, query) => (r.name + r.description).toLowerCase().includes(qu
 const githubMatches = query => query.trim().length < 2 ? [] : searchResults.filter(r => !r.listed);
 function exploreList() {
   const groupTopics = state.group.split(' ');
-  const list = listedRepos().filter(r => (!state.group || [...r.topics].some(t => groupTopics.includes(t))) && matches(r, state.search));
+  const list = listedRepos().filter(r => r.collected).filter(r => (!state.group || [...r.topics].some(t => groupTopics.includes(t))) && matches(r, state.search));
   return state.sort === 'name' ? list.sort((a, b) => a.name.localeCompare(b.name)) : list;
 }
 // 수집 전 저장소(아직 RepoBite에 없음)는 이슈 대신 수집 상태를 보여 준다
@@ -117,7 +118,7 @@ const exploreCards = list => list.map(r => `<article class="card win"><button cl
 </article>`).join('') || '<p class="empty">일치하는 저장소가 없습니다.</p>';
 // 구독된 레포와 POPULAR를 나눈 피드. 검색과 수집 상태 변경 때 이 부분만 다시 그린다.
 function updateFeeds() {
-  const list = exploreList(), subscribed = list.filter(r => r.subscribed), popular = list.filter(r => !r.subscribed), github = githubMatches(state.search);
+  const list = exploreList(), subscribed = list.filter(r => r.subscribed), popular = list.filter(r => !r.subscribed);
   const section = document.querySelector('#subscribed-section');
   if (!section) return;
   section.hidden = !subscribed.length;
@@ -125,8 +126,7 @@ function updateFeeds() {
   document.querySelector('#subscribed-count').textContent = subscribed.length;
   document.querySelector('#popular-feed').innerHTML = exploreCards(popular);
   document.querySelector('#popular-count').textContent = popular.length;
-  document.querySelector('#github-section').hidden = !github.length;
-  document.querySelector('#github-feed').innerHTML = exploreCards(github);
+  document.querySelector('#repository-not-found').hidden = !state.search.trim() || list.length > 0;
 }
 function repoRows() {
   const list = listedRepos().filter(r => (state.subs.has(r.name) || !state.topics.size || [...r.topics].some(t => state.topics.has(t))) && matches(r, state.query))
@@ -138,11 +138,11 @@ const screens = {
   explore() {
     const chips = [['전체', '']].concat(GROUPS).map(([label, value]) => `<button class="chip" data-group="${value}" aria-pressed="${state.group === value}">${label}${value ? '' : ` <span class="pix">${listedRepos().length}</span>`}</button>`).join('');
     // 오른쪽 패널이 숨는 좁은 화면에서는 돋보기 버튼으로 필터 바 위에 검색칸을 펼친다
-    const inline = state.searchOpen ? `<div class="inline-search"><label class="search-box">${icon('search')}<input class="search" id="explore-search-m" type="search" placeholder="저장소 이름이나 설명으로 검색" aria-label="저장소 검색" value="${esc(state.search)}"></label><button class="ghost" data-search-close>닫기</button></div>` : '';
+    const inline = state.searchOpen ? `<div class="inline-search"><label class="search-box">${icon('search')}<input class="search" id="explore-search-m" type="search" placeholder="수집된 저장소에서 검색" aria-label="수집된 저장소 검색" value="${esc(state.search)}"></label><button class="ghost" data-search-close>닫기</button></div>` : '';
     return `<div class="explore"><button class="search-toggle" data-search-open aria-label="저장소 검색" aria-expanded="${state.searchOpen}">${icon('search')}</button>${inline}
       <div class="bar"><select class="sort" id="sort" aria-label="정렬"><option value="recommended">추천순</option><option value="name" ${state.sort === 'name' ? 'selected' : ''}>레포 이름순</option></select><div class="chips" data-fold="groups">${chips}${moreChip('groups')}</div></div>
       <div class="section-head"><span class="eyebrow">REPOSITORIES / ${listedRepos().length}</span><button class="ghost invert" data-go="${state.onboarded ? 'subs' : 'topics'}">${state.onboarded ? '내 구독 보기' : '레포바이트 이용하기'}</button></div>
-      <section class="feed-section" id="github-section" hidden><div class="feed-title"><h2>GitHub에서 찾은 저장소</h2><p>RepoBite에 아직 없는 저장소입니다. 구독하면 바로 이슈를 수집합니다.</p></div><div class="masonry" id="github-feed"></div></section>
+      <section id="repository-not-found" class="repository-not-found win" hidden><div class="win-body"><h2>찾으시는 레포지토리가 없나요?</h2><p>수집 범위 밖의 저장소는 GitHub에서 찾아 구독할 수 있습니다.</p><button class="ghost invert" data-external-search>GitHub에서 레포지토리 찾기</button></div></section>
       <section class="feed-section" id="subscribed-section"><div class="feed-title"><h2>구독된 레포 <span class="pix" id="subscribed-count"></span></h2><p>사용자가 구독한 저장소입니다.</p></div><div class="masonry" id="subscribed-feed"></div></section>
       <section class="feed-section"><div class="feed-title"><h2>POPULAR <span class="pix" id="popular-count"></span></h2></div><div class="masonry" id="popular-feed"></div></section></div>`;
   },
@@ -222,7 +222,7 @@ const screens = {
 
 function renderSide() {
   stack.classList.remove('stack');
-  stack.innerHTML = `<label class="search-box">${icon('search')}<input class="search" id="explore-search" type="search" placeholder="저장소 이름이나 설명으로 검색" aria-label="저장소 검색" value="${esc(state.search)}"></label>
+  stack.innerHTML = `<label class="search-box">${icon('search')}<input class="search" id="explore-search" type="search" placeholder="수집된 저장소에서 검색" aria-label="수집된 저장소 검색" value="${esc(state.search)}"></label><button class="external-search-link" data-external-search>GitHub에서 다른 저장소 찾기 ↗</button>
     <section class="win dots"><div class="win-bar"><span>RECENT</span><span>${issues(recentIssues().length)}</span></div><div class="win-body"><div class="issue-list">${recentIssues().slice(0, 6).map(i => `<button class="issue-row with-owner" data-detail="${esc(i.repo)}" aria-haspopup="dialog">${owner(i.repo)}<span class="inv">Lv.${i.lv} ${LEVELS[i.lv - 1]}</span><span class="pix">${esc(short(i.repo))}</span><b>${esc(i.t)}</b></button>`).join('')}</div></div></section>`;
 }
 
@@ -233,6 +233,14 @@ const collectNotice = repo => `<section class="win dots collect-notice"><div cla
   ${state.collecting.has(repo.name)
     ? '<p>지금 이 저장소의 이슈를 수집하고 있습니다. 끝나면 알림으로 알려 드립니다.</p>'
     : '<p>RepoBite에 아직 없는 GitHub 저장소입니다. <b>구독하면 바로 이슈를 수집</b>하고, 수집이 끝나면 구독된 레포에 나타납니다.</p>'}</div></section>`;
+
+const repositorySearch = mountRepositorySearchDialog(document.querySelector('#repository-search'), {
+  onSelect(repo) {
+    const selected = ensureRepo(repo.full_name, repo.description || '');
+    state.detail = selected.name; state.dlv = 0;
+    render();
+  },
+});
 
 const toasts = document.querySelector('#toasts');
 function showToasts() {
@@ -404,6 +412,7 @@ document.addEventListener('click', async event => {
     return renderOnboard();
   }
   if (d.go) return go(d.go);
+  if ('externalSearch' in d) return repositorySearch.open(state.search);
   if ('searchOpen' in d) { state.searchOpen = true; if (route() !== 'explore') return go('explore'); }
   if ('searchClose' in d) { state.searchOpen = false; state.search = ''; }
   if ('group' in d) state.group = d.group;
@@ -463,7 +472,6 @@ document.addEventListener('input', event => {
   if (id === 'explore-search' || id === 'explore-search-m') {
     state.search = event.target.value;
     updateFeeds();
-    scheduleSearch(event.target);
     document.querySelectorAll('#explore-search, #explore-search-m').forEach(input => { if (input !== event.target) input.value = state.search; });
   }
 });
@@ -618,7 +626,7 @@ async function initialize() {
   pollTimer = setInterval(collectionStatus, 5000);
 }
 window.addEventListener('pagehide', () => { clearInterval(pollTimer); clearTimeout(searchTimer); searchController?.abort(); });
-document.addEventListener('compositionstart', event => { if (event.target.matches('input[type=search]')) { composingSearch = true; clearTimeout(searchTimer); searchController?.abort(); searchRevision++; } });
-document.addEventListener('compositionend', event => { if (event.target.matches('input[type=search]')) { composingSearch = false; scheduleSearch(event.target); } });
+document.addEventListener('compositionstart', event => { if (event.target.id === 'query') { composingSearch = true; clearTimeout(searchTimer); searchController?.abort(); searchRevision++; } });
+document.addEventListener('compositionend', event => { if (event.target.id === 'query') { composingSearch = false; scheduleSearch(event.target); } });
 
 await initialize();

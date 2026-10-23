@@ -352,3 +352,25 @@ html:has(dialog[open]) { overflow: hidden; }
 .card-meta small,.repo-head p,.detail-name {overflow-wrap:anywhere}
 svg {flex-shrink:0;vertical-align:middle}
 @media(max-width:700px){.account-strip{padding:12px 16px 0}.account-strip span{flex:1;min-width:0}}
+
+/* 수집된 저장소 검색과 별개인 GitHub 저장소 찾기 */
+.external-search-link { border: 0; background: none; color: var(--muted); text-align: left; padding: 0; font-size: 13px; }
+.external-search-link:hover { color: var(--text); }
+.repository-not-found { margin: 0 0 28px; }
+.repository-not-found h2 { font-size: 20px; margin: 0 0 8px; }
+.repository-not-found p { color: var(--muted); margin: 0 0 18px; }
+.repository-search { color: var(--text); width: min(640px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); padding: 0; overflow: auto; }
+.repository-search::backdrop { background: #000b; }
+.repository-search .win-bar { align-items: center; }
+.repository-search .win-bar button { width: 32px; height: 32px; border: 0; background: none; color: var(--ink); font-size: 24px; line-height: 1; }
+.repository-search h2 { font-size: 24px; margin: 4px 0 8px; }
+.repository-search p { color: var(--muted); font-size: 14px; }
+.repository-search form { display: flex; align-items: center; gap: 10px; margin-top: 22px; }
+.repository-search input { min-width: 0; }
+.repository-search form button { flex: none; }
+.repository-search-result { width: 100%; display: grid; grid-template-columns: 40px minmax(0, 1fr) 20px; gap: 14px; align-items: center; padding: 16px 0; border: 0; border-top: 1px solid var(--rule-strong); background: none; text-align: left; }
+.repository-search-result:hover { background: var(--bg); }
+.repository-search-result img { width: 40px; height: 40px; border-radius: 50%; }
+.repository-search-result b, .repository-search-result small { display: block; overflow-wrap: anywhere; }
+.repository-search-result b { font: 14px/1.5 var(--mono); }
+.repository-search-result small { color: var(--muted); font-size: 13px; margin-top: 4px; }

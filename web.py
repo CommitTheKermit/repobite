@@ -242,7 +242,7 @@ class Handler(BaseHTTPRequestHandler):
             self.reply(200, (radar.ROOT / self.path.lstrip("/")).read_bytes(), "text/css; charset=utf-8")
         elif self.path in {"/account-ui.mjs", "/contribution-ui.mjs", "/repository-autocomplete.mjs", "/subscription-client.mjs", "/subscription-pages.mjs"}:
             self.reply(200, (radar.ROOT / self.path.lstrip("/")).read_bytes(), "text/javascript; charset=utf-8")
-        elif self.path in {"/repobite.css", "/repobite-app.mjs", "/repobite-dither.js", "/repobite-icons.mjs"}:
+        elif self.path in {"/repobite.css", "/repobite-app.mjs", "/repobite-dither.js", "/repobite-icons.mjs", "/repository-search-dialog.mjs"}:
             kind = "text/css" if self.path.endswith(".css") else "text/javascript"
             self.reply(200, (radar.ROOT / self.path.lstrip("/")).read_bytes(), kind + "; charset=utf-8")
         elif self.path in {"/assets/fonts/Pretendard-Regular.woff2", "/assets/fonts/VT323-Regular.ttf"}:

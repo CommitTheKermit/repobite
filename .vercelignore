@@ -32,3 +32,5 @@
 !assets/fonts/*
 !repobite-icons.mjs
 !assets/lucide-LICENSE.txt
+
+!repository-search-dialog.mjs
