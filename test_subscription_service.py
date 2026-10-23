@@ -50,7 +50,7 @@ class OnboardingHTTPTest(AccountsHTTPTest):
         with patch.object(accounts,'github_json',side_effect=[{'access_token':'test-value'},{'id':10,'login':'octocat'}]):
             status,_,headers=self.request('callback',extra_query='&code=code&state='+state,cookie=accounts.STATE_COOKIE+'='+state)
         self.assertEqual(status,302)
-        self.assertEqual(dict(headers)['Location'],accounts.PUBLIC_ORIGIN+'/subscriptions.html')
+        self.assertEqual(dict(headers)['Location'],accounts.PUBLIC_ORIGIN+'/#/subs')
 
 class NotificationLevelTest(unittest.TestCase):
     def test_each_selected_level_and_legacy_default(self):

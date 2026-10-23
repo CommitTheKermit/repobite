@@ -6,6 +6,7 @@ import json
 from urllib.parse import parse_qs, urlsplit
 
 import accounts
+import collection
 
 
 def cookie_value(headers, name):
@@ -70,10 +71,21 @@ def handle_account(request):
                 secret = accounts.complete_login(params.get("code", [""])[0], params.get("state", [""])[0],
                     cookie_value(request.headers, accounts.STATE_COOKIE), previous_session=session)
                 snapshot = accounts.session_snapshot(secret)
-                destination = "/subscriptions.html" if snapshot["preferences"].get("onboarding_completed") else "/onboarding-repositories.html"
+                destination = "/#/subs" if snapshot["preferences"].get("onboarding_completed") else "/#/topics"
                 respond(request, 302, headers=[("Location", accounts.PUBLIC_ORIGIN + destination),
                     ("Set-Cookie", cookie_header(accounts.STATE_COOKIE)), ("Set-Cookie", cookie_header(
                         accounts.SESSION_COOKIE, secret, accounts.SESSION_SECONDS))])
+            elif action == "collection":
+                user = accounts.require_user(session)
+                names = accounts.subscriptions(user["id"])
+                jobs = collection.statuses(names)
+                if any(job["stage"] in collection.ACTIVE for job in jobs):
+                    if collection.community.redis("SET", "repobite:collect:wake-limit", "1", "NX", "EX", 15) == "OK":
+                        try:
+                            collection.wake()
+                        except (OSError, ValueError, RuntimeError):
+                            pass
+                respond(request, 200, {"user_id": user["id"], "jobs": jobs})
             elif action == "session":
                 respond(request, 200, accounts.session_snapshot(session))
             else:
@@ -108,6 +120,7 @@ def handle_account(request):
         elif action == "subscriptions":
             if request.command == "POST":
                 result = accounts.subscribe(user["id"], payload.get("repo"))
+                result["collection"] = collection.request(result["repo"])
                 respond(request, 201 if result["created"] else 200, result)
             else:
                 respond(request, 200, accounts.unsubscribe(user["id"], payload.get("repo")))

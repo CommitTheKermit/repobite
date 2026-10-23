@@ -9,6 +9,7 @@ import tempfile
 
 import accounts
 import community
+from collection_worker import CollectionLock
 import radar
 import repository_discovery
 from public_feed import public_items
@@ -55,19 +56,15 @@ def public_repositories(names):
     return public
 
 
-def run(root=radar.ROOT, since="24h", workers=4):
+def collect_batch(root=radar.ROOT, since="24h", workers=4, lock=None):
     if type(workers) is not int or not 1 <= workers <= 16:
         raise ValueError("동시 판정 수는 1-16이어야 합니다")
     root = Path(root)
-    submitted = community.registrations()
     names = {}
     for line in (root / "repos.txt").read_text(encoding="utf-8").splitlines():
         name = line.split("#", 1)[0].strip()
         if name:
             names.setdefault(community.normalize_repo(name).lower(), name)
-    for row in submitted:
-        name = community.normalize_repo(row["repo"])
-        names.setdefault(name.lower(), name)
     # 개인 식별자·이메일은 수집 목록이나 공개 결과로 전달하지 않는다.
     for value in accounts.subscription_repositories():
         name = community.normalize_repo(value)
@@ -97,10 +94,32 @@ def run(root=radar.ROOT, since="24h", workers=4):
     snapshot = {"items": items,
                 "collected_repos": list(names), "collected_at": community.timestamp(),
                 "discovered_repos": discovered}
-    # 등록 목록은 건드리지 않는다. 배치 도중 추가된 레포는 다음 실행까지 대기로 남는다.
-    community.redis("SET", community.SNAPSHOT_KEY, json.dumps(snapshot, ensure_ascii=False))
+    # 구독 도중 들어온 즉시 수집은 같은 잠금이 해제된 뒤 저장소 단위로 병합한다.
+    lock.check()
+    encoded = json.dumps(snapshot, ensure_ascii=False)
+    saved = community.redis("EVAL", "if redis.call('GET',KEYS[1])~=ARGV[1] then return 0 end; "
+                            "redis.call('SET',KEYS[2],ARGV[2]); return 1", 2,
+                            "repobite:collect:lock", community.SNAPSHOT_KEY, lock.token, encoded)
+    if not saved:
+        raise RuntimeError("수집 실행권을 잃었습니다.")
     print(f"공용 수집 결과 반영: 레포 {len(names)}개, 이슈 {len(snapshot['items'])}개")
     return 0
+
+
+def run(root=radar.ROOT, since="24h", workers=4):
+    if type(workers) is not int or not 1 <= workers <= 16:
+        raise ValueError("동시 판정 수는 1-16이어야 합니다")
+    with CollectionLock() as lock:
+        result = collect_batch(root, since, workers, lock)
+        if not result:
+            import collection
+            from collection_worker import save_job
+            snapshot = json.loads(community.redis("GET", community.SNAPSHOT_KEY) or '{}')
+            for raw in community.redis("HVALS", collection.JOBS_KEY) or []:
+                job = json.loads(raw)
+                if job["repo"] in snapshot.get("collected_repos", []):
+                    save_job(job, "done")
+        return result
 
 
 if __name__ == "__main__":

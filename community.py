@@ -57,49 +57,8 @@ def registrations():
 
 
 def feed():
-    rows = registrations()
+    # 공개 범위는 저장소 이름 합집합뿐이다. 계정 식별자와 이메일은 반환하지 않는다.
+    import accounts
     snapshot = redis("GET", SNAPSHOT_KEY)
-    return {"repos": rows, "snapshot": json.loads(snapshot) if snapshot else None}
-
-
-def register(value):
-    name = normalize_repo(value)
-    existing = redis("HGET", REPOS_KEY, name.lower())
-    if existing:
-        return {"repo": json.loads(existing), "created": False}
-    # ponytail: 서비스 전체 시간당 30회 검증. 이용량이 늘면 IP별 제한과 봇 검증으로 전환.
-    allowed = redis("EVAL", "local n=redis.call('INCR',KEYS[1]); "
-                    "if n==1 then redis.call('EXPIRE',KEYS[1],3600) end; return n", 1,
-                    "repobite:registration-rate")
-    if allowed > 30:
-        raise OverflowError("지금은 등록 요청이 많습니다. 잠시 후 다시 시도하세요.")
-    request = Request(f"https://api.github.com/repos/{name}", headers={
-        "Accept": "application/vnd.github+json", "User-Agent": "RepoBite"})
-    try:
-        with urlopen(request, timeout=10) as response:
-            info = json.load(response)
-    except HTTPError as error:
-        if error.code == 404:
-            raise ValueError("공개 GitHub 레포를 찾지 못했습니다. 주소를 확인하세요.") from None
-        raise RuntimeError("GitHub 확인에 실패했습니다. 잠시 후 다시 시도하세요.") from None
-    except (OSError, ValueError):
-        raise RuntimeError("GitHub 확인에 실패했습니다. 잠시 후 다시 시도하세요.") from None
-    if info.get("private") is not False or not info.get("has_issues") or info.get("archived"):
-        raise ValueError("이슈 기능이 켜져 있는 공개 레포만 추가할 수 있습니다. 보관된 레포는 제외합니다.")
-    name = normalize_repo(info["full_name"])
-    defaults = {line.split("#", 1)[0].strip().lower()
-                for line in (ROOT / "repos.txt").read_text(encoding="utf-8").splitlines()}
-    row = {"repo": name, "description": (info.get("description") or "")[:300],
-           "added_at": timestamp()}
-    if name.lower() in defaults:
-        return {"repo": row, "created": False, "default": True}
-    # 등록 중복과 상한은 동시에 여러 요청이 와도 DB 안에서 판정한다.
-    result = redis("EVAL", "if redis.call('HEXISTS',KEYS[1],ARGV[1])==1 then return 0 end; "
-                   "if redis.call('HLEN',KEYS[1])>=300 then return -1 end; "
-                   "return redis.call('HSET',KEYS[1],ARGV[1],ARGV[2])", 1,
-                   REPOS_KEY, name.lower(), json.dumps(row, ensure_ascii=False))
-    if result == -1:
-        raise OverflowError("공용 수집 목록이 가득 찼습니다. 나중에 다시 시도하세요.")
-    if result == 0:
-        row = json.loads(redis("HGET", REPOS_KEY, name.lower()))
-    return {"repo": row, "created": bool(result)}
+    return {"subscribed_repos": accounts.subscription_repositories(),
+            "snapshot": json.loads(snapshot) if snapshot else None}

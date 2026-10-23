@@ -35,9 +35,12 @@ $BatchAction = New-ScheduledTaskAction `
     -Argument "-NoProfile -ExecutionPolicy Bypass -File `"$Repo\scripts\run-batch.ps1`"" `
     -WorkingDirectory $Repo
 
+$BatchTriggers = @(0, 6, 12, 18 | ForEach-Object {
+    New-ScheduledTaskTrigger -Daily -At ([datetime]::Today.Add([TimeSpan]::Parse($BatchTime)).AddHours($_))
+})
 Register-ScheduledTask -TaskName "repobite-web" -Action $WebAction `
     -Trigger (New-ScheduledTaskTrigger -AtStartup) -Settings $WebSettings `
     -User $User -Password $Credential.Password -RunLevel Limited -Force
 Register-ScheduledTask -TaskName "repobite-batch" -Action $BatchAction `
-    -Trigger (New-ScheduledTaskTrigger -Daily -At $BatchTime) -Settings $BatchSettings `
+    -Trigger $BatchTriggers -Settings $BatchSettings `
     -User $User -Password $Credential.Password -RunLevel Limited -Force
