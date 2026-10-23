@@ -2,13 +2,16 @@ import { searchRepositories } from './repository-autocomplete.mjs';
 import { mountLoadingIndicator } from './loading-indicator.mjs';
 
 /** 수집 범위 밖의 공개 저장소를 찾아 상세로 넘긴다. 검색만으로 구독하지 않는다. */
-export function mountRepositorySearchDialog(dialog, {fetcher = fetch, onSelect, delay = 450} = {}) {
+export function mountRepositorySearchDialog(dialog, {loading, fetcher = fetch, onSelect, delay = 450} = {}) {
   const form = dialog.querySelector('form');
   const input = dialog.querySelector('input');
   const status = dialog.querySelector('[data-search-status]');
   const results = dialog.querySelector('[data-search-results]');
-  const loading = dialog.querySelector('[data-search-loading]');
-  const indicator = mountLoadingIndicator(loading);
+  const placeholder = dialog.querySelector('[data-search-placeholder]');
+  const indicator = mountLoadingIndicator(loading, {
+    show() { loading.hidden = false; loading.showPopover(); },
+    hide() { if (loading.matches(':popover-open')) loading.hidePopover(); loading.hidden = true; },
+  });
   let timer, controller, revision = 0, composing = false;
   function cancel() {
     clearTimeout(timer); controller?.abort(); revision++;
@@ -50,6 +53,7 @@ export function mountRepositorySearchDialog(dialog, {fetcher = fetch, onSelect, 
   }
   function changed(immediate = false) {
     cancel();
+    placeholder.hidden = input.value.trim().length >= 2 && !composing;
     if (composing) { clearResults('검색어를 입력해 주세요.'); return; }
     if (input.value.trim().length < 2) { clearResults('저장소 이름을 두 글자 이상 입력해 주세요.'); return; }
     clearResults('');
@@ -73,6 +77,7 @@ export function mountRepositorySearchDialog(dialog, {fetcher = fetch, onSelect, 
     open(query = '') {
       input.value = query; composing = false;
       if (!dialog.open) dialog.showModal();
+      window.paintDither?.(dialog);
       input.focus(); changed();
     },
   };

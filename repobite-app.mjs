@@ -139,8 +139,8 @@ const screens = {
   explore() {
     const chips = [['전체', '']].concat(GROUPS).map(([label, value]) => `<button class="chip" data-group="${value}" aria-pressed="${state.group === value}">${label}${value ? '' : ` <span class="pix">${listedRepos().length}</span>`}</button>`).join('');
     // 오른쪽 패널이 숨는 좁은 화면에서는 돋보기 버튼으로 필터 바 위에 검색칸을 펼친다
-    const inline = state.searchOpen ? `<div class="inline-search"><label class="search-box">${icon('search')}<input class="search" id="explore-search-m" type="search" placeholder="수집된 저장소에서 검색" aria-label="수집된 저장소 검색" value="${esc(state.search)}"></label><button class="ghost" data-search-close>닫기</button></div>` : '';
-    return `<div class="explore"><button class="search-toggle" data-search-open aria-label="저장소 검색" aria-expanded="${state.searchOpen}">${icon('search')}</button>${inline}
+    const inline = state.searchOpen ? `<div class="inline-search" id="collected-repository-search"><label class="search-box">${icon('search')}<input class="search" id="explore-search-m" type="search" placeholder="수집된 저장소에서 검색" aria-label="수집된 저장소 검색" value="${esc(state.search)}"></label><button class="ghost" data-search-close>닫기</button></div>` : '';
+    return `<div class="explore">${inline}
       <div class="bar"><select class="sort" id="sort" aria-label="정렬"><option value="recommended">추천순</option><option value="name" ${state.sort === 'name' ? 'selected' : ''}>레포 이름순</option></select><div class="chips" data-fold="groups">${chips}${moreChip('groups')}</div></div>
       <div class="section-head"><div class="repository-heading"><span class="eyebrow">REPOSITORIES / ${listedRepos().length}</span><button class="repository-search-cta" data-external-search>GitHub에서 다른 저장소 찾기 ↗</button></div><button class="ghost invert" data-go="${state.onboarded ? 'subs' : 'topics'}">${state.onboarded ? '내 구독 보기' : '레포바이트 이용하기'}</button></div>
       <section id="repository-not-found" class="repository-not-found win" hidden><div class="win-body"><h2>찾으시는 레포지토리가 없나요?</h2><p>수집 범위 밖의 저장소는 GitHub에서 찾아 구독할 수 있습니다.</p><button class="ghost invert" data-external-search>GitHub에서 레포지토리 찾기</button></div></section>
@@ -236,6 +236,7 @@ const collectNotice = repo => `<section class="win dots collect-notice"><div cla
     : '<p>RepoBite에 아직 없는 GitHub 저장소입니다. <b>구독하면 바로 이슈를 수집</b>하고, 수집이 끝나면 구독된 레포에 나타납니다.</p>'}</div></section>`;
 
 const repositorySearch = mountRepositorySearchDialog(document.querySelector('#repository-search'), {
+  loading: document.querySelector('#repository-search-loading'),
   onSelect(repo) {
     const selected = ensureRepo(repo.full_name, repo.description || '');
     state.detail = selected.name; state.dlv = 0;
@@ -370,6 +371,7 @@ function render() {
   if (name !== 'explore') state.detail = '';
   renderDetail();
   view.innerHTML = screens[name]();
+  document.querySelector('[data-search-open]').setAttribute('aria-expanded', String(name === 'explore' && state.searchOpen));
   updateFeeds();
   renderStack(name);
   window.lucide.createIcons();

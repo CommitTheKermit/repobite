@@ -1,4 +1,4 @@
-// TypeSafe식 1비트 디더 그림: <canvas data-dither="orb|burst|logo|compass|bookmark|seed|field" data-seed="저장소명">
+// TypeSafe식 1비트 디더 그림: <canvas data-dither="orb|burst|logo|compass|bookmark|plus|seed|field" data-seed="저장소명">
 const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map(v => (v + 0.5) / 16);
 
 function hash(text) {
@@ -38,6 +38,12 @@ const shapes = {
     const inside = m => x > 0.24 + m && x < 0.76 - m && y > 0.07 + m && y < 0.93 - m && y < 0.93 - 0.22 * (1 - Math.abs(x - 0.5) / 0.26) - m * 1.8;
     if (!inside(0)) return 0;
     return inside(0.1) ? 0.6 - (y - 0.07) * 0.45 : 1;
+  },
+  plus: (x, y) => {
+    const dx = Math.abs(x - 0.5), dy = Math.abs(y - 0.5);
+    const inside = m => (dx < 0.15 - m && dy < 0.4 - m) || (dy < 0.15 - m && dx < 0.4 - m);
+    if (!inside(0)) return 0;
+    return inside(0.05) ? 0.5 + (0.5 - y) * 0.4 : 1;
   },
   // 저장소 이름으로 고정되는 아바타
   seed: (x, y, [cx, cy, s]) => Math.max(0, 1 - Math.hypot(x - cx, y - cy) * s),
