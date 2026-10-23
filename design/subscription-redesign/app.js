@@ -25,6 +25,8 @@ for (const issue of window.ISSUES) {
 
 const state = { detail: '', dlv: 0, group: '', sort: 'recommended', search: '', onboarded: false, topics: new Set(), subs: new Set(), experience: 'new', level: 1, email: '', consent: true, mail: null, active: '', filter: 1, query: '', error: '' };
 const view = document.querySelector('#view'), stack = document.querySelector('#stack');
+// 서비스 아이콘 시안: ?icon=a|b|c (기본 a)
+document.querySelector('.mark canvas').dataset.dither = { a: 'radar', b: 'bite', c: 'block' }[new URLSearchParams(location.search).get('icon')] || 'radar';
 const esc = value => String(value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const short = name => name.split('/')[1];
 const avatar = (name, size = 16, cls = '') => `<canvas class="${cls}" data-dither="seed" data-seed="${esc(name)}" width="${size}" height="${size}" aria-hidden="true"></canvas>`;
@@ -65,7 +67,7 @@ const screens = {
     }).join('');
     return `<div class="explore">
       <div class="bar"><select class="sort" id="sort" aria-label="정렬"><option value="recommended">추천순</option><option value="name" ${state.sort === 'name' ? 'selected' : ''}>레포 이름순</option></select><div class="chips">${chips}</div></div>
-      <div class="section-head"><span class="eyebrow">REPOSITORIES / ${list.length}</span><button class="ghost" data-go="${state.onboarded ? 'subs' : 'topics'}">${state.onboarded ? '내 구독 보기' : '이슈 알림 구독하기'}</button></div>
+      <div class="section-head"><span class="eyebrow">REPOSITORIES / ${list.length}</span><button class="ghost invert" data-go="${state.onboarded ? 'subs' : 'topics'}">${state.onboarded ? '내 구독 보기' : '레포바이트 이용하기'}</button></div>
       <div class="masonry">${cards || '<p class="empty">일치하는 저장소가 없습니다.</p>'}</div></div>`;
   },
   topics() {

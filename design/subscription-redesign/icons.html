@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RepoBite 아이콘 시안</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&display=swap">
+<link rel="stylesheet" href="style.css">
+<style>
+  .sheet-page { max-width: 1120px; margin: 0 auto; padding: 56px 24px; }
+  .sheet-page h1 { font-size: 48px; letter-spacing: -.05em; margin: 12px 0 8px; }
+  .options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; margin-top: 40px; }
+  .options .win-body { display: grid; gap: 20px; }
+  .hero { width: 128px; height: 128px; image-rendering: pixelated; justify-self: center; margin: 12px 0; }
+  .sizes { display: flex; align-items: end; gap: 20px; justify-content: center; }
+  .sizes figure { margin: 0; display: grid; justify-items: center; gap: 6px; font: 16px/1 var(--pixel); color: var(--dim); }
+  .sizes canvas { image-rendering: pixelated; }
+  .rail-mock { display: flex; gap: 12px; align-items: center; padding: 10px; border: 1px solid var(--rule); background: var(--bg); }
+  .rail-mock canvas { width: 40px; height: 40px; image-rendering: pixelated; }
+  .rail-mock span { color: var(--muted); font-size: 13px; }
+  .options p { margin: 0; color: var(--muted); font-size: 14px; }
+  @media (max-width: 900px) { .options { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<main class="sheet-page">
+  <span class="eyebrow">REPOBITE / SERVICE ICON</span>
+  <h1>아이콘 시안 3개</h1>
+  <p class="sub" style="color:var(--muted)">모두 1비트 디더로 그린 같은 엔진의 결과입니다. 레일에서는 40px로 보이며, 프로토타입에서 <code>?icon=a|b|c</code>로 바꿔 볼 수 있습니다.</p>
+  <div class="options">
+    <section class="win"><div class="win-bar"><span>A / RADAR</span><a href="index.html?icon=a#/explore" style="color:inherit">try ↗</a></div><div class="win-body">
+      <canvas class="hero" data-dither="radar" width="64" height="64"></canvas>
+      <p>레이더 동심원과 탐침. 지금 레일의 ◎를 그대로 점묘로 옮겨, 저장소를 훑어 이슈를 찾는다는 뜻을 이어갑니다.</p>
+      <div class="sizes"><figure><canvas data-dither="radar" width="20" height="20" style="width:40px;height:40px"></canvas>40</figure><figure><canvas data-dither="radar" width="16" height="16" style="width:32px;height:32px"></canvas>32</figure><figure><canvas data-dither="radar" width="16" height="16" style="width:16px;height:16px"></canvas>16</figure></div>
+      <div class="rail-mock"><canvas data-dither="radar" width="20" height="20"></canvas><span>레일 위치</span></div>
+    </div></section>
+    <section class="win"><div class="win-bar"><span>B / BITE</span><a href="index.html?icon=b#/explore" style="color:inherit">try ↗</a></div><div class="win-body">
+      <canvas class="hero" data-dither="bite" width="64" height="64"></canvas>
+      <p>한 입 베어 문 구. 온보딩 첫 화면의 디더 구와 같은 형태라 서비스 안에서 한 가족처럼 보이고, 이름의 Bite를 직접 보여 줍니다.</p>
+      <div class="sizes"><figure><canvas data-dither="bite" width="20" height="20" style="width:40px;height:40px"></canvas>40</figure><figure><canvas data-dither="bite" width="16" height="16" style="width:32px;height:32px"></canvas>32</figure><figure><canvas data-dither="bite" width="16" height="16" style="width:16px;height:16px"></canvas>16</figure></div>
+      <div class="rail-mock"><canvas data-dither="bite" width="20" height="20"></canvas><span>레일 위치</span></div>
+    </div></section>
+    <section class="win"><div class="win-bar"><span>C / BLOCK</span><a href="index.html?icon=c#/explore" style="color:inherit">try ↗</a></div><div class="win-body">
+      <canvas class="hero" data-dither="block" width="64" height="64"></canvas>
+      <p>모서리를 베어 문 저장소 블록. 왼쪽과 아래 테두리를 채워 입체감을 주고, TypeSafe 블록 로고와 같은 결을 따릅니다.</p>
+      <div class="sizes"><figure><canvas data-dither="block" width="20" height="20" style="width:40px;height:40px"></canvas>40</figure><figure><canvas data-dither="block" width="16" height="16" style="width:32px;height:32px"></canvas>32</figure><figure><canvas data-dither="block" width="16" height="16" style="width:16px;height:16px"></canvas>16</figure></div>
+      <div class="rail-mock"><canvas data-dither="block" width="20" height="20"></canvas><span>레일 위치</span></div>
+    </div></section>
+  </div>
+</main>
+<script src="dither.js"></script>
+<script>paintDither();</script>
+</body>
+</html>

@@ -30,7 +30,8 @@ button:disabled { cursor: not-allowed; opacity: .35; }
 .rail { border-right: 1px solid var(--rule); display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 20px 0; position: relative; z-index: 2; background: var(--bg); }
 .rail a { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 12px; text-decoration: none; color: var(--muted); }
 .rail a[aria-current] { background: var(--raised); color: var(--text); }
-.rail .mark { font-size: 22px; color: var(--text); margin-bottom: 8px; }
+.rail .mark { margin-bottom: 8px; }
+.mark canvas { width: 40px; height: 40px; image-rendering: pixelated; }
 .side { border-left: 1px solid var(--rule); padding: 24px; display: flex; flex-direction: column; gap: 24px; background: var(--bg); position: sticky; top: 0; height: 100vh; overflow: auto; z-index: 1; }
 
 /* TypeSafe 데스크톱: 점묘 바탕과 모서리 태그 */
@@ -224,6 +225,7 @@ html:has(dialog[open]) { overflow: hidden; }
 .page-head { position: relative; display: flex; justify-content: space-between; align-items: end; gap: 16px; padding-bottom: 28px; border-bottom: 1px solid var(--rule); }
 .page-head h1 { font-size: 72px; line-height: .95; font-weight: 650; letter-spacing: -0.055em; margin: 12px 0 0; }
 .ghost { white-space: nowrap; height: 40px; padding: 0 16px; border-radius: 20px; border: 1px solid var(--rule-strong); background: none; display: inline-flex; align-items: center; text-decoration: none; font-size: 14px; }
+.ghost.invert { background: var(--active); color: var(--ink); border-color: var(--active); font-weight: 600; }
 .solid-btn { white-space: nowrap; height: 44px; padding: 0 20px; border: 0; background: var(--active); color: var(--ink); font-weight: 600; display: inline-flex; gap: 8px; align-items: center; }
 .repo-head { display: grid; grid-template-columns: 64px 1fr auto; gap: 16px; align-items: center; padding: 28px 0 16px; }
 .repo-head canvas { width: 64px; height: 64px; image-rendering: pixelated; border: 1px solid var(--rule-strong); }

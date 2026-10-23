@@ -19,6 +19,24 @@ const shapes = {
     const petal = Math.pow(Math.max(0, Math.cos(a * 8)), 3) * 0.42;
     return r < 0.08 ? 1 : r < 0.12 + petal ? 1 - r * 1.6 : 0;
   },
+  // 서비스 아이콘 시안 A: 레이더 동심원과 탐침
+  radar: (x, y) => {
+    const r = Math.hypot(x - 0.5, y - 0.5), a = Math.atan2(y - 0.5, x - 0.5);
+    if (r < 0.1) return 1;
+    if (Math.abs(r - 0.26) < 0.04 || Math.abs(r - 0.42) < 0.04) return 0.9;
+    return r < 0.46 && a > -Math.PI / 2 && a < -Math.PI / 6 ? 0.45 * (1 - r) : 0;
+  },
+  // 서비스 아이콘 시안 B: 한 입 베어 문 구
+  bite: (x, y) => {
+    if (Math.hypot(x - 0.5, y - 0.5) > 0.42 || Math.hypot(x - 0.84, y - 0.2) < 0.2) return 0;
+    return Math.max(0, 1 - Math.hypot(x - 0.36, y - 0.36) * 1.5) + 0.15;
+  },
+  // 서비스 아이콘 시안 C: 모서리를 베어 문 저장소 블록
+  block: (x, y) => {
+    if (x < 0.12 || x > 0.88 || y < 0.12 || y > 0.88 || Math.hypot(x - 0.88, y - 0.12) < 0.28) return 0;
+    if (x < 0.2 || y > 0.8) return 1;
+    return 0.95 - (x + y - 0.24) * 0.5;
+  },
   // 저장소 이름으로 고정되는 아바타
   seed: (x, y, [cx, cy, s]) => Math.max(0, 1 - Math.hypot(x - cx, y - cy) * s),
 };
