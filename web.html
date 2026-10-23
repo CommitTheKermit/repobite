@@ -41,6 +41,9 @@
         <b>어떤 저장소를 추가할까요?</b>
         <span>저장소 이름이나 owner/repo를 입력해 주세요.</span>
       </div>
+      <div id="repository-search-loading" class="dialog search-loading" data-search-loading hidden role="status" aria-label="저장소 검색 중">
+        <section class="win"><div class="win-bar"><span>RepoBite 1.0</span></div><div class="win-body">Loading ...<br>Repositories, Issues<div class="progress"><span style="width:0%">0%</span></div></div></section>
+      </div>
       <div data-search-results></div>
     </div>
   </div>
@@ -49,9 +52,6 @@
 <dialog id="onboard" class="onboard" aria-label="구독 설정"></dialog>
 <div id="toasts" class="toasts" popover="manual" role="status" aria-live="polite"></div>
 <div id="page-loading" class="dialog" role="status" aria-label="저장소와 이슈 불러오는 중">
-  <section class="win"><div class="win-bar"><span>RepoBite 1.0</span></div><div class="win-body">Loading ...<br>Repositories, Issues<div class="progress"><span style="width:0%">0%</span></div></div></section>
-</div>
-<div id="repository-search-loading" class="dialog search-loading" popover="manual" data-search-loading hidden role="status" aria-label="저장소 검색 중">
   <section class="win"><div class="win-bar"><span>RepoBite 1.0</span></div><div class="win-body">Loading ...<br>Repositories, Issues<div class="progress"><span style="width:0%">0%</span></div></div></section>
 </div>
 <div id="save-loading" class="dialog" popover="manual" role="status" aria-label="구독 설정 저장 중">

@@ -18,7 +18,7 @@ const draftKey = 'repobite:redesign-draft:v1';
       const snapshot = {collected_repos:names,items:names.map((repo,i)=>({repo,number:i+1,title:'이슈',criteria_version:2,grade:{difficulty:1,exclude:false},categories:['dev-tools']}))};
       await page.route('**/api/repos', r=>r.fulfill({json:{snapshot,subscribed_repos:session.subscriptions}}));
       await page.route('https://api.github.com/search/**', r=>r.fulfill({json:{items:[{full_name:'external/repo',private:false,archived:false,has_issues:true,description:'외부 저장소'}]}}));
-      await page.route('**/api/account?*', r => {
+      await page.route('**/api/account?*', async r => {
         const request = r.request(), action = new URL(request.url()).searchParams.get('action');
         if (action === 'start') { loginCalls++; return r.fulfill({contentType:'text/html',body:'격리된 로그인 진입점'}); }
         if (action === 'session') return r.fulfill({json:session.authenticated ? session : {authenticated:false}});
@@ -26,7 +26,8 @@ const draftKey = 'repobite:redesign-draft:v1';
         const body = request.postDataJSON();
         assert(session.authenticated, '로그인 전 쓰기를 호출하지 않는다');
         assert.equal(body.expected_user_id,'10');
-        writes.push({action,method:request.method(),body});
+        writes.push({action,method:request.method(),body,loading:await page.locator('#save-loading').evaluate(el=>el.matches(':popover-open'))});
+        await new Promise(resolve=>setTimeout(resolve,60));
         if (action === 'subscriptions' && failures.repo === body.repo) {
           failures.repo = ''; return r.fulfill({status:503,json:{error:'구독 저장 연결 오류'}});
         }
@@ -44,6 +45,25 @@ const draftKey = 'repobite:redesign-draft:v1';
         await page.evaluate(()=>document.fonts.ready);
       }
       return {page,context,session,errors,writes,failures,open,get loginCalls(){return loginCalls}};
+    }
+    for (const entry of ['', '/#/subs']) {
+      const f = await fixture(); await f.open(entry);
+      await f.page.locator('[data-login]').click();
+      await f.page.waitForURL('**/api/account?action=start');
+      f.session.authenticated = true;
+      // 실제 OAuth callback의 신규 계정 목적지. 메인에서 저장한 탐색 경로가 덮어쓰면 안 된다.
+      await f.open('/#/topics');
+      assert.equal(new URL(f.page.url()).hash,'#/topics','첫 로그인은 전체 온보딩으로 진입한다');
+      await f.page.locator('[data-nav="explore"]').click();
+      assert.equal(await f.page.locator('.section-head .ghost.invert').innerText(),'레포바이트 이용하기');
+      await f.page.locator('.section-head .ghost.invert').click();
+      assert.equal(new URL(f.page.url()).hash,'#/topics');
+      f.session.preferences.onboarding_completed = true;
+      await f.open();
+      assert.equal(await f.page.locator('.section-head .ghost.invert').innerText(),'레포바이트 이용하기','온보딩 완료 계정도 같은 메인 버튼을 유지한다');
+      await f.page.locator('.section-head .ghost.invert').click();
+      assert.equal(new URL(f.page.url()).hash,'#/topics');
+      assert.deepEqual(f.errors,[]); await f.context.close();
     }
     for (const entry of ['explore','add']) {
       const f = await fixture(); await f.open();
@@ -116,10 +136,19 @@ const draftKey = 'repobite:redesign-draft:v1';
     await f.page.locator('[data-go="repos"]').click();
     await f.page.locator('[data-repo="owner/repo"]').click();
     assert.equal(f.writes.length,0,'로그인한 계정도 온보딩 저장소 선택만으로는 저장하지 않는다');
+    await f.page.locator('[data-repo="second/repo"]').click();
     await f.page.locator('[data-go="level"]').click();
     await f.page.locator('[data-go="mail"]').click();
+    await f.page.evaluate(()=>{
+      window.saveLoadingEvents = [];
+      const box = document.querySelector('#save-loading');
+      box.addEventListener('beforetoggle', e=>window.saveLoadingEvents.push(e.newState));
+    });
     await f.page.locator('[data-finish="skip"]').click();
     await f.page.waitForFunction(()=>location.hash==='#/subs');
+    assert.deepEqual(await f.page.evaluate(()=>window.saveLoadingEvents),['open','closed'],'여러 구독·개인화·알림 저장 전체에 로딩을 한 번만 켜고 끈다');
+    assert.equal(f.writes.filter(w=>w.action==='subscriptions').length,2);
+    assert(f.writes.every(w=>w.loading),'각 구독·개인화·알림 저장 도중 로딩이 유지된다');
     for (const width of [1440,1000,390,320]) {
       await f.page.setViewportSize({width,height:900});
       await f.page.locator('[data-nav="explore"]').click();

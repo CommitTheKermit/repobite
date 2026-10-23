@@ -402,7 +402,8 @@ svg {flex-shrink:0;vertical-align:middle}
 .repository-search [data-search-status] { min-height: 42px; margin: 12px 0; flex: none; }
 .repository-search-content { position: relative; flex: 1; min-height: 0; }
 .repository-search [data-search-results] { height: 100%; overflow-y: auto; scrollbar-gutter: stable; }
-.search-loading { pointer-events: none; }
+.search-loading { position: absolute; pointer-events: none; background: none; }
+.search-loading .win { width: min(440px, calc(100% - 24px)); }
 .repository-search-placeholder { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 20px; text-align: center; }
 .repository-search-placeholder canvas { width: 80px; height: 80px; image-rendering: pixelated; margin-bottom: 12px; }
 .repository-search-placeholder b { font-size: 18px; }

@@ -8,10 +8,7 @@ export function mountRepositorySearchDialog(dialog, {loading, fetcher = fetch, o
   const status = dialog.querySelector('[data-search-status]');
   const results = dialog.querySelector('[data-search-results]');
   const placeholder = dialog.querySelector('[data-search-placeholder]');
-  const indicator = mountLoadingIndicator(loading, {
-    show() { loading.hidden = false; loading.showPopover(); },
-    hide() { if (loading.matches(':popover-open')) loading.hidePopover(); loading.hidden = true; },
-  });
+  const indicator = mountLoadingIndicator(loading);
   let timer, controller, revision = 0, composing = false;
   function cancel() {
     clearTimeout(timer); controller?.abort(); revision++;
