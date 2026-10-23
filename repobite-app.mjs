@@ -2,6 +2,7 @@ import { icon } from './repobite-icons.mjs';
 import { SubscriptionClient } from './subscription-client.mjs';
 import { mountRepositorySearchDialog } from './repository-search-dialog.mjs';
 import { searchRepositories } from './repository-autocomplete.mjs';
+import { mountLoadingIndicator } from './loading-indicator.mjs';
 // 공개 저장소 탐색, 계정별 구독과 온보딩을 실제 API에 연결한다.
 const TOPICS = [
   ['ai-ml', 'AI · 머신러닝', 'brain'], ['agents-automation', '에이전트', 'bot'], ['search-knowledge', '검색 · 지식', 'search'],
@@ -143,7 +144,7 @@ const screens = {
       <div class="bar"><select class="sort" id="sort" aria-label="정렬"><option value="recommended">추천순</option><option value="name" ${state.sort === 'name' ? 'selected' : ''}>레포 이름순</option></select><div class="chips" data-fold="groups">${chips}${moreChip('groups')}</div></div>
       <div class="section-head"><div class="repository-heading"><span class="eyebrow">REPOSITORIES / ${listedRepos().length}</span><button class="repository-search-cta" data-external-search>GitHub에서 다른 저장소 찾기 ↗</button></div><button class="ghost invert" data-go="${state.onboarded ? 'subs' : 'topics'}">${state.onboarded ? '내 구독 보기' : '레포바이트 이용하기'}</button></div>
       <section id="repository-not-found" class="repository-not-found win" hidden><div class="win-body"><h2>찾으시는 레포지토리가 없나요?</h2><p>수집 범위 밖의 저장소는 GitHub에서 찾아 구독할 수 있습니다.</p><button class="ghost invert" data-external-search>GitHub에서 레포지토리 찾기</button></div></section>
-      <section class="feed-section" id="subscribed-section"><div class="feed-title"><h2>구독된 레포 <span class="pix" id="subscribed-count"></span></h2><p>사용자가 구독한 저장소입니다.</p></div><div class="masonry" id="subscribed-feed"></div></section>
+      <section class="feed-section" id="subscribed-section"><div class="feed-title"><h2>구독된 레포 <span class="pix" id="subscribed-count"></span></h2><p>다른 사용자가 구독한 저장소입니다.</p></div><div class="masonry" id="subscribed-feed"></div></section>
       <section class="feed-section"><div class="feed-title"><h2>POPULAR <span class="pix" id="popular-count"></span></h2></div><div class="masonry" id="popular-feed"></div></section></div>`;
   },
   topics() {
@@ -256,27 +257,35 @@ async function collectionStatus() {
   try {
     const {jobs, user_id} = await client.request('collection');
     if (user_id !== client.session?.user?.id) return;
-    let completed = false;
+    const completed = [];
     for (const job of jobs) {
       const name = job.repo.toLowerCase();
       if (['idle', 'done', 'failed'].includes(job.stage)) {
         if (job.stage === 'failed' && terminalStages.get(name) !== 'failed') notify('COLLECT', short(name), `<p>${esc(name)} ${esc(stageName(job.stage))}</p>`);
-        terminalStages.set(name, job.stage);
+        if (job.stage === 'done' && terminalStages.get(name) !== 'done') completed.push(name);
+        if (job.stage !== 'done') terminalStages.set(name, job.stage);
         const previous = progressToasts.get(name);
         if (previous) {
-          previous.remove(); progressToasts.delete(name); state.collecting.delete(name);
-          if (job.stage === 'done') notify('DONE', short(name), `<p>${esc(name)} 수집 완료</p>`);
-          if (job.stage === 'done') completed = true;
+          previous.remove(); progressToasts.delete(name);
         }
+        state.collecting.delete(name);
         continue;
       }
+      terminalStages.delete(name);
       state.collecting.set(name, job.stage);
       let toast = progressToasts.get(name);
       if (!toast) { toast = document.createElement('section'); toast.className = 'win toast'; toasts.append(toast); progressToasts.set(name, toast); }
       toast.innerHTML = `<div class="win-bar"><span>COLLECT</span><span>${esc(short(name))}</span></div><div class="win-body"><p><b>${esc(name)}</b> · ${esc(stageName(job.stage))}</p></div>`;
     }
     showToasts();
-    if (completed) await loadFeed();
+    if (completed.length) {
+      await loadFeed();
+      if (user_id !== client.session?.user?.id) return;
+      for (const name of completed) {
+        terminalStages.set(name, 'done');
+        notify('DONE', short(name), `<p><b>${esc(name)}</b> 수집 완료 · ${issues(repos.get(name)?.issues.length || 0)}</p><button class="ghost" data-detail="${esc(name)}">보기</button>`);
+      }
+    }
     refresh();
   } catch { /* 네트워크 조회 실패를 수집 실패로 표시하지 않는다. 다음 조회에서 확인한다. */ }
 }
@@ -449,9 +458,10 @@ document.addEventListener('click', async event => {
     state.mail = enabled ? email : null;
     state.onboarded = true;
     state.filter = state.level;
+    state.active = [...state.subs].find(n => repos.get(n).issues.some(i => i.lv === state.level)) || '';
     if (inOnboard) {
       closeOnboard(); render();
-      notify('DONE', 'SUBSCRIBED', '<p>구독 설정을 저장했습니다.</p><button class="ghost" data-go="subs">내 구독</button>');
+      notify('DONE', 'SUBSCRIBED', `<p>구독을 시작했습니다.${enabled ? ' 조건에 맞는 새 이슈를 메일로 보내 드립니다.' : ''}</p><button class="ghost" data-go="subs">내 구독</button>`);
       return;
     }
     return go('subs');
@@ -489,6 +499,12 @@ document.fonts.ready.then(foldAll);
 window.addEventListener('resize', () => { window.paintDither(document.querySelector('.desk')); foldAll(); });
 
 const client = new SubscriptionClient(window.fetch.bind(window));
+const pageLoading = mountLoadingIndicator(document.querySelector('#page-loading'));
+const savingBox = document.querySelector('#save-loading');
+const savingIndicator = mountLoadingIndicator(savingBox, {
+  show: () => savingBox.showPopover(),
+  hide: () => { if (savingBox.matches(':popover-open')) savingBox.hidePopover(); },
+});
 let busy = false, accountError = '', searchResults = [], searchTimer, searchRevision = 0, searchController;
 let pollTimer, composingSearch = false, accountRevision = 0;
 const DRAFT = 'repobite:redesign-draft:v1';
@@ -499,12 +515,15 @@ function rememberDraft(pendingRepo = '') {
 function login() { rememberDraft(state.detail); location.href = '/api/account?action=start'; }
 function renderAccount() {
   const user = client.session?.user;
-  document.querySelector('#account-strip').innerHTML = `<span>${esc(accountError || (user ? user.login : '공개 탐색은 로그인 없이 사용할 수 있습니다.'))}</span><button class="ghost" ${user ? 'data-logout' : 'data-login'}>${user ? '로그아웃' : 'GitHub 로그인'}</button>`;
+  const button = `<button title="${esc(accountError || user?.login || 'GitHub 로그인')}" ${user ? 'data-logout' : 'data-login'}>${user ? '로그아웃' : 'GitHub 로그인'}</button>`;
+  document.querySelector('#account-strip').innerHTML = button;
+  document.querySelector('.mobile-account')?.remove();
+  document.querySelector('.section-head')?.insertAdjacentHTML('beforeend', button.replace('<button ', '<button class="ghost mobile-account" '));
 }
 function clearPrivate() {
   state.subs.clear(); state.topics.clear(); state.email = ''; state.mail = null; state.consent = false; state.onboarded = false;
   state.obStep = ''; state.active = ''; state.level = 1; state.experience = 'new';
-  progressToasts.forEach(t => t.remove()); progressToasts.clear(); state.collecting.clear(); showToasts();
+  progressToasts.forEach(t => t.remove()); progressToasts.clear(); terminalStages.clear(); state.collecting.clear(); showToasts();
 }
 async function logout() {
   accountRevision++;
@@ -520,12 +539,15 @@ async function logout() {
   } catch (error) { accountError = error.message; renderAccount(); }
 }
 async function mutate(action, body, verify, method = 'POST') {
-  if (!client.session?.authenticated) { rememberDraft(state.detail); accountError = 'GitHub 로그인 후 저장할 수 있습니다. 입력은 유지됩니다.'; renderAccount(); return false; }
+  if (!client.session?.authenticated) {
+    rememberDraft(state.detail); accountError = 'GitHub 로그인 후 저장할 수 있습니다. 입력은 유지됩니다.'; renderAccount();
+    notify('ACCOUNT', 'SAVE', `<p>${accountError}</p><button class="ghost" data-login>GitHub 로그인</button>`);
+    return false;
+  }
   if (busy) return false;
   const revision = accountRevision;
   busy = true; render();
-  const saving = document.querySelector('#save-loading');
-  saving.showPopover();
+  savingIndicator.start();
   try {
     const fresh = await client.save(action, body, verify, method);
     if (revision !== accountRevision) return false;
@@ -543,7 +565,7 @@ async function mutate(action, body, verify, method = 'POST') {
     accountError = error.message;
     notify('ACCOUNT', 'SAVE', `<p>${esc(error.message)}</p><button class="ghost" data-login>GitHub 로그인</button>`);
     return false;
-  } finally { saving.hidePopover(); busy = false; render(); }
+  } finally { await savingIndicator.finish(); busy = false; render(); }
 }
 async function savePersonalization() {
   const {level, experience} = state, topics = [...state.topics].sort();
@@ -605,6 +627,7 @@ function scheduleSearch(input) {
 }
 async function initialize() {
   busy = true;
+  pageLoading.start();
   try {
     const session = await client.load();
     if (session.authenticated) {
@@ -625,8 +648,8 @@ async function initialize() {
   } catch { accountError = '계정 연결을 확인하지 못했습니다. 입력을 저장하려면 다시 로그인하세요.'; }
   try { await loadFeed(); } catch (error) { accountError = error.message; }
   busy = false; render();
+  await pageLoading.finish();
   document.querySelector('.shell').inert = false;
-  document.querySelector('#page-loading').hidden = true;
   await collectionStatus();
   pollTimer = setInterval(collectionStatus, 5000);
 }

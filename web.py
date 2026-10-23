@@ -242,10 +242,12 @@ class Handler(BaseHTTPRequestHandler):
             self.reply(200, (radar.ROOT / self.path.lstrip("/")).read_bytes(), "text/css; charset=utf-8")
         elif self.path in {"/account-ui.mjs", "/contribution-ui.mjs", "/repository-autocomplete.mjs", "/subscription-client.mjs", "/subscription-pages.mjs"}:
             self.reply(200, (radar.ROOT / self.path.lstrip("/")).read_bytes(), "text/javascript; charset=utf-8")
-        elif self.path in {"/repobite.css", "/repobite-app.mjs", "/repobite-dither.js", "/repobite-icons.mjs", "/repository-search-dialog.mjs"}:
+        elif self.path in {"/repobite.css", "/repobite-app.mjs", "/repobite-dither.js", "/repobite-icons.mjs", "/repository-search-dialog.mjs", "/loading-indicator.mjs"}:
             kind = "text/css" if self.path.endswith(".css") else "text/javascript"
             self.reply(200, (radar.ROOT / self.path.lstrip("/")).read_bytes(), kind + "; charset=utf-8")
-        elif self.path in {"/assets/fonts/Pretendard-Regular.woff2", "/assets/fonts/VT323-Regular.ttf"}:
+        elif self.path == '/assets/fonts/pretendardvariable.css':
+            self.reply(200, (radar.ROOT / self.path.lstrip('/')).read_bytes(), 'text/css; charset=utf-8')
+        elif self.path in {"/assets/fonts/Pretendard-Regular.woff2", "/assets/fonts/VT323-Regular.ttf"} | {f'/assets/fonts/PretendardVariable.subset.{n}.woff2' for n in range(92)}:
             self.reply(200, (radar.ROOT / self.path.lstrip("/")).read_bytes(), "font/woff2" if self.path.endswith(".woff2") else "font/ttf")
         elif self.path == "/api/repos":
             try:

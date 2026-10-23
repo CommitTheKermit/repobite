@@ -32,6 +32,8 @@ const base = process.env.REPOBITE_TEST_URL || 'http://127.0.0.1:18765';
     releaseSession();
     await page.waitForRequest(r => r.url().endsWith('/api/repos'));
     assert(await page.locator('#page-loading').isVisible(), '피드를 기다리는 동안 첫 진입 로딩을 유지한다');
+    await page.waitForTimeout(1200);
+    assert.equal(await page.locator('#page-loading .progress span').innerText(),'99%','느린 요청을 완료로 표시하지 않는다');
     releaseFeed();
     await page.waitForSelector('.card');
     await page.waitForSelector('#page-loading[hidden]', {state:'attached'});
@@ -84,6 +86,7 @@ const base = process.env.REPOBITE_TEST_URL || 'http://127.0.0.1:18765';
     await fallback.route('**/data.json', r=>r.fulfill({json:snapshot}));
     await fallback.goto(base, {waitUntil:'domcontentloaded'});
     await fallback.waitForSelector('.card');
+    await fallback.waitForSelector('#page-loading[hidden]', {state:'attached'});
     assert.equal(await fallback.locator('#page-loading').isVisible(),false);
     console.log('통과: 실제 요청을 기다리는 진입·저장 로딩, 정적 피드 대체, 4개 폭에서 검색 전·로딩·결과별 창 크기·입력 위치 고정');
   } finally { await browser.close(); }

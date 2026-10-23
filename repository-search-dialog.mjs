@@ -1,4 +1,5 @@
 import { searchRepositories } from './repository-autocomplete.mjs';
+import { mountLoadingIndicator } from './loading-indicator.mjs';
 
 /** 수집 범위 밖의 공개 저장소를 찾아 상세로 넘긴다. 검색만으로 구독하지 않는다. */
 export function mountRepositorySearchDialog(dialog, {fetcher = fetch, onSelect, delay = 450} = {}) {
@@ -7,13 +8,14 @@ export function mountRepositorySearchDialog(dialog, {fetcher = fetch, onSelect, 
   const status = dialog.querySelector('[data-search-status]');
   const results = dialog.querySelector('[data-search-results]');
   const loading = dialog.querySelector('[data-search-loading]');
+  const indicator = mountLoadingIndicator(loading);
   let timer, controller, revision = 0, composing = false;
   function cancel() {
     clearTimeout(timer); controller?.abort(); revision++;
-    loading.hidden = true; results.setAttribute('aria-busy', 'false');
+    indicator.cancel(); results.setAttribute('aria-busy', 'false');
   }
   function clearResults(message) {
-    loading.hidden = true; results.replaceChildren(); status.textContent = message;
+    indicator.cancel(); results.replaceChildren(); status.textContent = message;
     results.setAttribute('aria-busy', 'false');
   }
   async function search(ticket) {
@@ -21,6 +23,8 @@ export function mountRepositorySearchDialog(dialog, {fetcher = fetch, onSelect, 
     const timeout = setTimeout(() => controller.abort(), 10000);
     try {
       const repositories = await searchRepositories(fetcher, input.value.trim(), controller.signal);
+      if (ticket !== revision || !dialog.open) return;
+      await indicator.finish();
       if (ticket !== revision || !dialog.open) return;
       clearResults(repositories.length ? `공개 저장소 ${repositories.length}곳을 찾았습니다. 선택하면 상세를 볼 수 있습니다.` : '검색 결과가 없습니다. 저장소 이름이나 owner/repo로 다시 검색해 주세요.');
       for (const repo of repositories) {
@@ -49,7 +53,7 @@ export function mountRepositorySearchDialog(dialog, {fetcher = fetch, onSelect, 
     if (composing) { clearResults('검색어를 입력해 주세요.'); return; }
     if (input.value.trim().length < 2) { clearResults('저장소 이름을 두 글자 이상 입력해 주세요.'); return; }
     clearResults('');
-    loading.hidden = false;
+    indicator.start();
     results.setAttribute('aria-busy', 'true');
     const ticket = revision;
     timer = setTimeout(() => search(ticket), immediate ? 0 : delay);

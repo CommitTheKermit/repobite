@@ -1,4 +1,4 @@
-@font-face { font-family: Pretendard; src: url('/assets/fonts/Pretendard-Regular.woff2') format('woff2'); font-weight: 100 900; font-display: swap; }
+@import url('/assets/fonts/pretendardvariable.css');
 @font-face { font-family: VT323; src: url('/assets/fonts/VT323-Regular.ttf') format('truetype'); font-weight: 400; font-display: swap; }
 /* RepoBite 구독 시안: 메인(web.html) 다크 토큰 + stoic 화면 구성 + TypeSafe 데스크톱/창/스펙 시트 질감 */
 :root {
@@ -347,11 +347,12 @@ html:has(dialog[open]) { overflow: hidden; }
   .overlay-title h2 { font-size: 44px; }
 }
 
-.account-strip {display:flex;justify-content:flex-end;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 32px 0;min-height:48px;color:var(--muted);font-size:12px;position:relative;z-index:4}
-.account-strip .ghost{font-size:12px;padding:6px 10px}
+.account-strip { margin-top: auto; }
+.account-strip button { padding: 8px 2px; border: 0; background: none; color: var(--muted); font-size: 11px; }
+.mobile-account { display: none; }
 .card-meta small,.repo-head p,.detail-name {overflow-wrap:anywhere}
 svg {flex-shrink:0;vertical-align:middle}
-@media(max-width:700px){.account-strip{padding:12px 16px 0}.account-strip span{flex:1;min-width:0}}
+@media(max-width:767px){.account-strip{display:none}.mobile-account{display:inline-flex}}
 
 /* 수집된 저장소 검색과 별개인 GitHub 저장소 찾기 */
 /* GitHub 검색 진입점은 배경 없이 밝은 색과 굵기로 강조한다. */
@@ -375,7 +376,7 @@ svg {flex-shrink:0;vertical-align:middle}
 .repository-search > .win-bar { flex: none; }
 .repository-search > .win-body { display: flex; flex-direction: column; min-height: 0; flex: 1; }
 .repository-search::backdrop { background: #000b; }
-.repository-search .win-bar { align-items: center; }
+.repository-search > .win-bar { align-items: center; }
 .repository-search .win-bar button { width: 32px; height: 32px; border: 0; background: none; color: var(--ink); font-size: 24px; line-height: 1; }
 .repository-search h2 { font-size: 24px; margin: 4px 0 8px; }
 .repository-search p { color: var(--muted); font-size: 14px; }
@@ -389,15 +390,12 @@ svg {flex-shrink:0;vertical-align:middle}
 .repository-search-result b { font: 14px/1.5 var(--mono); }
 .repository-search-result small { color: var(--muted); font-size: 13px; margin-top: 4px; }
 
-/* 시안의 창과 막대를 재사용하되 실제 응답 전까지 완료율을 표시하지 않는다. */
+/* 원본의 창·문구·퍼센트 애니메이션을 페이지·저장·검색에서 함께 사용한다. */
 .dialog[popover] { margin: 0; padding: 0; width: 100%; height: 100%; max-width: none; max-height: none; border: 0; color: var(--text); }
 .dialog[popover]:not(:popover-open) { display: none; }
-.progress.indeterminate { overflow: hidden; }
-.progress.indeterminate span { width: 35%; min-width: 0; padding: 0; animation: loading-sweep 1.2s ease-in-out infinite alternate; }
-@keyframes loading-sweep { from { left: 0; } to { left: 65%; } }
-@media (prefers-reduced-motion: reduce) { .progress.indeterminate span { animation: none; left: 32.5%; } }
 .repository-search [data-search-status] { min-height: 42px; margin: 12px 0; flex: none; }
 .repository-search-content { position: relative; flex: 1; min-height: 0; }
 .repository-search [data-search-results] { height: 100%; overflow-y: auto; scrollbar-gutter: stable; }
 .search-loading { position: absolute; inset: 0; display: grid; place-items: center; }
-.search-loading .progress { width: min(280px, 80%); margin: 0; }
+.search-loading .win { width: min(440px, 100%); box-shadow: 8px 8px 0 #000; }
+.search-loading .win-body { font: 24px/1.25 var(--pixel); color: var(--text); }

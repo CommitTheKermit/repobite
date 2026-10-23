@@ -14,11 +14,11 @@
     <a class="nav-item" href="#/explore" data-nav="explore" aria-label="탐색"><canvas data-dither="compass" width="20" height="20" aria-hidden="true"></canvas><span>explore</span></a>
     <a class="nav-item" href="#/subs" data-nav="subs" aria-label="내 구독"><canvas data-dither="bookmark" width="20" height="20" aria-hidden="true"></canvas><span>my</span></a>
     <button class="rail-search" data-external-search aria-label="GitHub에서 다른 저장소 찾기"><span data-lucide="search"></span><span>search</span></button>
+    <div class="account-strip" id="account-strip"></div>
   </nav>
   <main class="desk">
     <canvas class="field" data-dither="field" data-color="--rule-strong" aria-hidden="true"></canvas>
     <span class="os-tag" aria-hidden="true">RB.OS1</span>
-    <div class="account-strip" id="account-strip" role="status"></div>
     <div id="view"></div>
   </main>
   <aside class="side" aria-label="진행 요약">
@@ -35,7 +35,7 @@
     </form>
     <p data-search-status role="status" aria-live="polite"></p>
     <div class="repository-search-content">
-      <div class="search-loading" data-search-loading hidden role="status" aria-label="저장소 검색 중"><div class="progress indeterminate" aria-hidden="true"><span></span></div></div>
+      <div class="search-loading" data-search-loading hidden role="status" aria-label="저장소 검색 중"><section class="win"><div class="win-bar"><span>RepoBite 1.0</span></div><div class="win-body">Loading ...<br>Repositories, Issues<div class="progress"><span style="width:0%">0%</span></div></div></section></div>
       <div data-search-results></div>
     </div>
   </div>
@@ -44,10 +44,10 @@
 <dialog id="onboard" class="onboard" aria-label="구독 설정"></dialog>
 <div id="toasts" class="toasts" popover="manual" role="status" aria-live="polite"></div>
 <div id="page-loading" class="dialog" role="status" aria-label="저장소와 이슈 불러오는 중">
-  <section class="win"><div class="win-bar"><span>RepoBite 1.0</span></div><div class="win-body">Loading ...<br>Repositories, Issues<div class="progress indeterminate" aria-hidden="true"><span></span></div></div></section>
+  <section class="win"><div class="win-bar"><span>RepoBite 1.0</span></div><div class="win-body">Loading ...<br>Repositories, Issues<div class="progress"><span style="width:0%">0%</span></div></div></section>
 </div>
 <div id="save-loading" class="dialog" popover="manual" role="status" aria-label="구독 설정 저장 중">
-  <section class="win"><div class="win-bar"><span>RepoBite 1.0</span></div><div class="win-body">Saving ...<br>Subscriptions, Mail<div class="progress indeterminate" aria-hidden="true"><span></span></div></div></section>
+  <section class="win"><div class="win-bar"><span>RepoBite 1.0</span></div><div class="win-body">Saving ...<br>Subscriptions, Mail<div class="progress"><span style="width:0%">0%</span></div></div></section>
 </div>
 <script src="/repobite-dither.js"></script>
 <script type="module" src="/repobite-app.mjs"></script>
