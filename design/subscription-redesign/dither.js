@@ -48,44 +48,4 @@ function paint(canvas) {
   }
 }
 
-// README 대표 이미지를 밝기 기준 1비트 점묘로 바꾼다. CORS가 막힌 이미지는 흑백 <img>로 대체한다.
-const images = new Map();
-function paintImage(canvas) {
-  const src = canvas.dataset.src;
-  if (!images.has(src)) {
-    images.set(src, new Promise((resolve, reject) => {
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.onload = () => resolve(img);
-      img.onerror = reject;
-      img.src = src;
-    }));
-  }
-  images.get(src).then(img => {
-    const w = canvas.width, h = Math.max(48, Math.min(140, Math.round(w * img.naturalHeight / img.naturalWidth)));
-    canvas.height = h;
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(img, 0, 0, w, h);
-    const { data } = ctx.getImageData(0, 0, w, h), light = [];
-    for (let i = 0; i < data.length; i += 4) light.push((data[i] * 0.3 + data[i + 1] * 0.59 + data[i + 2] * 0.11) / 255 * (data[i + 3] / 255));
-    // 밝은 바탕 배너는 반전해 어두운 테마에서 바탕이 점으로 뒤덮이지 않게 한다
-    const flip = light.reduce((a, b) => a + b, 0) / light.length > 0.55;
-    if (flip) light.forEach((v, i) => { light[i] = 1 - v; });
-    const lo = Math.min(...light), span = Math.max(0.05, Math.max(...light) - lo);
-    ctx.clearRect(0, 0, w, h);
-    ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--text');
-    light.forEach((value, i) => {
-      const x = i % w, y = Math.floor(i / w);
-      if (((value - lo) / span) * 0.9 > BAYER[(y % 4) * 4 + (x % 4)]) ctx.fillRect(x, y, 1, 1);
-    });
-  }).catch(() => {
-    const img = new Image();
-    img.className = 'halftone';
-    img.alt = '';
-    img.onload = () => canvas.replaceWith(img);
-    img.onerror = () => { canvas.dataset.dither = 'seed'; canvas.dataset.seed = src; paint(canvas); };
-    img.src = src;
-  });
-}
-
-window.paintDither = (root = document) => root.querySelectorAll('canvas[data-dither]').forEach(c => (c.dataset.dither === 'image' ? paintImage : paint)(c));
+window.paintDither = (root = document) => root.querySelectorAll('canvas[data-dither]').forEach(paint);

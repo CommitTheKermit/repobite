@@ -28,6 +28,7 @@ const view = document.querySelector('#view'), stack = document.querySelector('#s
 const esc = value => String(value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const short = name => name.split('/')[1];
 const avatar = (name, size = 16, cls = '') => `<canvas class="${cls}" data-dither="seed" data-seed="${esc(name)}" width="${size}" height="${size}" aria-hidden="true"></canvas>`;
+const owner = name => `<img class="owner" src="https://avatars.githubusercontent.com/${esc(name.split('/')[0])}?v=4&s=64" alt="" loading="lazy">`;
 const icon = name => `<span data-lucide="${name}"></span>`;
 const subIssues = () => [...state.subs].flatMap(name => repos.get(name).issues);
 const route = () => location.hash.replace('#/', '') || 'explore';
@@ -51,12 +52,13 @@ const screens = {
     if (state.sort === 'name') list = list.sort((a, b) => a.name.localeCompare(b.name));
     const chips = [['전체', '']].concat(GROUPS).map(([label, value]) => `<button class="chip" data-group="${value}" aria-pressed="${state.group === value}">${label}${value ? '' : ` <span class="pix">${repos.size}</span>`}</button>`).join('');
     const cards = list.map(r => {
-      const image = window.REPO_IMAGES[r.name];
-      const art = image ? `<canvas class="card-art" data-dither="image" data-src="${esc(image)}" width="120" height="70" aria-hidden="true"></canvas>` : `<canvas class="card-art" data-dither="seed" data-seed="${esc(r.name)}" width="120" height="70" aria-hidden="true"></canvas>`;
+      // 메인과 같은 순서: README 대표 이미지 > GitHub 소셜 미리보기 > 저장소 이름
+      const social = `https://opengraph.githubassets.com/1/${r.name}`, image = window.REPO_IMAGES[r.name] || social;
+      const art = `<span class="card-media"><img class="card-art${image === social ? ' social' : ''}" src="${esc(image)}" data-social="${esc(social)}" alt="${esc(r.name)} 대표 이미지" loading="lazy"><span class="card-fallback" hidden>${esc(r.name)}</span></span>`;
       const open = state.selected === r.name;
       return `<article class="card win" aria-current="${open}"><button class="card-hit" data-select="${esc(r.name)}" aria-expanded="${open}">
         <span class="win-bar"><span>${esc(short(r.name))}</span><span>${r.issues.length} ISS</span></span>${art}
-        <span class="card-body"><b>${esc(r.name)}</b><small>${esc(r.description)}</small><span class="tags">${levelTags(r.issues)}</span></span></button>
+        <span class="card-body"><span class="card-meta">${owner(r.name)}<span><b>${esc(r.name)}</b><small>${esc(r.description)}</small></span></span><span class="tags">${levelTags(r.issues)}</span></span></button>
         ${open ? `<div class="card-issues">${r.issues.map(issueRow).join('')}</div>` : ''}</article>`;
     }).join('');
     return `<div class="explore">
@@ -148,7 +150,7 @@ function renderSide(name) {
       <div class="tags">${[...repo.topics].map(t => `<span class="tag">${esc(TOPIC_NAME[t] || t)}</span>`).join('')}</div>
       <div class="issue-list">${repo.issues.map(issueRow).join('')}</div>
       ${state.subs.has(repo.name) ? '<button class="ghost" data-go="subs" style="margin-top:16px">구독 중 · 내 구독 보기</button>' : `<button class="solid-btn" data-subscribe="${esc(repo.name)}" style="margin-top:16px">이 저장소 구독하기 ${icon('arrow-right')}</button>`}</div></section>`
-    : `<section class="win dots"><div class="win-bar"><span>RECENT</span><span>${window.ISSUES.length} ISSUES</span></div><div class="win-body"><div class="issue-list">${window.ISSUES.slice(0, 6).map(i => `<button class="issue-row" data-select="${esc(i.repo)}"><span class="inv">Lv.${i.lv} ${LEVELS[i.lv - 1]}</span><span class="pix">${esc(short(i.repo))}</span><b>${esc(i.t)}</b></button>`).join('')}</div></div></section>`;
+    : `<section class="win dots"><div class="win-bar"><span>RECENT</span><span>${window.ISSUES.length} ISSUES</span></div><div class="win-body"><div class="issue-list">${window.ISSUES.slice(0, 6).map(i => `<button class="issue-row with-owner" data-select="${esc(i.repo)}">${owner(i.repo)}<span class="inv">Lv.${i.lv} ${LEVELS[i.lv - 1]}</span><span class="pix">${esc(short(i.repo))}</span><b>${esc(i.t)}</b></button>`).join('')}</div></div></section>`;
   stack.classList.remove('stack');
   stack.innerHTML = `<input class="search" id="explore-search" type="search" placeholder="저장소 검색" aria-label="저장소 검색" value="${esc(state.search)}">${pick}`;
 }
@@ -247,6 +249,14 @@ document.addEventListener('input', event => {
   input.focus();
   input.setSelectionRange(input.value.length, input.value.length);
 });
+// 카드 이미지가 깨지면 소셜 미리보기, 그것도 실패하면 저장소 이름을 보여 준다 (error는 버블링되지 않아 캡처 단계에서 받는다)
+document.addEventListener('error', event => {
+  const img = event.target;
+  if (!img.classList || !img.classList.contains('card-art')) return;
+  if (!img.classList.contains('social')) { img.classList.add('social'); img.src = img.dataset.social; return; }
+  img.hidden = true;
+  img.nextElementSibling.hidden = false;
+}, true);
 window.addEventListener('hashchange', () => { render(); window.scrollTo(0, 0); });
 window.addEventListener('resize', () => window.paintDither(document.querySelector('.desk')));
 
