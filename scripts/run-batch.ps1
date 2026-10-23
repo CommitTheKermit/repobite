@@ -11,7 +11,7 @@ foreach ($Name in @(
     "UPSTASH_REDIS_REST_URL",
     "UPSTASH_REDIS_REST_TOKEN"
 )) {
-    if (-not [Environment]::GetEnvironmentVariable($Name, "Process")) {
+    if (-not $env:REPOBITE_TEST_PROBE -and -not [Environment]::GetEnvironmentVariable($Name, "Process")) {
         $Value = [Environment]::GetEnvironmentVariable($Name, "User")
         if ($Value) { [Environment]::SetEnvironmentVariable($Name, $Value, "Process") }
     }
