@@ -23,7 +23,7 @@ for (const issue of window.ISSUES) {
   repos.set(issue.repo, repo);
 }
 
-const state = { selected: '', group: '', sort: 'recommended', search: '', onboarded: false, topics: new Set(), subs: new Set(), experience: 'new', level: 1, email: '', consent: true, mail: null, active: '', filter: 1, query: '', error: '' };
+const state = { detail: '', dlv: 0, group: '', sort: 'recommended', search: '', onboarded: false, topics: new Set(), subs: new Set(), experience: 'new', level: 1, email: '', consent: true, mail: null, active: '', filter: 1, query: '', error: '' };
 const view = document.querySelector('#view'), stack = document.querySelector('#stack');
 const esc = value => String(value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const short = name => name.split('/')[1];
@@ -58,11 +58,10 @@ const screens = {
     if (state.sort === 'name') list = list.sort((a, b) => a.name.localeCompare(b.name));
     const chips = [['전체', '']].concat(GROUPS).map(([label, value]) => `<button class="chip" data-group="${value}" aria-pressed="${state.group === value}">${label}${value ? '' : ` <span class="pix">${repos.size}</span>`}</button>`).join('');
     const cards = list.map(r => {
-      const open = state.selected === r.name;
-      return `<article class="card win" aria-current="${open}"><button class="card-hit" data-select="${esc(r.name)}" aria-expanded="${open}">
+      return `<article class="card win"><button class="card-hit" data-detail="${esc(r.name)}" aria-haspopup="dialog">
         <span class="win-bar"><span>${esc(short(r.name))}</span><span>${issues(r.issues.length)}</span></span>${repoMedia(r.name)}
         <span class="card-body"><span class="card-meta">${owner(r.name)}<span><b>${esc(r.name)}</b><small>${esc(r.description)}</small></span></span><span class="tags">${levelTags(r.issues)}</span></span></button>
-        ${open ? `<div class="card-issues">${r.issues.map(issueRow).join('')}</div>` : ''}</article>`;
+</article>`;
     }).join('');
     return `<div class="explore">
       <div class="bar"><select class="sort" id="sort" aria-label="정렬"><option value="recommended">추천순</option><option value="name" ${state.sort === 'name' ? 'selected' : ''}>레포 이름순</option></select><div class="chips">${chips}</div></div>
@@ -146,20 +145,52 @@ const screens = {
   },
 };
 
-function renderSide(name) {
-  const repo = repos.get(state.selected);
-  const pick = repo ? `<section class="win"><div class="win-bar"><span>REPO</span><span>${issues(repo.issues.length)}</span></div><div class="win-body">
-      <span class="wordmark sm">${esc(short(repo.name))}</span><p class="caption">${esc(repo.description)}</p>
-      <div class="tags">${[...repo.topics].map(t => `<span class="tag">${esc(TOPIC_NAME[t] || t)}</span>`).join('')}</div>
-      <div class="issue-list">${repo.issues.map(issueRow).join('')}</div>
-      ${state.subs.has(repo.name) ? '<button class="ghost" data-go="subs" style="margin-top:16px">구독 중 · 내 구독 보기</button>' : `<button class="solid-btn" data-subscribe="${esc(repo.name)}" style="margin-top:16px">이 저장소 구독하기 ${icon('arrow-right')}</button>`}</div></section>`
-    : `<section class="win dots"><div class="win-bar"><span>RECENT</span><span>${issues(window.ISSUES.length)}</span></div><div class="win-body"><div class="issue-list">${window.ISSUES.slice(0, 6).map(i => `<button class="issue-row with-owner" data-select="${esc(i.repo)}">${owner(i.repo)}<span class="inv">Lv.${i.lv} ${LEVELS[i.lv - 1]}</span><span class="pix">${esc(short(i.repo))}</span><b>${esc(i.t)}</b></button>`).join('')}</div></div></section>`;
+function renderSide() {
   stack.classList.remove('stack');
-  stack.innerHTML = `<input class="search" id="explore-search" type="search" placeholder="저장소 검색" aria-label="저장소 검색" value="${esc(state.search)}">${pick}`;
+  stack.innerHTML = `<input class="search" id="explore-search" type="search" placeholder="저장소 검색" aria-label="저장소 검색" value="${esc(state.search)}">
+    <section class="win dots"><div class="win-bar"><span>RECENT</span><span>${issues(window.ISSUES.length)}</span></div><div class="win-body"><div class="issue-list">${window.ISSUES.slice(0, 6).map(i => `<button class="issue-row with-owner" data-detail="${esc(i.repo)}" aria-haspopup="dialog">${owner(i.repo)}<span class="inv">Lv.${i.lv} ${LEVELS[i.lv - 1]}</span><span class="pix">${esc(short(i.repo))}</span><b>${esc(i.t)}</b></button>`).join('')}</div></div></section>`;
 }
 
+// 저장소 상세 다이얼로그: TypeSafe 스펙 시트 오버레이 (2026-10-23 A·B·C 시안 중 C로 확정)
+const detailBox = document.querySelector('#detail');
+function detailParts(repo) {
+  const counts = [1, 2, 3].map(n => repo.issues.filter(i => i.lv === n).length);
+  const list = repo.issues.filter(i => !state.dlv || i.lv === state.dlv);
+  const subscribed = state.subs.has(repo.name);
+  return {
+    counts, list,
+    topics: `<div class="tags">${[...repo.topics].map(t => `<span class="tag">${esc(TOPIC_NAME[t] || t)}</span>`).join('')}</div>`,
+    cta: subscribed ? '<button class="ghost" data-go="subs">구독 중 · 내 구독 보기</button>' : `<button class="solid-btn" data-subscribe="${esc(repo.name)}">이 저장소 구독하기 ${icon('arrow-right')}</button>`,
+    github: `<a class="ghost" href="https://github.com/${esc(repo.name)}" target="_blank" rel="noopener noreferrer">GitHub ↗</a>`,
+    chips: `<div class="chips" role="group" aria-label="난이도">${[[0, '전체', repo.issues.length], ...counts.map((c, i) => [i + 1, LEVELS[i], c])].map(([n, label, c]) => `<button class="chip" data-dlv="${n}" aria-pressed="${state.dlv === n}">${label} <span class="pix">${c}</span></button>`).join('')}</div>`,
+    close: '<button class="detail-close" data-close aria-label="닫기">×</button>',
+  };
+}
+function detailView(repo, p) {
+    const cells = p.list.map(i => `<article><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><span class="inv">Lv.${i.lv} ${LEVELS[i.lv - 1]}</span><span class="pix">#${i.n}</span></div>
+      <h3 style="font-size:17px;line-height:1.4;margin:12px 0 10px;letter-spacing:-.01em">${esc(i.t)}</h3><a href="https://github.com/${esc(i.repo)}/issues/${i.n}" target="_blank" rel="noopener noreferrer" style="color:var(--muted);font-size:13px">GitHub에서 열기 ↗</a></article>`).join('');
+    return `<section class="overlay">${p.close}
+      <div class="overlay-top"><div class="overlay-title"><span class="eyebrow">REPOSITORY</span><h2>${esc(short(repo.name))}</h2><span class="card-meta" style="margin-top:16px">${owner(repo.name)}<span><b class="detail-name">${esc(repo.name)}</b><small>${esc(repo.description)}</small></span></span>${p.topics}<div class="overlay-cta">${p.cta}${p.github}</div></div>
+        <div class="spec"><span class="cross tl"></span><span class="cross br"></span><div class="full">${repoMedia(repo.name, 'spec-media')}</div>
+          <div><span class="lab">Issues</span><span class="val big">${repo.issues.length}</span></div>
+          <div class="right"><span class="lab">Topics</span><span class="val big">${repo.topics.size}</span></div>
+          ${p.counts.map((c, i) => `<div class="full" style="display:flex;justify-content:space-between"><span class="inv">Lv.${i + 1} ${LEVELS[i]}</span><span class="val">${c}</span></div>`).join('')}
+          <div class="full barcode" aria-hidden="true"></div></div></div>
+      <div class="overlay-issues">${p.chips}<div class="action-grid">${cells || '<p class="empty" style="text-align:left">이 난이도의 이슈가 지금은 없습니다.</p>'}</div></div></section>`;
+}
+function renderDetail() {
+  const repo = repos.get(state.detail);
+  if (!repo) { if (detailBox.open) detailBox.close(); return; }
+  detailBox.setAttribute('aria-label', `${repo.name} 상세`);
+  detailBox.innerHTML = detailView(repo, detailParts(repo));
+  if (!detailBox.open) detailBox.showModal();
+  window.lucide.createIcons();
+}
+detailBox.addEventListener('close', () => { state.detail = ''; });
+detailBox.addEventListener('click', event => { if (event.target === detailBox) detailBox.close(); });
+
 function renderStack(name) {
-  if (name === 'explore') return renderSide(name);
+  if (name === 'explore') return renderSide();
   stack.classList.toggle('stack', name !== 'subs');
   if (name === 'subs') {
     stack.innerHTML = state.subs.size ? `<section class="win" style="--i:0"><div class="win-bar"><span>SUBSCRIBED</span><span>${state.subs.size}</span></div><div class="win-body"><div class="sub-list">${[...state.subs].map(n => `<button class="sub-row" data-active="${esc(n)}" aria-current="${n === state.active}">${avatar(n)}<span><b>${esc(short(n))}</b><small>${esc(n.split('/')[0])}</small></span><span class="pix">${repos.get(n).issues.length}</span></button>`).join('')}</div></div></section>
@@ -186,6 +217,8 @@ function render() {
   if (!screens[name]) name = 'explore';
   document.querySelectorAll('[data-nav]').forEach(a => a.toggleAttribute('aria-current', a.dataset.nav === (name === 'explore' ? 'explore' : 'subs')));
   if ((name === 'level' || name === 'mail') && !state.subs.size) return go(state.topics.size ? 'repos' : 'topics');
+  if (name !== 'explore') state.detail = '';
+  renderDetail();
   view.innerHTML = screens[name]();
   renderStack(name);
   window.lucide.createIcons();
@@ -211,7 +244,9 @@ document.addEventListener('click', event => {
   const d = b.dataset;
   if (d.go) return go(d.go);
   if ('group' in d) state.group = d.group;
-  if (d.select) state.selected = state.selected === d.select && b.classList.contains('card-hit') ? '' : d.select;
+  if (d.detail) { state.detail = d.detail; state.dlv = 0; }
+  if ('close' in d) return detailBox.close();
+  if ('dlv' in d) state.dlv = Number(d.dlv);
   if (d.subscribe) {
     state.subs.add(d.subscribe);
     repos.get(d.subscribe).topics.forEach(t => state.topics.add(t));

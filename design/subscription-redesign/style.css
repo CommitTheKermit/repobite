@@ -196,7 +196,6 @@ button:disabled { cursor: not-allowed; opacity: .35; }
 .card-body b { font: 500 14px var(--mono); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .card-body small { color: var(--muted); font-size: 13px; }
 .card-body .tags { margin-top: 6px; }
-.card-issues { display: none; border-top: 1px solid var(--rule-strong); padding: 4px 14px 8px; }
 .issue-list { display: grid; margin-top: 14px; border-top: 1px solid var(--rule); }
 .issue-row { display: grid; grid-template-columns: auto 1fr; gap: 6px 10px; align-items: center; padding: 12px 0; border: 0; border-bottom: 1px solid var(--rule); background: none; text-align: left; text-decoration: none; color: var(--text); width: 100%; }
 .issue-row .pix { justify-self: end; font-size: 18px; }
@@ -204,12 +203,28 @@ button:disabled { cursor: not-allowed; opacity: .35; }
 .issue-row:hover b { text-decoration: underline; }
 .wordmark.sm { font-size: 34px; overflow-wrap: anywhere; }
 
+/* 저장소 상세 다이얼로그: TypeSafe 스펙 시트 오버레이 */
+html:has(dialog[open]) { overflow: hidden; }
+.detail { padding: 0; border: 0; background: none; color: var(--text); max-width: none; max-height: none; overflow: visible; }
+.detail::backdrop { background: rgb(9 9 11 / .78); }
+.detail-close { width: 28px; height: 28px; border: 0; background: none; font-size: 22px; line-height: 1; color: inherit; display: inline-grid; place-items: center; padding: 0; }
+.detail-name { font: 500 15px var(--mono); overflow-wrap: anywhere; }
+.card-meta small { color: var(--muted); font-size: 13px; }
+.detail { width: min(1080px, calc(100vw - 32px)); margin: auto; }
+.overlay { position: relative; max-height: calc(100vh - 48px); overflow: auto; background: var(--bg); border: 1px solid var(--rule-strong); padding: 48px; }
+.overlay > .detail-close { position: absolute; top: 16px; right: 16px; z-index: 1; }
+.overlay-top { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 420px); gap: 48px; align-items: start; }
+.overlay-title h2 { font-size: 72px; line-height: .95; font-weight: 650; letter-spacing: -.055em; margin: 12px 0 0; overflow-wrap: anywhere; }
+.overlay-title .card-meta { display: grid; }
+.overlay-cta { display: flex; gap: 8px; margin-top: 24px; flex-wrap: wrap; }
+.overlay-issues { margin-top: 48px; padding-top: 28px; border-top: 1px solid var(--rule); }
+
 /* 내 구독 */
 .page { padding: 56px 40px 40px; max-width: 1040px; }
 .page-head { position: relative; display: flex; justify-content: space-between; align-items: end; gap: 16px; padding-bottom: 28px; border-bottom: 1px solid var(--rule); }
 .page-head h1 { font-size: 72px; line-height: .95; font-weight: 650; letter-spacing: -0.055em; margin: 12px 0 0; }
-.ghost { height: 40px; padding: 0 16px; border-radius: 20px; border: 1px solid var(--rule-strong); background: none; display: inline-flex; align-items: center; text-decoration: none; font-size: 14px; }
-.solid-btn { height: 44px; padding: 0 20px; border: 0; background: var(--active); color: var(--ink); font-weight: 600; display: inline-flex; gap: 8px; align-items: center; }
+.ghost { white-space: nowrap; height: 40px; padding: 0 16px; border-radius: 20px; border: 1px solid var(--rule-strong); background: none; display: inline-flex; align-items: center; text-decoration: none; font-size: 14px; }
+.solid-btn { white-space: nowrap; height: 44px; padding: 0 20px; border: 0; background: var(--active); color: var(--ink); font-weight: 600; display: inline-flex; gap: 8px; align-items: center; }
 .repo-head { display: grid; grid-template-columns: 64px 1fr auto; gap: 16px; align-items: center; padding: 28px 0 16px; }
 .repo-head canvas { width: 64px; height: 64px; image-rendering: pixelated; border: 1px solid var(--rule-strong); }
 .repo-head h2 { font: 600 24px var(--mono); letter-spacing: -0.02em; margin: 0; }
@@ -234,7 +249,6 @@ button:disabled { cursor: not-allowed; opacity: .35; }
   .shell { grid-template-columns: var(--rail) minmax(0, 1fr); }
   .side { display: none; }
   .masonry { columns: 2; }
-  .card-issues { display: grid; }
 }
 @media (max-width: 767px) {
   .shell { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 1fr; }
@@ -266,4 +280,8 @@ button:disabled { cursor: not-allowed; opacity: .35; }
   .action-grid { grid-template-columns: 1fr; }
   .mobile-subs { display: flex; gap: 8px; overflow-x: auto; margin: 16px -16px 0; padding: 0 16px; }
   .mobile-subs .chip { flex: none; font-family: var(--mono); font-size: 13px; }
+  .detail { width: 100vw; height: 100vh; margin: 0; }
+  .overlay { max-height: 100vh; height: 100vh; padding: 64px 16px 32px; border: 0; }
+  .overlay-top { grid-template-columns: 1fr; gap: 24px; }
+  .overlay-title h2 { font-size: 44px; }
 }
