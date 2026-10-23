@@ -20,6 +20,19 @@ const shapes = {
     const petal = Math.pow(Math.max(0, Math.cos(a * 8)), bold ? 1.2 : 3) * (bold ? 0.36 : 0.42);
     return r < (bold ? 0.14 : 0.08) ? 1 : r < 0.12 + petal ? 1 - r * 1.6 : 0;
   },
+  // 레일 아이콘: 윤곽은 꽉 찬 선(1), 안쪽은 옅은 값으로 두어 디더 점묘가 생기게 한다
+  compass: (x, y) => {
+    const dx = x - 0.5, dy = y - 0.5, r = Math.hypot(dx, dy);
+    const along = (dx - dy) / Math.SQRT2, across = (dx + dy) / Math.SQRT2;
+    if (Math.abs(along) < 0.26 && Math.abs(across) < 0.1 * (1 - Math.abs(along) / 0.26)) return along > 0 ? 1 : 0.55;
+    if (Math.abs(r - 0.4) < 0.045) return 1;
+    return r < 0.36 ? 0.16 + (0.5 - y) * 0.3 : 0;
+  },
+  bookmark: (x, y) => {
+    const inside = m => x > 0.27 + m && x < 0.73 - m && y > 0.12 + m && y < 0.88 - m && y < 0.88 - 0.2 * (1 - Math.abs(x - 0.5) / 0.23) - m * 1.8;
+    if (!inside(0)) return 0;
+    return inside(0.055) ? 0.75 - (y - 0.12) * 0.75 : 1;
+  },
   // 저장소 이름으로 고정되는 아바타
   seed: (x, y, [cx, cy, s]) => Math.max(0, 1 - Math.hypot(x - cx, y - cy) * s),
 };

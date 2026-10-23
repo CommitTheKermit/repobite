@@ -131,7 +131,7 @@ const screens = {
       <div class="bar"><select class="sort" id="sort" aria-label="정렬"><option value="recommended">추천순</option><option value="name" ${state.sort === 'name' ? 'selected' : ''}>레포 이름순</option></select><div class="chips" data-fold="groups">${chips}${moreChip('groups')}</div></div>
       <div class="section-head"><span class="eyebrow">REPOSITORIES / ${listedRepos().length}</span><button class="ghost invert" data-go="${state.onboarded ? 'subs' : 'topics'}">${state.onboarded ? '내 구독 보기' : '레포바이트 이용하기'}</button></div>
       <section class="feed-section" id="github-section" hidden><div class="feed-title"><h2>GitHub에서 찾은 저장소</h2><p>RepoBite에 아직 없는 저장소입니다. 구독하면 바로 이슈를 수집합니다.</p></div><div class="masonry" id="github-feed"></div></section>
-      <section class="feed-section" id="subscribed-section"><div class="feed-title"><h2>구독된 레포 <span class="pix" id="subscribed-count"></span></h2><p>사용자들이 구독한 저장소입니다. 구독하는 순간 바로 수집합니다.</p></div><div class="masonry" id="subscribed-feed"></div></section>
+      <section class="feed-section" id="subscribed-section"><div class="feed-title"><h2>구독된 레포 <span class="pix" id="subscribed-count"></span></h2><p>다른 사용자가 구독한 저장소입니다.</p></div><div class="masonry" id="subscribed-feed"></div></section>
       <section class="feed-section"><div class="feed-title"><h2>POPULAR <span class="pix" id="popular-count"></span></h2></div><div class="masonry" id="popular-feed"></div></section></div>`;
   },
   topics() {
@@ -343,7 +343,11 @@ function renderStack(name) {
 function render() {
   let name = route();
   if (!screens[name]) name = 'explore';
-  document.querySelectorAll('[data-nav]').forEach(a => a.toggleAttribute('aria-current', a.dataset.nav === (name === 'explore' ? 'explore' : 'subs')));
+  document.querySelectorAll('[data-nav]').forEach(a => {
+    const current = a.dataset.nav === (name === 'explore' ? 'explore' : 'subs');
+    a.toggleAttribute('aria-current', current);
+    a.querySelector('canvas').dataset.color = current ? '--text' : '--dim';
+  });
   if ((name === 'level' || name === 'mail') && !state.subs.size) return go(state.topics.size ? 'repos' : 'topics');
   if (name !== 'explore') state.detail = '';
   renderDetail();

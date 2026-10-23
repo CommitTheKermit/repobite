@@ -32,6 +32,9 @@ button:disabled { cursor: not-allowed; opacity: .35; }
 .rail a[aria-current] { background: var(--raised); color: var(--text); }
 .rail .mark { margin-bottom: 8px; }
 .mark canvas { width: 40px; height: 40px; image-rendering: pixelated; }
+.rail .nav-item { width: 64px; height: auto; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 0 5px; border-radius: 12px; color: var(--dim); font: 16px/1 var(--pixel); }
+.rail .nav-item canvas { width: 52px; height: 52px; image-rendering: pixelated; }
+.rail .nav-item[aria-current] { background: var(--raised); color: var(--text); }
 .side { border-left: 1px solid var(--rule); padding: 24px; display: flex; flex-direction: column; gap: 24px; background: var(--bg); position: sticky; top: 0; height: 100vh; overflow: auto; z-index: 1; }
 
 /* TypeSafe 데스크톱: 점묘 바탕과 모서리 태그 */
