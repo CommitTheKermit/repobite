@@ -25,7 +25,7 @@ function sessionValue(value) {
 
 /** 필수 마크업 ID는 account-* 계약을 따른다. API 실패는 공개 탐색 상태를 건드리지 않는다. */
 export function mountAccountUI({ document, fetch, storage = browserStorage(),
-  location = globalThis.location, onSubscriptionsChanged = () => {} }) {
+  location = globalThis.location, accountPage = null, onSubscriptionsChanged = () => {} }) {
   const ids = ['status', 'login', 'dialog-login', 'open', 'dialog', 'close', 'message',
     'email-form', 'email', 'delivery', 'repo-form', 'repo', 'subscriptions', 'logout'];
   const el = Object.fromEntries(ids.map(id => {
@@ -150,6 +150,7 @@ export function mountAccountUI({ document, fetch, storage = browserStorage(),
 
   function open() {
     if (destroyed) return;
+    if (accountPage) { location.href = accountPage; return; }
     el.dialog.hidden = false;
     if (!el.dialog.open && typeof el.dialog.showModal === 'function') el.dialog.showModal();
   }

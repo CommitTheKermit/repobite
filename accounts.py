@@ -21,6 +21,7 @@ SESSION_SECONDS = 30 * 24 * 60 * 60
 STATE_SECONDS = 10 * 60
 USERS_KEY = "repobite:accounts:users"
 PREFERENCES_KEY = "repobite:accounts:preferences"
+PERSONALIZATION_KEY = "repobite:accounts:personalization"
 DAILY_LIMIT = 3
 
 
@@ -130,7 +131,10 @@ def authenticated_user(session_secret):
 
 def preferences(user_id):
     saved = community.redis("HGET", PREFERENCES_KEY, user_id)
-    return json.loads(saved) if saved else {"email": "", "delivery_enabled": False, "daily_limit": DAILY_LIMIT}
+    value = json.loads(saved) if saved else {"email": "", "delivery_enabled": False, "daily_limit": DAILY_LIMIT}
+    personal = community.redis("HGET", PERSONALIZATION_KEY, user_id)
+    value.update(json.loads(personal) if personal else {})
+    return value
 
 
 def subscriptions(user_id):
@@ -177,15 +181,33 @@ def normalize_email(value):
     return local + "@" + domain.lower()
 
 
-def save_preferences(user_id, email, delivery_enabled):
+def save_preferences(user_id, email, delivery_enabled, complete=False):
     subscriptions_key(user_id)
     email = normalize_email(email)
     if type(delivery_enabled) is not bool:
         raise ValueError("수동 이메일 수신 여부를 선택하세요.")
     if delivery_enabled and not email:
         raise ValueError("수신할 이메일 주소를 입력하세요.")
-    value = {"email": email, "delivery_enabled": delivery_enabled, "daily_limit": DAILY_LIMIT}
+    previous = preferences(user_id)
+    if complete and (not subscriptions(user_id) or previous.get("difficulty") not in (1, 2, 3)):
+        raise ValueError("저장소와 난이도를 먼저 선택하세요.")
+    value = {"email": email, "delivery_enabled": delivery_enabled, "daily_limit": DAILY_LIMIT,
+             "onboarding_completed": complete or previous.get("onboarding_completed", False)}
     community.redis("HSET", PREFERENCES_KEY, user_id, json.dumps(value))
+    return value
+
+
+def save_personalization(user_id, difficulty, experience, topics):
+    subscriptions_key(user_id)
+    if type(difficulty) is not int or difficulty not in (1, 2, 3):
+        raise ValueError("Lv.1, Lv.2, Lv.3 중 하나를 선택하세요.")
+    if experience not in ("new", "project", "experienced"):
+        raise ValueError("개발 경험을 선택하세요.")
+    if (not isinstance(topics, list) or len(topics) > 20
+            or any(not isinstance(topic, str) or not re.fullmatch(r"[a-z0-9-]{1,50}", topic) for topic in topics)):
+        raise ValueError("관심 분야를 확인하세요.")
+    value = {"difficulty": difficulty, "experience": experience, "topics": sorted(set(topics))}
+    community.redis("HSET", PERSONALIZATION_KEY, user_id, json.dumps(value))
     return value
 
 
@@ -251,5 +273,6 @@ def delivery_subscribers():
         saved = preferences(user_id)
         if saved.get("delivery_enabled") is True and saved.get("email"):
             recipients.append({"user_id": user_id, "email": saved["email"], "daily_limit": DAILY_LIMIT,
-                               "subscriptions": subscriptions(user_id)})
+                               "subscriptions": subscriptions(user_id),
+                               **({"difficulty": saved["difficulty"]} if "difficulty" in saved else {})})
     return recipients

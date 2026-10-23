@@ -56,12 +56,12 @@ def _evaluate(issue, checked_at):
     return _result(True, "확인 완료", checked_at)
 
 
-def apply_freshness(rows, run=subprocess.run, checked_at=None):
+def apply_freshness(rows, run=subprocess.run, checked_at=None, candidate=is_candidate):
     """추천 후보 행에 freshness를 추가한다. 호출부는 출력 직전에 실행해야 한다."""
     checked_at = checked_at or datetime.now(timezone.utc).isoformat(timespec="seconds").replace(
         "+00:00", "Z")
     output = [dict(row) for row in rows]
-    candidates = [(index, row) for index, row in enumerate(output) if is_candidate(row)]
+    candidates = [(index, row) for index, row in enumerate(output) if candidate(row)]
     for start in range(0, len(candidates), BATCH_SIZE):
         batch = candidates[start:start + BATCH_SIZE]
         try:

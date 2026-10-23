@@ -75,6 +75,8 @@ def main():
         assert request('/api/account?action=session') == (200, b'{"authenticated": false}')
         assert request('/api/account?action=session', headers={'Host': 'attacker.example'})[0] == 403
         assert request('/api/account?action=preferences', {'email': 'x@example.test'})[0] == 403
+        for page in ['subscriptions.html','onboarding-repositories.html','onboarding-difficulty.html','onboarding-notifications.html','subscription-tokens.css','subscription-components.css','subscription-pages.mjs','subscription-client.mjs']:
+            assert request('/'+page)[0] == 200
         assert request('/account-ui.mjs')[0] == 200
         assert request('/repository-autocomplete.mjs')[0] == 200
         assert request('/contribution-ui.mjs')[0] == 200

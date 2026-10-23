@@ -35,6 +35,16 @@ def is_public_repository(repo):
         return False
 
 
+def is_notification_candidate(row):
+    grade = row.get('grade')
+    return (isinstance(grade, dict) and not row.get('error')
+            and grade.get('exclude') is False and grade.get('difficulty') in (1, 2, 3))
+
+
+def refresh_notification_candidates(rows):
+    return freshness.apply_freshness(rows, candidate=is_notification_candidate)
+
+
 class ManualDelivery:
     def __init__(self, path):
         path = Path(path)
@@ -57,14 +67,14 @@ class ManualDelivery:
     def close(self):
         self.db.close()
 
-    def prepare(self, rows, subscribers, day=None, refresh=freshness.apply_freshness,
+    def prepare(self, rows, subscribers, day=None, refresh=refresh_notification_candidates,
                 public_check=is_public_repository):
         """재생성 시 최신성을 재확인한다. 초안은 발송 실적으로 집계하지 않는다."""
         day = day or korean_day()
         subscribers = list(subscribers)
         date.fromisoformat(day)
         candidates = radar.unique_issues(rows)
-        candidates = [row for row in candidates if freshness.is_candidate(row)
+        candidates = [row for row in candidates if is_notification_candidate(row)
                       and row.get('criteria_version') == radar.CRITERIA_VERSION
                       and row.get('model') == radar.MODEL
                       and row.get('reasoning_effort') == radar.REASONING_EFFORT]
@@ -99,7 +109,8 @@ class ManualDelivery:
                 selected = []
                 for row in candidates:
                     repo, number = radar.issue_key(row)
-                    if repo in subscriptions and (repo, number) not in sent:
+                    if (repo in subscriptions and (repo, number) not in sent
+                            and row.get('grade', {}).get('difficulty') == subscriber.get('difficulty', 1)):
                         selected.append({key: row.get(key) for key in (
                             'repo', 'number', 'url', 'title', 'grade', 'freshness',
                             'model', 'criteria_version')})
@@ -137,7 +148,7 @@ class ManualDelivery:
         message['X-Unsent'] = '1'
         items = json.loads(row['items'])
         lines = ['구독한 저장소의 기여 후보입니다.',
-                 '등급은 구현 난이도가 아닌 이슈 본문 완결성 기준입니다.', '']
+                 '난이도는 이슈 본문의 정보 충실도를 기준으로 한 Lv.1/2/3입니다.', '']
         for item in items:
             reason = item['grade']['reason'].replace('\r', ' ').replace('\n', ' ')[:40]
             lines += [item['title'], item['url'], reason, '']

@@ -69,7 +69,9 @@ def handle_account(request):
                     raise accounts.AuthenticationRequired()
                 secret = accounts.complete_login(params.get("code", [""])[0], params.get("state", [""])[0],
                     cookie_value(request.headers, accounts.STATE_COOKIE), previous_session=session)
-                respond(request, 302, headers=[("Location", accounts.PUBLIC_ORIGIN + "/?auth=success"),
+                snapshot = accounts.session_snapshot(secret)
+                destination = "/subscriptions.html" if snapshot["preferences"].get("onboarding_completed") else "/onboarding-repositories.html"
+                respond(request, 302, headers=[("Location", accounts.PUBLIC_ORIGIN + destination),
                     ("Set-Cookie", cookie_header(accounts.STATE_COOKIE)), ("Set-Cookie", cookie_header(
                         accounts.SESSION_COOKIE, secret, accounts.SESSION_SECONDS))])
             elif action == "session":
@@ -95,6 +97,13 @@ def handle_account(request):
             return
         if action == "preferences" and request.command == "POST":
             saved = accounts.save_preferences(user["id"], payload.get("email"), payload.get("delivery_enabled"))
+            respond(request, 200, {"preferences": saved})
+        elif action == "personalization" and request.command == "POST":
+            saved = accounts.save_personalization(user["id"], payload.get("difficulty"),
+                                                 payload.get("experience"), payload.get("topics"))
+            respond(request, 200, {"preferences": saved})
+        elif action == "onboarding" and request.command == "POST":
+            saved = accounts.save_preferences(user["id"], payload.get("email"), payload.get("delivery_enabled"), complete=True)
             respond(request, 200, {"preferences": saved})
         elif action == "subscriptions":
             if request.command == "POST":

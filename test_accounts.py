@@ -301,7 +301,7 @@ class AccountsHTTPTest(AccountsFixture, unittest.TestCase):
                 {"id": 42, "login": "octocat"}]):
             status, _, headers = self.request("callback", extra_query="&state=" + state + "&code=code", cookie=cookie)
         self.assertEqual(status, 302)
-        self.assertEqual(dict(headers)["Location"], accounts.PUBLIC_ORIGIN + "/?auth=success")
+        self.assertEqual(dict(headers)["Location"], accounts.PUBLIC_ORIGIN + "/onboarding-repositories.html")
         self.assertEqual(len([v for k, v in headers if k == "Set-Cookie"]), 2)
         status, _, headers = self.request("callback", extra_query="&state=bad&code=private-code")
         self.assertEqual(dict(headers)["Location"], accounts.PUBLIC_ORIGIN + "/?auth=failed")

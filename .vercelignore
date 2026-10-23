@@ -13,3 +13,11 @@
 !account-ui.mjs
 !contribution-ui.mjs
 !repository-autocomplete.mjs
+!subscriptions.html
+!onboarding-repositories.html
+!onboarding-difficulty.html
+!onboarding-notifications.html
+!subscription-tokens.css
+!subscription-components.css
+!subscription-client.mjs
+!subscription-pages.mjs

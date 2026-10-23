@@ -236,7 +236,11 @@ class Handler(BaseHTTPRequestHandler):
             handle_contributions(self)
         elif self.path == "/":
             self.reply(200, (radar.ROOT / "web.html").read_bytes(), "text/html; charset=utf-8")
-        elif self.path in {"/account-ui.mjs", "/contribution-ui.mjs", "/repository-autocomplete.mjs"}:
+        elif self.path in {'/onboarding-notifications.html', '/subscriptions.html', '/onboarding-repositories.html', '/onboarding-difficulty.html'}:
+            self.reply(200, (radar.ROOT / self.path.lstrip("/")).read_bytes(), "text/html; charset=utf-8")
+        elif self.path in {'/subscription-tokens.css', '/subscription-components.css'}:
+            self.reply(200, (radar.ROOT / self.path.lstrip("/")).read_bytes(), "text/css; charset=utf-8")
+        elif self.path in {"/account-ui.mjs", "/contribution-ui.mjs", "/repository-autocomplete.mjs", "/subscription-client.mjs", "/subscription-pages.mjs"}:
             self.reply(200, (radar.ROOT / self.path.lstrip("/")).read_bytes(), "text/javascript; charset=utf-8")
         elif self.path == "/api/repos":
             try:

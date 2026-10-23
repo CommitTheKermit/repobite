@@ -76,7 +76,7 @@ document.querySelectorAll('[data-filter]').forEach(b=>b.onclick=()=>{tags=b.data
 <script type="module">
 import {mountAccountUI} from '/account-ui.mjs';
 let ui;
-ui=mountAccountUI({document,fetch:window.fetch.bind(window),location:window.location,onSubscriptionsChanged:()=>{if(ui)updateSubscribeButton()}});
+ui=mountAccountUI({accountPage:'/subscriptions.html',document,fetch:window.fetch.bind(window),location:window.location,onSubscriptionsChanged:()=>{if(ui)updateSubscribeButton()}});
 function updateSubscribeButton(){const button=document.getElementById('subscribe-selected');if(!button)return;const {authenticated,subscriptions=[]}=ui.getState();const subscribed=subscriptions.some(repo=>repo.toLowerCase()===button.dataset.repo.toLowerCase());button.textContent=authenticated?(subscribed?'구독 해지':'이 저장소 구독'):'로그인하고 구독';button.setAttribute('aria-pressed',String(authenticated&&subscribed))}
 const observer=new MutationObserver(updateSubscribeButton);observer.observe(document.getElementById('heading'),{childList:true});
 document.getElementById('heading').addEventListener('click',event=>{const button=event.target.closest('#subscribe-selected');if(button)ui.toggleSubscription(button.dataset.repo)});
