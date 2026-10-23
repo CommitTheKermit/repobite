@@ -15,15 +15,22 @@ const GROUPS = [['AI', 'ai-ml agents-automation'], ['프레임워크', 'web-fram
   ['앱', 'desktop-app mobile productivity'], ['미디어', 'media-creative games-graphics']];
 const STEPS = [['topics', 'TOPIC'], ['repos', 'REPO'], ['level', 'LV'], ['mail', 'MAIL']];
 
+// 사용자들이 담은 공용 레포 샘플. 처음에는 수집 전이라 이슈가 보이지 않고, 정기 수집을 기다리거나 구독하면 바로 수집한다.
+const COMMUNITY = new Set(['glanceapp/glance', 'henrygd/beszel', 'asciimoo/hister']);
 const repos = new Map();
 for (const issue of window.ISSUES) {
-  const repo = repos.get(issue.repo) || { name: issue.repo, description: issue.d, topics: new Set(), issues: [] };
+  const repo = repos.get(issue.repo) || {
+    name: issue.repo, description: issue.d, topics: new Set(), all: [], community: COMMUNITY.has(issue.repo),
+    get collected() { return !this.community || state.collected.has(this.name); },
+    // 화면에서 쓰는 이슈는 모두 이 getter를 거친다. 수집 전 저장소는 빈 목록이다.
+    get issues() { return this.collected ? this.all : []; },
+  };
   issue.c.forEach(t => repo.topics.add(t));
-  repo.issues.push(issue);
+  repo.all.push(issue);
   repos.set(issue.repo, repo);
 }
 
-const state = { searchOpen: false, open: new Set(), detail: '', dlv: 0, group: '', sort: 'recommended', search: '', onboarded: false, topics: new Set(), subs: new Set(), experience: 'new', level: 1, email: '', consent: true, mail: null, active: '', filter: 1, query: '', error: '' };
+const state = { collected: new Set(), collecting: new Map(), searchOpen: false, open: new Set(), detail: '', dlv: 0, group: '', sort: 'recommended', search: '', onboarded: false, topics: new Set(), subs: new Set(), experience: 'new', level: 1, email: '', consent: true, mail: null, active: '', filter: 1, query: '', error: '' };
 const view = document.querySelector('#view'), stack = document.querySelector('#stack');
 const esc = value => String(value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const short = name => name.split('/')[1];
@@ -57,6 +64,7 @@ function fold(box) {
 const foldAll = () => document.querySelectorAll('[data-fold]').forEach(box => box.querySelector('.chip')?.offsetParent && fold(box));
 const issues = n => `${n} issue${n === 1 ? '' : 's'}`;
 const icon = name => `<span data-lucide="${name}"></span>`;
+const recentIssues = () => window.ISSUES.filter(i => repos.get(i.repo).collected);
 const subIssues = () => [...state.subs].flatMap(name => repos.get(name).issues);
 const route = () => location.hash.replace('#/', '') || 'explore';
 const levelTags = list => [1, 2, 3].map(n => [n, list.filter(i => i.lv === n).length]).filter(([, c]) => c).map(([n, c]) => `<span class="tag">${LEVELS[n - 1]} ${c}</span>`).join('');
@@ -78,26 +86,41 @@ function exploreList() {
   const list = [...repos.values()].filter(r => (!state.group || [...r.topics].some(t => groupTopics.includes(t))) && (r.name + r.description).toLowerCase().includes(query));
   return state.sort === 'name' ? list.sort((a, b) => a.name.localeCompare(b.name)) : list;
 }
+// 수집 전 공용 레포는 이슈 대신 수집 상태를 보여 준다
+const collectStatus = r => state.collecting.has(r.name)
+  ? `<span class="tag">수집 중</span><span class="collect-bar"><span style="width:${state.collecting.get(r.name)}%"></span></span>`
+  : '<span class="tag">정기 수집 대기</span>';
 const exploreCards = list => list.map(r => `<article class="card win"><button class="card-hit" data-detail="${esc(r.name)}" aria-haspopup="dialog">
-        <span class="win-bar"><span>${esc(short(r.name))}</span><span>${issues(r.issues.length)}</span></span>${repoMedia(r.name)}
-        <span class="card-body"><span class="card-meta">${owner(r.name)}<span><b>${esc(r.name)}</b><small>${esc(r.description)}</small></span></span><span class="tags">${levelTags(r.issues)}</span></span></button>
+        <span class="win-bar"><span>${esc(short(r.name))}</span><span>${r.collected ? issues(r.issues.length) : state.collecting.has(r.name) ? 'collecting' : 'queued'}</span></span>${repoMedia(r.name)}
+        <span class="card-body"><span class="card-meta">${owner(r.name)}<span><b>${esc(r.name)}</b><small>${esc(r.description)}</small></span></span><span class="tags">${r.collected ? levelTags(r.issues) : collectStatus(r)}</span></span></button>
 </article>`).join('') || '<p class="empty">일치하는 저장소가 없습니다.</p>';
+// 사용자들이 담은 레포와 기본·자동 발굴 레포를 나눈 피드. 검색과 수집 상태 변경 때 이 부분만 다시 그린다.
+function updateFeeds() {
+  const list = exploreList(), community = list.filter(r => r.community), base = list.filter(r => !r.community);
+  const section = document.querySelector('#community-section');
+  if (!section) return;
+  section.hidden = !community.length;
+  document.querySelector('#community-feed').innerHTML = exploreCards(community);
+  document.querySelector('#community-count').textContent = community.length;
+  document.querySelector('#base-feed').innerHTML = exploreCards(base);
+  document.querySelector('#base-count').textContent = base.length;
+}
 function repoRows() {
   const query = state.query.toLowerCase();
   const list = [...repos.values()].filter(r => (state.subs.has(r.name) || [...r.topics].some(t => state.topics.has(t))) && r.name.toLowerCase().includes(query));
-  return list.map(r => `<button class="repo" data-repo="${esc(r.name)}" aria-pressed="${state.subs.has(r.name)}">${repoMedia(r.name, 'thumb')}<span><b>${esc(r.name)}</b><small>${esc(r.description)}</small></span><span class="pix">${issues(r.issues.length)}</span><span class="check">${icon('check')}</span></button>`).join('') || '<p class="empty">일치하는 저장소가 없습니다.</p>';
+  return list.map(r => `<button class="repo" data-repo="${esc(r.name)}" aria-pressed="${state.subs.has(r.name)}">${repoMedia(r.name, 'thumb')}<span><b>${esc(r.name)}</b><small>${esc(r.description)}</small>${r.collected ? '' : `<small class="collect-hint">${state.collecting.has(r.name) ? '수집 중' : '구독하면 바로 수집'}</small>`}</span><span class="pix">${r.collected ? issues(r.issues.length) : 'new'}</span><span class="check">${icon('check')}</span></button>`).join('') || '<p class="empty">일치하는 저장소가 없습니다.</p>';
 }
 
 const screens = {
   explore() {
-    const list = exploreList();
     const chips = [['전체', '']].concat(GROUPS).map(([label, value]) => `<button class="chip" data-group="${value}" aria-pressed="${state.group === value}">${label}${value ? '' : ` <span class="pix">${repos.size}</span>`}</button>`).join('');
     // 오른쪽 패널이 숨는 좁은 화면에서는 돋보기 버튼으로 필터 바 위에 검색칸을 펼친다
     const inline = state.searchOpen ? `<div class="inline-search"><label class="search-box">${icon('search')}<input class="search" id="explore-search-m" type="search" placeholder="저장소 이름이나 설명으로 검색" aria-label="저장소 검색" value="${esc(state.search)}"></label><button class="ghost" data-search-close>닫기</button></div>` : '';
     return `<div class="explore"><button class="search-toggle" data-search-open aria-label="저장소 검색" aria-expanded="${state.searchOpen}">${icon('search')}</button>${inline}
       <div class="bar"><select class="sort" id="sort" aria-label="정렬"><option value="recommended">추천순</option><option value="name" ${state.sort === 'name' ? 'selected' : ''}>레포 이름순</option></select><div class="chips" data-fold="groups">${chips}${moreChip('groups')}</div></div>
-      <div class="section-head"><span class="eyebrow" id="repo-count">REPOSITORIES / ${list.length}</span><button class="ghost invert" data-go="${state.onboarded ? 'subs' : 'topics'}">${state.onboarded ? '내 구독 보기' : '레포바이트 이용하기'}</button></div>
-      <div class="masonry">${exploreCards(list)}</div></div>`;
+      <div class="section-head"><span class="eyebrow">REPOSITORIES / ${repos.size}</span><button class="ghost invert" data-go="${state.onboarded ? 'subs' : 'topics'}">${state.onboarded ? '내 구독 보기' : '레포바이트 이용하기'}</button></div>
+      <section class="feed-section" id="community-section"><div class="feed-title"><h2>사용자들이 담은 레포 <span class="pix" id="community-count"></span></h2><p>다음 정기 수집 때 이슈를 가져옵니다. 구독하면 기다리지 않고 바로 수집합니다.</p></div><div class="masonry" id="community-feed"></div></section>
+      <section class="feed-section"><div class="feed-title"><h2>기본·자동 발굴 레포 <span class="pix" id="base-count"></span></h2></div><div class="masonry" id="base-feed"></div></section></div>`;
   },
   topics() {
     const tiles = TOPICS.map(([key, name, glyph]) => {
@@ -176,11 +199,76 @@ const screens = {
 function renderSide() {
   stack.classList.remove('stack');
   stack.innerHTML = `<label class="search-box">${icon('search')}<input class="search" id="explore-search" type="search" placeholder="저장소 이름이나 설명으로 검색" aria-label="저장소 검색" value="${esc(state.search)}"></label>
-    <section class="win dots"><div class="win-bar"><span>RECENT</span><span>${issues(window.ISSUES.length)}</span></div><div class="win-body"><div class="issue-list">${window.ISSUES.slice(0, 6).map(i => `<button class="issue-row with-owner" data-detail="${esc(i.repo)}" aria-haspopup="dialog">${owner(i.repo)}<span class="inv">Lv.${i.lv} ${LEVELS[i.lv - 1]}</span><span class="pix">${esc(short(i.repo))}</span><b>${esc(i.t)}</b></button>`).join('')}</div></div></section>`;
+    <section class="win dots"><div class="win-bar"><span>RECENT</span><span>${issues(recentIssues().length)}</span></div><div class="win-body"><div class="issue-list">${recentIssues().slice(0, 6).map(i => `<button class="issue-row with-owner" data-detail="${esc(i.repo)}" aria-haspopup="dialog">${owner(i.repo)}<span class="inv">Lv.${i.lv} ${LEVELS[i.lv - 1]}</span><span class="pix">${esc(short(i.repo))}</span><b>${esc(i.t)}</b></button>`).join('')}</div></div></section>`;
 }
 
 // 저장소 상세 다이얼로그: TypeSafe 스펙 시트 오버레이 (2026-10-23 A·B·C 시안 중 C로 확정)
 const detailBox = document.querySelector('#detail');
+// 수집 전 공용 레포 안내. 구독하면 정기 수집을 기다리지 않고 바로 수집한다.
+const collectNotice = repo => `<section class="win dots collect-notice"><div class="win-bar"><span>COLLECT</span><span>${state.collecting.has(repo.name) ? `${Math.round(state.collecting.get(repo.name))}%` : 'queued'}</span></div><div class="win-body">
+  ${state.collecting.has(repo.name)
+    ? '<p>지금 이 저장소의 이슈를 수집하고 있습니다. 끝나면 알림으로 알려 드립니다.</p>'
+    : '<p>사용자들이 담은 저장소라 아직 이슈를 수집하지 않았습니다. 다음 정기 수집 때 가져오며, <b>구독하면 기다리지 않고 바로 수집</b>합니다.</p>'}</div></section>`;
+
+function subscribe(name) {
+  state.subs.add(name);
+  const repo = repos.get(name);
+  if (!repo.collected && !state.collecting.has(name)) collect(repo);
+}
+
+// 즉시 수집 흉내: 진행 토스트를 띄우고, 끝나면 완료 토스트로 바꾼 뒤 숨겨 둔 샘플 이슈를 보여 준다
+const toasts = document.querySelector('#toasts');
+function showToasts() {
+  // popover는 열린 dialog보다 위 레이어에 놓이도록 다시 연다
+  if (toasts.matches(':popover-open')) toasts.hidePopover();
+  if (toasts.children.length) toasts.showPopover();
+}
+function collect(repo) {
+  const toast = document.createElement('section');
+  toast.className = 'win toast';
+  toasts.append(toast);
+  let percent = 0;
+  const draw = () => {
+    const step = percent < 45 ? '이슈를 가져오는 중' : percent < 90 ? '난이도를 판정하는 중' : '정리하는 중';
+    toast.innerHTML = `<div class="win-bar"><span>COLLECT</span><span>${esc(short(repo.name))}</span></div><div class="win-body"><p><b>${esc(repo.name)}</b> 구독 즉시 수집 · ${step}</p><div class="progress"><span style="width:${percent}%">${Math.round(percent)}%</span></div></div>`;
+  };
+  state.collecting.set(repo.name, 0);
+  draw();
+  showToasts();
+  refresh();
+  const timer = setInterval(() => {
+    percent = Math.min(100, percent + 2 + Math.random() * 3);
+    state.collecting.set(repo.name, percent);
+    draw();
+    refreshProgress(repo.name, percent);
+    if (percent < 100) return;
+    clearInterval(timer);
+    state.collecting.delete(repo.name);
+    state.collected.add(repo.name);
+    toast.innerHTML = `<div class="win-bar"><span>DONE</span><span>${esc(short(repo.name))}</span></div><div class="win-body toast-done"><p><b>${esc(repo.name)}</b> 수집 완료 · ${issues(repo.issues.length)}</p><button class="ghost" data-detail="${esc(repo.name)}">보기</button></div>`;
+    refresh();
+    setTimeout(() => { toast.remove(); showToasts(); }, 5000);
+  }, 150);
+}
+// 수집 상태가 바뀌면 다시 그린다. 입력 중이면 입력칸을 건드리지 않도록 목록만 갱신한다.
+function refresh() {
+  if (document.activeElement?.matches('input, textarea')) {
+    updateFeeds();
+    const list = document.querySelector('.repos');
+    if (list) { list.innerHTML = repoRows(); window.lucide.createIcons(); }
+    return;
+  }
+  render();
+}
+// 진행률은 매 틱마다 막대와 숫자만 바꾼다
+function refreshProgress(name, percent) {
+  document.querySelectorAll(`.card-hit[data-detail="${CSS.escape(name)}"] .collect-bar span`).forEach(bar => { bar.style.width = `${percent}%`; });
+  if (state.detail === name) {
+    const label = detailBox.querySelector('.collect-notice .win-bar span:last-child');
+    if (label) label.textContent = `${Math.round(percent)}%`;
+  }
+}
+
 function detailParts(repo) {
   const counts = [1, 2, 3].map(n => repo.issues.filter(i => i.lv === n).length);
   const list = repo.issues.filter(i => !state.dlv || i.lv === state.dlv);
@@ -188,7 +276,7 @@ function detailParts(repo) {
   return {
     counts, list,
     topics: `<div class="tags">${[...repo.topics].map(t => `<span class="tag">${esc(TOPIC_NAME[t] || t)}</span>`).join('')}</div>`,
-    cta: subscribed ? '<button class="ghost" data-go="subs">구독 중 · 내 구독 보기</button>' : `<button class="solid-btn" data-subscribe="${esc(repo.name)}">이 저장소 구독하기 ${icon('arrow-right')}</button>`,
+    cta: subscribed ? '<button class="ghost" data-go="subs">구독 중 · 내 구독 보기</button>' : `<button class="solid-btn" data-subscribe="${esc(repo.name)}">${repo.collected ? '이 저장소 구독하기' : '구독하고 바로 수집'} ${icon('arrow-right')}</button>`,
     github: `<a class="ghost" href="https://github.com/${esc(repo.name)}" target="_blank" rel="noopener noreferrer">GitHub ↗</a>`,
     chips: `<div class="chips" role="group" aria-label="난이도">${[[0, '전체', repo.issues.length], ...counts.map((c, i) => [i + 1, LEVELS[i], c])].map(([n, label, c]) => `<button class="chip" data-dlv="${n}" aria-pressed="${state.dlv === n}">${label} <span class="pix">${c}</span></button>`).join('')}</div>`,
     close: '<button class="detail-close" data-close aria-label="닫기">×</button>',
@@ -200,11 +288,11 @@ function detailView(repo, p) {
     return `<section class="overlay">${p.close}
       <div class="overlay-top"><div class="overlay-title"><span class="eyebrow">REPOSITORY</span><h2>${esc(short(repo.name))}</h2><span class="card-meta" style="margin-top:16px">${owner(repo.name)}<span><b class="detail-name">${esc(repo.name)}</b><small>${esc(repo.description)}</small></span></span>${p.topics}<div class="overlay-cta">${p.cta}${p.github}</div></div>
         <div class="spec"><span class="cross tl"></span><span class="cross br"></span><div class="full">${repoMedia(repo.name, 'spec-media')}</div>
-          <div><span class="lab">Issues</span><span class="val big">${repo.issues.length}</span></div>
+          <div><span class="lab">Issues</span><span class="val big">${repo.collected ? repo.issues.length : '-'}</span></div>
           <div class="right"><span class="lab">Topics</span><span class="val big">${repo.topics.size}</span></div>
-          ${p.counts.map((c, i) => `<div class="full" style="display:flex;justify-content:space-between"><span class="inv">Lv.${i + 1} ${LEVELS[i]}</span><span class="val">${c}</span></div>`).join('')}
+          ${p.counts.map((c, i) => `<div class="full" style="display:flex;justify-content:space-between"><span class="inv">Lv.${i + 1} ${LEVELS[i]}</span><span class="val">${repo.collected ? c : '-'}</span></div>`).join('')}
           <div class="full barcode" aria-hidden="true"></div></div></div>
-      <div class="overlay-issues">${p.chips}<div class="action-grid">${cells || '<p class="empty" style="text-align:left">이 난이도의 이슈가 지금은 없습니다.</p>'}</div></div></section>`;
+      <div class="overlay-issues">${repo.collected ? `${p.chips}<div class="action-grid">${cells || '<p class="empty" style="text-align:left">이 난이도의 이슈가 지금은 없습니다.</p>'}</div>` : collectNotice(repo)}</div></section>`;
 }
 function renderDetail() {
   const repo = repos.get(state.detail);
@@ -248,6 +336,7 @@ function render() {
   if (name !== 'explore') state.detail = '';
   renderDetail();
   view.innerHTML = screens[name]();
+  updateFeeds();
   renderStack(name);
   window.lucide.createIcons();
   window.paintDither();
@@ -276,17 +365,17 @@ document.addEventListener('click', event => {
   if ('searchClose' in d) { state.searchOpen = false; state.search = ''; }
   if ('group' in d) state.group = d.group;
   if (d.more) state.open.has(d.more) ? state.open.delete(d.more) : state.open.add(d.more);
-  if (d.detail) { state.detail = d.detail; state.dlv = 0; }
+  if (d.detail) { state.detail = d.detail; state.dlv = 0; if (route() !== 'explore') return go('explore'); }
   if ('close' in d) return detailBox.close();
   if ('dlv' in d) state.dlv = Number(d.dlv);
   if (d.subscribe) {
-    state.subs.add(d.subscribe);
+    subscribe(d.subscribe);
     repos.get(d.subscribe).topics.forEach(t => state.topics.add(t));
     if (!state.onboarded) return go('repos');
     state.active = d.subscribe;
   }
   if (d.topic) state.topics.has(d.topic) ? state.topics.delete(d.topic) : state.topics.add(d.topic);
-  if (d.repo) state.subs.has(d.repo) ? state.subs.delete(d.repo) : state.subs.add(d.repo);
+  if (d.repo) state.subs.has(d.repo) ? state.subs.delete(d.repo) : subscribe(d.repo);
   if (d.exp) { state.experience = d.exp; state.level = EXPERIENCES.find(([key]) => key === d.exp)[2]; }
   if (d.level) state.level = Number(d.level);
   if ('consent' in d) state.consent = !state.consent;
@@ -321,9 +410,7 @@ document.addEventListener('input', event => {
   }
   if (id === 'explore-search' || id === 'explore-search-m') {
     state.search = event.target.value;
-    const list = exploreList();
-    document.querySelector('.masonry').innerHTML = exploreCards(list);
-    document.querySelector('#repo-count').textContent = `REPOSITORIES / ${list.length}`;
+    updateFeeds();
     document.querySelectorAll('#explore-search, #explore-search-m').forEach(input => { if (input !== event.target) input.value = state.search; });
   }
 });
