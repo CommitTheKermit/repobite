@@ -351,6 +351,9 @@ def reusable_grades(rows, issues, model):
 
 
 def grade(args):
+    workers = getattr(args, "workers", 16)
+    if type(workers) is not int or not 1 <= workers <= 16:
+        raise ValueError("동시 판정 수는 1-16이어야 합니다")
     if args.input.resolve() == args.output.resolve():
         raise ValueError("입력과 출력 경로가 같을 수 없습니다")
     issues = unique_issues(read_jsonl(args.input))
@@ -386,8 +389,8 @@ def grade(args):
 
     results = dict(reused)
     failed = 0
-    with ThreadPoolExecutor(max_workers=16) as pool:
-        for index, row in enumerate(pool.map(judge, selected, buffersize=16), 1):
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        for index, row in enumerate(pool.map(judge, selected, buffersize=workers), 1):
             results[issue_key(row)] = row
             failed += row["grade"] is None
             print(f"판정 {index}/{len(selected)}: {row['repo']}#{row['number']} "
@@ -508,7 +511,7 @@ def batch(args):
     if result := collect(collect_args):
         return result
     grade_args = argparse.Namespace(input=args.issues, output=args.grades, reuse=args.grades,
-                                    model=args.model, all_issues=False)
+                                    model=args.model, all_issues=False, workers=getattr(args, "workers", 16))
     if result := grade(grade_args):
         return result
     return candidates(argparse.Namespace(input=args.grades, output=args.candidates))
@@ -530,6 +533,7 @@ def main():
     grade_parser.add_argument("--model", default=MODEL, help=f"Vertex AI 판정 모델 (기본: {MODEL})")
     grade_parser.add_argument("--reuse", type=Path, help="정확히 일치하는 성공 판정을 재사용할 JSONL (기본: 기존 출력)")
     grade_parser.add_argument("--all", dest="all_issues", action="store_true", help="100건·레포당 20건 상한 없이 전체 판정")
+    grade_parser.add_argument("--workers", type=int, choices=range(1, 17), default=16, help="동시 판정 수 (기본 16)")
     grade_parser.set_defaults(run=grade)
     report_parser = commands.add_parser("report", help="교차표, 비율, 레포 집중도, 사람 판정 비교")
     report_parser.add_argument("--input", type=Path, default=Path("grades.jsonl"))
@@ -546,6 +550,7 @@ def main():
     batch_parser.add_argument("--grades", type=Path, default=Path("grades.jsonl"))
     batch_parser.add_argument("--candidates", type=Path, default=Path("candidates.jsonl"))
     batch_parser.add_argument("--model", default=MODEL, help=f"Vertex AI 판정 모델 (기본: {MODEL})")
+    batch_parser.add_argument("--workers", type=int, choices=range(1, 17), default=16, help="동시 판정 수 (기본 16)")
     batch_parser.set_defaults(run=batch)
     args = parser.parse_args()
     try:

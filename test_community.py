@@ -48,6 +48,7 @@ def test_snapshot_recovery():
         late = {"repo": "Late/Repo", "description": "중간 등록", "added_at": "later"}
 
         def batch(args):
+            assert args.workers == 4
             submitted.append(late)
             args.issues.write_text(json.dumps(issue) + "\n", encoding="utf-8")
             args.grades.write_text(json.dumps(graded) + "\n", encoding="utf-8")
@@ -365,6 +366,13 @@ def test_discovery_contract():
 
 
 if __name__ == "__main__":
+    for invalid in (0, 17, True, "4"):
+        try:
+            community_batch.run(workers=invalid)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError("잘못된 동시 판정 수를 허용했습니다")
     test_discovery_contract()
     with (patch.object(community_batch.accounts, "subscription_repositories", return_value=[]),
           patch.object(community_batch, "discovered_repositories", return_value=[])):

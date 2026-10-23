@@ -138,16 +138,20 @@ def test_schema_and_grading():
     with tempfile.TemporaryDirectory() as directory:
         source, target = Path(directory) / "issues.jsonl", Path(directory) / "grades.jsonl"
         source.write_text(json.dumps(issue) + "\n" + json.dumps({**issue, "number": 2}) + "\n")
-        args = argparse.Namespace(input=source, output=target, model=radar.MODEL)
+        args = argparse.Namespace(input=source, output=target, model=radar.MODEL, workers=2)
+        for invalid in (0, 17, True, "4"):
+            rejects(radar.grade, argparse.Namespace(workers=invalid))
 
         def fake_grade(row, model):
             if row["number"] == 2:
                 raise ValueError("invalid model response")
             return GOOD
 
-        with (patch.object(radar, "grade_issue", side_effect=fake_grade),
+        with (patch.object(radar, "ThreadPoolExecutor", wraps=radar.ThreadPoolExecutor) as pool,
+              patch.object(radar, "grade_issue", side_effect=fake_grade),
               patch.object(radar.freshness, "apply_freshness", side_effect=lambda rows: rows)):
             assert radar.grade(args) == 1
+            pool.assert_called_once_with(max_workers=2)
         rows = radar.read_jsonl(target)
         assert rows[0]["grade"] == GOOD and rows[1]["grade"] is None
         assert rows[0]["criteria_version"] == radar.CRITERIA_VERSION

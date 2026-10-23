@@ -55,7 +55,9 @@ def public_repositories(names):
     return public
 
 
-def run(root=radar.ROOT, since="24h"):
+def run(root=radar.ROOT, since="24h", workers=4):
+    if type(workers) is not int or not 1 <= workers <= 16:
+        raise ValueError("동시 판정 수는 1-16이어야 합니다")
     root = Path(root)
     submitted = community.registrations()
     names = {}
@@ -87,7 +89,7 @@ def run(root=radar.ROOT, since="24h"):
             repos.write_text("\n".join(names.values()) + "\n", encoding="utf-8")
             args = argparse.Namespace(repos=repos, since=since, issues=data / "issues.jsonl",
                                       grades=data / "grades.jsonl", candidates=data / "candidates.jsonl",
-                                      model=radar.MODEL)
+                                      model=radar.MODEL, workers=workers)
             if result := radar.batch(args):
                 return result
         issues = [row for row in radar.read_jsonl(args.issues) if row["repo"].lower() in names]
@@ -104,9 +106,10 @@ def run(root=radar.ROOT, since="24h"):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--since", default="24h")
+    parser.add_argument("--workers", type=int, choices=range(1, 17), default=4, help="동시 판정 수 (기본 4)")
     args = parser.parse_args()
     try:
-        sys.exit(run(since=args.since))
+        sys.exit(run(since=args.since, workers=args.workers))
     except (OSError, ValueError, RuntimeError, KeyError, TypeError, subprocess.TimeoutExpired):
         print("공용 배치 실패: DB 연결, GitHub와 Vertex AI 인증, 입력 파일을 확인하세요.", file=sys.stderr)
         sys.exit(1)
