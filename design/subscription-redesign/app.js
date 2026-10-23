@@ -35,7 +35,7 @@ for (const issue of window.ISSUES) {
   repos.set(issue.repo, repo);
 }
 
-const state = { collected: new Set(), collecting: new Map(), searchOpen: false, open: new Set(), detail: '', dlv: 0, group: '', sort: 'recommended', search: '', onboarded: false, topics: new Set(), subs: new Set(), experience: 'new', level: 1, email: '', consent: true, mail: null, active: '', filter: 1, query: '', error: '' };
+const state = { obStep: '', collected: new Set(), collecting: new Map(), searchOpen: false, open: new Set(), detail: '', dlv: 0, group: '', sort: 'recommended', search: '', onboarded: false, topics: new Set(), subs: new Set(), experience: 'new', level: 1, email: '', consent: true, mail: null, active: '', filter: 1, query: '', error: '' };
 const view = document.querySelector('#view'), stack = document.querySelector('#stack');
 const esc = value => String(value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const short = name => name.split('/')[1];
@@ -257,9 +257,9 @@ function collect(repo) {
     clearInterval(timer);
     state.collecting.delete(repo.name);
     state.collected.add(repo.name);
-    toast.innerHTML = `<div class="win-bar"><span>DONE</span><span>${esc(short(repo.name))}</span></div><div class="win-body toast-done"><p><b>${esc(repo.name)}</b> 수집 완료 · ${issues(repo.issues.length)}</p><button class="ghost" data-detail="${esc(repo.name)}">보기</button></div>`;
+    toast.remove();
+    notify('DONE', short(repo.name), `<p><b>${esc(repo.name)}</b> 수집 완료 · ${issues(repo.issues.length)}</p><button class="ghost" data-detail="${esc(repo.name)}">보기</button>`);
     refresh();
-    setTimeout(() => { toast.remove(); showToasts(); }, 5000);
   }, 150);
 }
 // 수집 상태가 바뀌면 다시 그린다. 입력 중이면 입력칸을 건드리지 않도록 목록만 갱신한다.
@@ -315,7 +315,7 @@ function renderDetail() {
   window.lucide.createIcons();
 }
 detailBox.addEventListener('close', () => { state.detail = ''; });
-detailBox.addEventListener('click', event => { if (event.target === detailBox) detailBox.close(); });
+detailBox.addEventListener('click', event => { if (event.target === detailBox) closeDetail(); });
 
 function renderStack(name) {
   if (name === 'explore') return renderSide();
@@ -357,6 +357,34 @@ function render() {
   window.lucide.createIcons();
   window.paintDither();
   foldAll();
+  renderOnboard();
+}
+
+// 상세에서 처음 구독할 때 여는 온보딩 다이얼로그. 전체 화면 온보딩과 같은 단계 화면을 쓰되 페이지는 탐색에 머문다.
+const onboardBox = document.querySelector('#onboard');
+function renderOnboard() {
+  if (!state.obStep) { if (onboardBox.open) onboardBox.close(); return; }
+  if ((state.obStep === 'level' || state.obStep === 'mail') && !state.subs.size) state.obStep = 'repos';
+  onboardBox.innerHTML = screens[state.obStep]();
+  // 새로 연 다이얼로그가 수집 토스트를 덮지 않도록 토스트를 다시 위로 올린다
+  if (!onboardBox.open) { onboardBox.showModal(); showToasts(); }
+  window.lucide.createIcons();
+  window.paintDither(onboardBox);
+}
+// close 이벤트는 비동기로 오므로, 닫은 직후 다시 그려도 열리지 않게 상태를 먼저 비운다
+const closeOnboard = () => { state.obStep = ''; onboardBox.close(); };
+const closeDetail = () => { state.detail = ''; detailBox.close(); };
+onboardBox.addEventListener('close', () => { state.obStep = ''; });
+onboardBox.addEventListener('click', event => { if (event.target === onboardBox) closeOnboard(); });
+// 알림 토스트: 완료나 저장 결과를 잠시 보여 준다
+function notify(bar, label, html) {
+  const toast = document.createElement('section');
+  toast.className = 'win toast';
+  toast.innerHTML = `<div class="win-bar"><span>${bar}</span><span>${esc(label)}</span></div><div class="win-body toast-done">${html}</div>`;
+  toasts.append(toast);
+  showToasts();
+  setTimeout(() => { toast.remove(); showToasts(); }, 5000);
+  return toast;
 }
 
 function dialog(lines, done) {
@@ -375,19 +403,25 @@ function dialog(lines, done) {
 document.addEventListener('click', event => {
   const b = event.target.closest('button');
   if (!b || b.disabled) return;
-  const d = b.dataset;
+  const d = b.dataset, inOnboard = !!b.closest('#onboard');
+  if (d.go && inOnboard) {
+    if (!STEPS.some(([key]) => key === d.go)) return closeOnboard();
+    state.obStep = d.go;
+    return renderOnboard();
+  }
   if (d.go) return go(d.go);
   if ('searchOpen' in d) { state.searchOpen = true; if (route() !== 'explore') return go('explore'); }
   if ('searchClose' in d) { state.searchOpen = false; state.search = ''; }
   if ('group' in d) state.group = d.group;
   if (d.more) state.open.has(d.more) ? state.open.delete(d.more) : state.open.add(d.more);
   if (d.detail) { state.detail = d.detail; state.dlv = 0; if (route() !== 'explore') return go('explore'); }
-  if ('close' in d) return detailBox.close();
+  if ('close' in d) return closeDetail();
   if ('dlv' in d) state.dlv = Number(d.dlv);
   if (d.subscribe) {
     subscribe(d.subscribe);
     repos.get(d.subscribe).topics.forEach(t => state.topics.add(t));
-    if (!state.onboarded) return go('repos');
+    // 처음 구독이면 상세를 닫고 같은 자리에서 온보딩 다이얼로그를 2단계(저장소)부터 연다
+    if (!state.onboarded) { closeDetail(); state.obStep = 'repos'; return render(); }
     state.active = d.subscribe;
   }
   if (d.topic) state.topics.has(d.topic) ? state.topics.delete(d.topic) : state.topics.add(d.topic);
@@ -408,6 +442,12 @@ document.addEventListener('click', event => {
     state.onboarded = true;
     state.filter = state.level;
     state.active = [...state.subs].find(n => repos.get(n).issues.some(i => i.lv === state.level)) || '';
+    if (inOnboard) {
+      const mailOn = !!state.mail;
+      closeOnboard();
+      render();
+      return dialog('Saving ...<br>Subscriptions, Mail', () => notify('DONE', 'SUBSCRIBED', `<p>구독을 시작했습니다.${mailOn ? ' 조건에 맞는 새 이슈를 메일로 보내 드립니다.' : ''}</p><button class="ghost" data-go="subs">내 구독</button>`));
+    }
     render();
     return dialog('Saving ...<br>Subscriptions, Mail', () => go('subs'));
   }

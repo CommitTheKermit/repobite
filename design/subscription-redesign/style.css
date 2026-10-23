@@ -243,6 +243,13 @@ html:has(dialog[open]) { overflow: hidden; }
 .overlay-cta { display: flex; gap: 8px; margin-top: 24px; flex-wrap: wrap; }
 .overlay-issues { margin-top: 48px; padding-top: 28px; border-top: 1px solid var(--rule); }
 
+/* 상세에서 여는 온보딩 다이얼로그: 전체 화면 온보딩과 같은 단계 화면을 창 안에 담는다 */
+.onboard { width: min(680px, calc(100vw - 32px)); max-width: none; max-height: calc(100vh - 48px); margin: auto; padding: 0; border: 1px solid var(--rule-strong); background: var(--bg); color: var(--text); box-shadow: 8px 8px 0 #000; overflow: auto; }
+.onboard::backdrop { background: rgb(9 9 11 / .78); }
+.onboard .flow { min-height: 0; padding: 20px 28px 28px; }
+.onboard .panel { padding-top: 8px; }
+.onboard .panel h1 { font-size: 32px; }
+
 /* 즉시 수집 토스트와 안내 */
 .toasts[popover] { inset: auto 24px 24px auto; margin: 0; padding: 0; border: 0; background: none; overflow: visible; display: grid; gap: 12px; width: 340px; color: var(--text); }
 .toasts:not(:popover-open) { display: none; }
@@ -299,6 +306,9 @@ html:has(dialog[open]) { overflow: hidden; }
   .rail .mark { margin: 0 8px 0 0; }
   .os-tag { display: none; }
   .toasts[popover] { inset: auto 12px 12px 12px; width: auto; }
+  .onboard { width: 100vw; height: 100vh; max-height: 100vh; margin: 0; border: 0; box-shadow: none; }
+  .onboard .flow { padding: 16px 16px 24px; }
+  .onboard .panel h1 { font-size: 26px; }
   .search-toggle { display: none; }
   .rail-search { display: grid; margin-left: auto; }
   .inline-search { padding-top: 12px; }
