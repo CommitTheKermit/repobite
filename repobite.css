@@ -29,7 +29,7 @@ button:disabled { cursor: not-allowed; opacity: .35; }
 
 /* 메인과 같은 3단 셸 */
 .shell { display: grid; grid-template-columns: var(--rail) minmax(0, 1fr) var(--side); min-height: 100%; }
-.rail { border-right: 1px solid var(--rule); display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 20px 0; position: relative; z-index: 2; background: var(--bg); }
+.rail { border-right: 1px solid var(--rule); display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 20px 0; position: sticky; top: 0; height: 100dvh; align-self: start; z-index: 4; background: var(--bg); }
 .rail a { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 12px; text-decoration: none; color: var(--muted); }
 .rail a[aria-current] { background: var(--raised); color: var(--text); }
 /* 로고 링크는 레일 공통 40px 상자를 풀어 60px 로고가 넘치지 않고 가운데에 오게 한다 */
@@ -305,8 +305,9 @@ html:has(dialog[open]) { overflow: hidden; }
   .masonry { columns: 2; }
 }
 @media (max-width: 767px) {
+  :root { --rail-header: 86px; }
   .shell { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 1fr; }
-  .rail { flex-direction: row; justify-content: flex-start; padding: 8px 16px; border-right: 0; border-bottom: 1px solid var(--rule); gap: 8px; }
+  .rail { height: var(--rail-header); flex-direction: row; justify-content: flex-start; padding: 8px 16px; border-right: 0; border-bottom: 1px solid var(--rule); gap: 8px; }
   .rail .mark { margin: 0 8px 0 0; }
   .os-tag { display: none; }
   .toasts[popover] { inset: auto 12px 12px 12px; width: auto; }
@@ -348,8 +349,8 @@ html:has(dialog[open]) { overflow: hidden; }
 
 .account-strip { margin-top: auto; }
 .account-strip button { padding: 8px 2px; border: 0; background: none; color: var(--muted); font-size: 11px; }
-.explore-header { display: flex; justify-content: flex-end; align-items: center; min-height: 56px; padding: 8px 0; }
-.explore-header ~ .bar { padding-top: 0; }
+.explore-header { display: flex; justify-content: flex-end; align-items: center; min-height: 56px; padding: 8px 0; position: sticky; top: var(--rail-header, 0px); z-index: 3; background: var(--bg); }
+.explore-header ~ .bar { padding-top: 0; top: calc(var(--rail-header, 0px) + 56px); }
 .card-meta small,.repo-head p,.detail-name {overflow-wrap:anywhere}
 svg {flex-shrink:0;vertical-align:middle}
 @media(max-width:767px){.account-strip{display:none}}
