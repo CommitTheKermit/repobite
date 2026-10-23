@@ -348,10 +348,11 @@ html:has(dialog[open]) { overflow: hidden; }
 
 .account-strip { margin-top: auto; }
 .account-strip button { padding: 8px 2px; border: 0; background: none; color: var(--muted); font-size: 11px; }
-.mobile-account { display: none; }
+.explore-header { display: flex; justify-content: flex-end; align-items: center; min-height: 56px; padding: 8px 0; }
+.explore-header ~ .bar { padding-top: 0; }
 .card-meta small,.repo-head p,.detail-name {overflow-wrap:anywhere}
 svg {flex-shrink:0;vertical-align:middle}
-@media(max-width:767px){.account-strip{display:none}.mobile-account{display:inline-flex}}
+@media(max-width:767px){.account-strip{display:none}}
 
 /* 수집된 저장소 검색과 별개인 GitHub 저장소 찾기 */
 /* GitHub 검색 진입점은 배경 없이 밝은 색과 굵기로 강조한다. */
