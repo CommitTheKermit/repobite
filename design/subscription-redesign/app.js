@@ -23,7 +23,7 @@ for (const issue of window.ISSUES) {
   repos.set(issue.repo, repo);
 }
 
-const state = { detail: '', dlv: 0, group: '', sort: 'recommended', search: '', onboarded: false, topics: new Set(), subs: new Set(), experience: 'new', level: 1, email: '', consent: true, mail: null, active: '', filter: 1, query: '', error: '' };
+const state = { open: new Set(), detail: '', dlv: 0, group: '', sort: 'recommended', search: '', onboarded: false, topics: new Set(), subs: new Set(), experience: 'new', level: 1, email: '', consent: true, mail: null, active: '', filter: 1, query: '', error: '' };
 const view = document.querySelector('#view'), stack = document.querySelector('#stack');
 const esc = value => String(value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const short = name => name.split('/')[1];
@@ -34,6 +34,27 @@ const repoMedia = (name, cls = '') => {
   const social = `https://opengraph.githubassets.com/1/${name}`, image = window.REPO_IMAGES[name] || social;
   return `<span class="card-media ${cls}"><img class="card-art${image === social ? ' social' : ''}" src="${esc(image)}" data-social="${esc(social)}" alt="${esc(name)} 대표 이미지" loading="lazy"><span class="card-fallback" hidden>${esc(name)}</span></span>`;
 };
+// 가로 스크롤 대신 칩을 한 줄로 접고 '+N 더보기'로 펼친다
+const moreChip = key => `<button class="chip more" data-more="${key}" aria-expanded="${state.open.has(key)}">${state.open.has(key) ? '접기' : ''}</button>`;
+function fold(box) {
+  const chips = [...box.querySelectorAll('.chip:not(.more)')], more = box.querySelector('.more');
+  chips.forEach(c => { c.hidden = false; });
+  more.hidden = false;
+  if (state.open.has(box.dataset.fold)) { more.hidden = !chips.some(c => c.offsetTop !== chips[0].offsetTop); return; }
+  more.hidden = true;
+  // 첫 줄은 칩으로 채우고 더보기 칩은 다음 줄로 내려가도 된다
+  const top = chips[0].offsetTop, overflows = () => chips.some(c => !c.hidden && c.offsetTop !== top);
+  if (!overflows()) return;
+  more.hidden = false;
+  // 선택된 칩은 남기고 뒤에서부터 숨긴다
+  for (let i = chips.length - 1, hidden = 0; i > 0 && overflows(); i--) {
+    if (chips[i].getAttribute('aria-pressed') === 'true') continue;
+    chips[i].hidden = true;
+    more.textContent = `+${++hidden} 더보기`;
+  }
+}
+// display: contents인 묶음은 offsetParent가 없으므로 첫 칩으로 화면 표시 여부를 본다
+const foldAll = () => document.querySelectorAll('[data-fold]').forEach(box => box.querySelector('.chip')?.offsetParent && fold(box));
 const issues = n => `${n} issue${n === 1 ? '' : 's'}`;
 const icon = name => `<span data-lucide="${name}"></span>`;
 const subIssues = () => [...state.subs].flatMap(name => repos.get(name).issues);
@@ -64,7 +85,7 @@ const screens = {
 </article>`;
     }).join('');
     return `<div class="explore">
-      <div class="bar"><select class="sort" id="sort" aria-label="정렬"><option value="recommended">추천순</option><option value="name" ${state.sort === 'name' ? 'selected' : ''}>레포 이름순</option></select><div class="chips">${chips}</div></div>
+      <div class="bar"><select class="sort" id="sort" aria-label="정렬"><option value="recommended">추천순</option><option value="name" ${state.sort === 'name' ? 'selected' : ''}>레포 이름순</option></select><div class="chips" data-fold="groups">${chips}${moreChip('groups')}</div></div>
       <div class="section-head"><span class="eyebrow">REPOSITORIES / ${list.length}</span><button class="ghost invert" data-go="${state.onboarded ? 'subs' : 'topics'}">${state.onboarded ? '내 구독 보기' : '레포바이트 이용하기'}</button></div>
       <div class="masonry">${cards || '<p class="empty">일치하는 저장소가 없습니다.</p>'}</div></div>`;
   },
@@ -133,7 +154,7 @@ const screens = {
     return `<div class="page">
       <header class="page-head"><span class="cross tr"></span><div><span class="eyebrow">MY SUBSCRIPTIONS</span><h1>내 구독</h1></div>
         <div style="display:grid;justify-items:end;gap:12px"><span class="pix">${state.subs.size} REPOS / LV.${state.level} / MAIL ${state.mail ? 'ON' : 'OFF'}</span><button class="ghost" data-go="topics">처음부터 다시 설정</button></div></header>
-      <nav class="mobile-subs" aria-label="구독 저장소">${[...state.subs].map(n => `<button class="chip" data-active="${esc(n)}" aria-pressed="${n === state.active}">${esc(short(n))}</button>`).join('')}</nav>
+      <nav class="mobile-subs" data-fold="subs" aria-label="구독 저장소">${[...state.subs].map(n => `<button class="chip" data-active="${esc(n)}" aria-pressed="${n === state.active}">${esc(short(n))}</button>`).join('')}${moreChip('subs')}</nav>
       <section class="repo-head">${avatar(repo.name)}<div><h2>${esc(repo.name)}</h2><p>${esc(repo.description)}</p></div><button class="ghost" data-unsub="${esc(repo.name)}">구독 해제</button></section>
       <div class="spec spec-3"><span class="cross tl"></span><span class="cross br"></span>
         <div><span class="lab">Issues</span><span class="val big">${repo.issues.length}</span></div>
@@ -223,6 +244,7 @@ function render() {
   renderStack(name);
   window.lucide.createIcons();
   window.paintDither();
+  foldAll();
 }
 
 function dialog(lines, done) {
@@ -244,6 +266,7 @@ document.addEventListener('click', event => {
   const d = b.dataset;
   if (d.go) return go(d.go);
   if ('group' in d) state.group = d.group;
+  if (d.more) state.open.has(d.more) ? state.open.delete(d.more) : state.open.add(d.more);
   if (d.detail) { state.detail = d.detail; state.dlv = 0; }
   if ('close' in d) return detailBox.close();
   if ('dlv' in d) state.dlv = Number(d.dlv);
@@ -296,7 +319,8 @@ document.addEventListener('error', event => {
   img.nextElementSibling.hidden = false;
 }, true);
 window.addEventListener('hashchange', () => { render(); window.scrollTo(0, 0); });
-window.addEventListener('resize', () => window.paintDither(document.querySelector('.desk')));
+document.fonts.ready.then(foldAll);
+window.addEventListener('resize', () => { window.paintDither(document.querySelector('.desk')); foldAll(); });
 
 render();
 dialog('Loading ...<br>Repositories, Issues', () => {});

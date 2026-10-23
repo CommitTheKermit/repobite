@@ -168,8 +168,10 @@ button:disabled { cursor: not-allowed; opacity: .35; }
 /* 탐색 메인: 메인 구조(필터 바, 3열 masonry, 오른쪽 패널) + TypeSafe 창 카드 */
 .explore { padding: 0 32px 40px; }
 .bar { display: flex; gap: 8px; padding: 56px 0 16px; position: sticky; top: 0; z-index: 2; background: linear-gradient(var(--bg) 85%, transparent); }
-.bar .chips { margin: 0; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
-.bar .chip { flex: none; }
+/* 칩을 정렬 상자 뒤로 이어 흐르게 해 첫 줄을 최대한 채운다 */
+.bar { flex-wrap: wrap; }
+.bar .chips { display: contents; }
+.chip.more { border-style: dashed; color: var(--muted); }
 .sort { height: 40px; width: 128px; flex: none; border: 1px solid var(--rule-strong); border-radius: 20px; background: var(--bg); color: var(--text); padding: 0 14px; font: inherit; font-size: 14px; }
 .section-head { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin: 16px 0 24px; }
 .masonry { columns: 3; column-gap: 28px; }
@@ -245,7 +247,7 @@ html:has(dialog[open]) { overflow: hidden; }
 .kv { display: grid; grid-template-columns: auto 1fr; gap: 10px 16px; font-size: 14px; margin: 0; }
 .kv dt { color: var(--muted); }
 .kv dd { margin: 0; text-align: right; }
-.mobile-subs { display: none; scrollbar-width: none; }
+.mobile-subs { display: none; }
 
 @media (max-width: 1199px) {
   .shell { grid-template-columns: var(--rail) minmax(0, 1fr); }
@@ -258,7 +260,7 @@ html:has(dialog[open]) { overflow: hidden; }
   .rail .mark { margin: 0 8px 0 0; }
   .os-tag { display: none; }
   .explore { padding: 0 16px 32px; }
-  .bar { padding-top: 12px; margin: 0 -16px; padding-inline: 16px; }
+  .bar { padding-top: 12px; }
   .masonry { columns: 1; }
   .flow { padding: 16px 16px 24px; min-height: calc(100vh - 57px); }
   .panel { padding-top: 12px; }
@@ -280,8 +282,8 @@ html:has(dialog[open]) { overflow: hidden; }
   .repo-head canvas { width: 48px; height: 48px; }
   .repo-head .ghost { grid-column: 1 / -1; justify-self: start; }
   .action-grid { grid-template-columns: 1fr; }
-  .mobile-subs { display: flex; gap: 8px; overflow-x: auto; margin: 16px -16px 0; padding: 0 16px; }
-  .mobile-subs .chip { flex: none; font-family: var(--mono); font-size: 13px; }
+  .mobile-subs { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+  .mobile-subs .chip { font-family: var(--mono); font-size: 13px; }
   .detail { width: 100vw; height: 100vh; margin: 0; }
   .overlay { max-height: 100vh; height: 100vh; padding: 64px 16px 32px; border: 0; }
   .overlay-top { grid-template-columns: 1fr; gap: 24px; }
