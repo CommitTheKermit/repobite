@@ -7,8 +7,8 @@ const TOPICS = [
   ['infra-cloud', '인프라', 'cloud'], ['productivity', '생산성', 'list-checks'], ['media-creative', '미디어', 'clapperboard'], ['mobile', '모바일', 'smartphone'],
 ];
 const TOPIC_NAME = Object.fromEntries(TOPICS.map(([key, name]) => [key, name]));
-const LEVELS = ['본문 충분', '추가 정보 필요', '판단 보류'];
-const LEVEL_TEXT = ['본문의 정보로 작업을 시작할 수 있습니다.', '작업 전에 추가 정보를 확인해야 합니다.', '현재 정보로는 작업 판단이 어렵습니다.'];
+// 화면 난이도 이름은 쉬움·보통·어려움만 쓴다. 판정 기준(본문 충분도)을 난이도 설명으로 노출하지 않는다.
+const LEVELS = ['쉬움', '보통', '어려움'];
 const EXPERIENCES = [['new', '오픈 소스 기여가 처음입니다', 1], ['project', '프로젝트 개발 경험이 있습니다', 2], ['experienced', '오픈 소스 기여 경험이 있습니다', 3]];
 const STEPS = [['topics', 'TOPIC'], ['repos', 'REPO'], ['level', 'LV'], ['mail', 'MAIL']];
 
@@ -63,7 +63,7 @@ const screens = {
     const all = subIssues(), matched = all.filter(i => i.lv === state.level);
     const rows = [1, 2, 3].map(n => {
       const count = all.filter(i => i.lv === n).length;
-      return `<button class="bench-row" data-level="${n}" aria-pressed="${state.level === n}" style="--at:${all.length ? (count / all.length) * 100 : 0}%"><span class="inv">Lv.${n} ${LEVELS[n - 1]}</span><span></span><span class="count">${count}</span><p>${LEVEL_TEXT[n - 1]}</p><span class="track"></span></button>`;
+      return `<button class="bench-row" data-level="${n}" aria-pressed="${state.level === n}" style="--at:${all.length ? (count / all.length) * 100 : 0}%"><span class="inv">Lv.${n} ${LEVELS[n - 1]}</span><span></span><span class="count">${count}</span><span class="track"></span></button>`;
     }).join('');
     const first = matched[0];
     const spec = first ? `<div class="spec" style="margin-top:28px;width:100%"><span class="cross tl"></span><span class="cross br"></span>
@@ -71,7 +71,7 @@ const screens = {
         <div class="right"><span class="outline">Output</span><div class="val" style="margin-top:8px">Lv.${first.lv}</div></div>
         <div class="full"><span class="lab">Repository</span><span class="val">${esc(first.repo)}</span></div>
         <div class="full"><h3>${esc(first.t)}</h3><p style="margin-top:6px">${esc(first.why)}…</p></div>
-        <div><span class="lab">Readiness</span><span class="val">${esc(first.r)}</span></div>
+        <div><span class="lab">Difficulty</span><span class="inv">${LEVELS[first.lv - 1]}</span></div>
         <div class="right"><span class="lab">Match</span><span class="val">${matched.length} / ${all.length}</span></div>
         <div class="full barcode" aria-hidden="true"></div></div>` : '<p class="empty">이 난이도의 이슈가 지금은 없습니다. 새 이슈가 판정되면 보내 드립니다.</p>';
     return flow('level', `<h1>오픈 소스 기여는<br>얼마나 해 보셨어요?</h1><p class="sub">경험에 맞춰 난이도를 추천합니다. 추천은 아래에서 직접 바꿀 수 있습니다.</p>
@@ -200,29 +200,6 @@ document.addEventListener('input', event => {
 });
 window.addEventListener('hashchange', () => { render(); window.scrollTo(0, 0); });
 window.addEventListener('resize', () => window.paintDither(document.querySelector('.desk')));
-
-// TypeSafe 위젯: 실시간 시계와 6x6 Game of Life 글라이더
-const clock = document.querySelector('#clock');
-const tick = () => {
-  const now = new Date();
-  clock.innerHTML = `${now.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' })}<br>${now.toTimeString().slice(0, 8)}`;
-};
-let cells = [1, 8, 12, 13, 14];
-const life = document.querySelector('#life');
-const step = () => {
-  life.innerHTML = Array.from({ length: 36 }, (_, i) => `<span class="${cells.includes(i) ? 'on' : ''}"></span>`).join('');
-  const alive = new Set(cells), next = [];
-  for (let i = 0; i < 36; i++) {
-    const x = i % 6, y = Math.floor(i / 6);
-    let n = 0;
-    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if ((dx || dy) && alive.has(((y + dy + 6) % 6) * 6 + ((x + dx + 6) % 6))) n++;
-    if (n === 3 || (n === 2 && alive.has(i))) next.push(i);
-  }
-  cells = next;
-};
-tick(); step();
-setInterval(tick, 1000);
-setInterval(step, 600);
 
 render();
 dialog('Loading ...<br>Repositories, Issues', () => {});

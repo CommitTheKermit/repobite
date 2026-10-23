@@ -164,14 +164,6 @@ button:disabled { cursor: not-allowed; opacity: .35; }
 .progress { margin-top: 14px; height: 32px; border: 1px solid var(--muted); position: relative; }
 .progress span { position: absolute; inset: 0 auto 0 0; background: var(--active); color: var(--ink); font: 22px/30px var(--pixel); padding-left: 8px; min-width: 48px; transition: width .1s linear; }
 
-/* TypeSafe 위젯 */
-.widgets { margin-top: auto; display: grid; grid-template-columns: 1fr auto; gap: 16px; align-items: end; }
-.clock .win-body { font: 22px/1.2 var(--pixel); color: var(--text); }
-.life { display: grid; grid-template-columns: repeat(6, 14px); gap: 2px; padding: 10px; }
-.life span { width: 14px; height: 14px; border: 1px solid var(--rule-strong); border-radius: 50%; }
-.life span.on { background: var(--active); border-color: var(--active); }
-.life-cap { font: 18px/1 var(--pixel); color: var(--muted); padding: 0 10px 8px; }
-
 /* 내 구독 */
 .page { padding: 56px 40px 40px; max-width: 1040px; }
 .page-head { position: relative; display: flex; justify-content: space-between; align-items: end; gap: 16px; padding-bottom: 28px; border-bottom: 1px solid var(--rule); }
