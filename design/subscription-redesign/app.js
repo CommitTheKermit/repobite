@@ -15,13 +15,18 @@ const GROUPS = [['AI', 'ai-ml agents-automation'], ['프레임워크', 'web-fram
   ['앱', 'desktop-app mobile productivity'], ['미디어', 'media-creative games-graphics']];
 const STEPS = [['topics', 'TOPIC'], ['repos', 'REPO'], ['level', 'LV'], ['mail', 'MAIL']];
 
-// 사용자들이 담은 공용 레포 샘플. 처음에는 수집 전이라 이슈가 보이지 않고, 정기 수집을 기다리거나 구독하면 바로 수집한다.
-const COMMUNITY = new Set(['glanceapp/glance', 'henrygd/beszel', 'asciimoo/hister']);
+// 저장소는 구독하는 순간 바로 수집한다("담기"나 정기 수집 대기 개념은 없다).
+// OTHERS: 다른 사용자가 이미 구독해 수집된 저장소 샘플. GITHUB: RepoBite에 아직 없어 검색으로만 찾는 GitHub 저장소 샘플.
+const OTHERS = new Set(['glanceapp/glance', 'henrygd/beszel', 'asciimoo/hister']);
+const GITHUB = new Set(['bookorbit/bookorbit', 'neurosnap/zmx']);
 const repos = new Map();
 for (const issue of window.ISSUES) {
   const repo = repos.get(issue.repo) || {
-    name: issue.repo, description: issue.d, topics: new Set(), all: [], community: COMMUNITY.has(issue.repo),
-    get collected() { return !this.community || state.collected.has(this.name); },
+    name: issue.repo, description: issue.d, topics: new Set(), all: [], external: GITHUB.has(issue.repo),
+    get collected() { return !this.external || state.collected.has(this.name); },
+    // RepoBite 목록에 보이는지: 수집됐거나 지금 수집 중인 저장소
+    get listed() { return this.collected || state.collecting.has(this.name); },
+    get subscribed() { return OTHERS.has(this.name) || state.subs.has(this.name); },
     // 화면에서 쓰는 이슈는 모두 이 getter를 거친다. 수집 전 저장소는 빈 목록이다.
     get issues() { return this.collected ? this.all : []; },
   };
@@ -81,50 +86,57 @@ function flow(step, body, foot) {
 }
 
 // 검색 결과 부분만 다시 그리는 조각들. 타이핑 중에 입력칸을 바꿔 끼우면 한글 조합이 끊기므로 입력칸은 건드리지 않는다.
+const listedRepos = () => [...repos.values()].filter(r => r.listed);
+const matches = (r, query) => (r.name + r.description).toLowerCase().includes(query.toLowerCase());
+// RepoBite에 없는 GitHub 저장소는 두 글자 이상 검색했을 때만 결과로 보여 준다
+const githubMatches = query => query.trim().length < 2 ? [] : [...repos.values()].filter(r => !r.listed && matches(r, query.trim()));
 function exploreList() {
-  const query = state.search.toLowerCase(), groupTopics = state.group.split(' ');
-  const list = [...repos.values()].filter(r => (!state.group || [...r.topics].some(t => groupTopics.includes(t))) && (r.name + r.description).toLowerCase().includes(query));
+  const groupTopics = state.group.split(' ');
+  const list = listedRepos().filter(r => (!state.group || [...r.topics].some(t => groupTopics.includes(t))) && matches(r, state.search));
   return state.sort === 'name' ? list.sort((a, b) => a.name.localeCompare(b.name)) : list;
 }
-// 수집 전 공용 레포는 이슈 대신 수집 상태를 보여 준다
+// 수집 전 저장소(아직 RepoBite에 없음)는 이슈 대신 수집 상태를 보여 준다
 const collectStatus = r => state.collecting.has(r.name)
   ? `<span class="tag">수집 중</span><span class="collect-bar"><span style="width:${state.collecting.get(r.name)}%"></span></span>`
-  : '<span class="tag">정기 수집 대기</span>';
+  : '<span class="tag">구독하면 바로 수집</span>';
 const exploreCards = list => list.map(r => `<article class="card win"><button class="card-hit" data-detail="${esc(r.name)}" aria-haspopup="dialog">
-        <span class="win-bar"><span>${esc(short(r.name))}</span><span>${r.collected ? issues(r.issues.length) : state.collecting.has(r.name) ? 'collecting' : 'queued'}</span></span>${repoMedia(r.name)}
+        <span class="win-bar"><span>${esc(short(r.name))}</span><span>${r.collected ? issues(r.issues.length) : state.collecting.has(r.name) ? 'collecting' : 'github'}</span></span>${repoMedia(r.name)}
         <span class="card-body"><span class="card-meta">${owner(r.name)}<span><b>${esc(r.name)}</b><small>${esc(r.description)}</small></span></span><span class="tags">${r.collected ? levelTags(r.issues) : collectStatus(r)}</span></span></button>
 </article>`).join('') || '<p class="empty">일치하는 저장소가 없습니다.</p>';
 // 구독된 레포와 POPULAR를 나눈 피드. 검색과 수집 상태 변경 때 이 부분만 다시 그린다.
 function updateFeeds() {
-  const list = exploreList(), community = list.filter(r => r.community), base = list.filter(r => !r.community);
-  const section = document.querySelector('#community-section');
+  const list = exploreList(), subscribed = list.filter(r => r.subscribed), popular = list.filter(r => !r.subscribed), github = githubMatches(state.search);
+  const section = document.querySelector('#subscribed-section');
   if (!section) return;
-  section.hidden = !community.length;
-  document.querySelector('#community-feed').innerHTML = exploreCards(community);
-  document.querySelector('#community-count').textContent = community.length;
-  document.querySelector('#base-feed').innerHTML = exploreCards(base);
-  document.querySelector('#base-count').textContent = base.length;
+  section.hidden = !subscribed.length;
+  document.querySelector('#subscribed-feed').innerHTML = exploreCards(subscribed);
+  document.querySelector('#subscribed-count').textContent = subscribed.length;
+  document.querySelector('#popular-feed').innerHTML = exploreCards(popular);
+  document.querySelector('#popular-count').textContent = popular.length;
+  document.querySelector('#github-section').hidden = !github.length;
+  document.querySelector('#github-feed').innerHTML = exploreCards(github);
 }
 function repoRows() {
-  const query = state.query.toLowerCase();
-  const list = [...repos.values()].filter(r => (state.subs.has(r.name) || [...r.topics].some(t => state.topics.has(t))) && r.name.toLowerCase().includes(query));
-  return list.map(r => `<button class="repo" data-repo="${esc(r.name)}" aria-pressed="${state.subs.has(r.name)}">${repoMedia(r.name, 'thumb')}<span><b>${esc(r.name)}</b><small>${esc(r.description)}</small>${r.collected ? '' : `<small class="collect-hint">${state.collecting.has(r.name) ? '수집 중' : '구독하면 바로 수집'}</small>`}</span><span class="pix">${r.collected ? issues(r.issues.length) : 'new'}</span><span class="check">${icon('check')}</span></button>`).join('') || '<p class="empty">일치하는 저장소가 없습니다.</p>';
+  const list = listedRepos().filter(r => (state.subs.has(r.name) || [...r.topics].some(t => state.topics.has(t))) && matches(r, state.query))
+    .concat(githubMatches(state.query));
+  return list.map(r => `<button class="repo" data-repo="${esc(r.name)}" aria-pressed="${state.subs.has(r.name)}">${repoMedia(r.name, 'thumb')}<span><b>${esc(r.name)}</b><small>${esc(r.description)}</small>${r.collected ? '' : `<small class="collect-hint">${state.collecting.has(r.name) ? '수집 중' : 'RepoBite에 아직 없음 · 구독하면 바로 수집'}</small>`}</span><span class="pix">${r.collected ? issues(r.issues.length) : 'new'}</span><span class="check">${icon('check')}</span></button>`).join('') || '<p class="empty">일치하는 저장소가 없습니다.</p>';
 }
 
 const screens = {
   explore() {
-    const chips = [['전체', '']].concat(GROUPS).map(([label, value]) => `<button class="chip" data-group="${value}" aria-pressed="${state.group === value}">${label}${value ? '' : ` <span class="pix">${repos.size}</span>`}</button>`).join('');
+    const chips = [['전체', '']].concat(GROUPS).map(([label, value]) => `<button class="chip" data-group="${value}" aria-pressed="${state.group === value}">${label}${value ? '' : ` <span class="pix">${listedRepos().length}</span>`}</button>`).join('');
     // 오른쪽 패널이 숨는 좁은 화면에서는 돋보기 버튼으로 필터 바 위에 검색칸을 펼친다
     const inline = state.searchOpen ? `<div class="inline-search"><label class="search-box">${icon('search')}<input class="search" id="explore-search-m" type="search" placeholder="저장소 이름이나 설명으로 검색" aria-label="저장소 검색" value="${esc(state.search)}"></label><button class="ghost" data-search-close>닫기</button></div>` : '';
     return `<div class="explore"><button class="search-toggle" data-search-open aria-label="저장소 검색" aria-expanded="${state.searchOpen}">${icon('search')}</button>${inline}
       <div class="bar"><select class="sort" id="sort" aria-label="정렬"><option value="recommended">추천순</option><option value="name" ${state.sort === 'name' ? 'selected' : ''}>레포 이름순</option></select><div class="chips" data-fold="groups">${chips}${moreChip('groups')}</div></div>
-      <div class="section-head"><span class="eyebrow">REPOSITORIES / ${repos.size}</span><button class="ghost invert" data-go="${state.onboarded ? 'subs' : 'topics'}">${state.onboarded ? '내 구독 보기' : '레포바이트 이용하기'}</button></div>
-      <section class="feed-section" id="community-section"><div class="feed-title"><h2>구독된 레포 <span class="pix" id="community-count"></span></h2><p>다음 정기 수집 때 이슈를 가져옵니다. 구독하면 기다리지 않고 바로 수집합니다.</p></div><div class="masonry" id="community-feed"></div></section>
-      <section class="feed-section"><div class="feed-title"><h2>POPULAR <span class="pix" id="base-count"></span></h2></div><div class="masonry" id="base-feed"></div></section></div>`;
+      <div class="section-head"><span class="eyebrow">REPOSITORIES / ${listedRepos().length}</span><button class="ghost invert" data-go="${state.onboarded ? 'subs' : 'topics'}">${state.onboarded ? '내 구독 보기' : '레포바이트 이용하기'}</button></div>
+      <section class="feed-section" id="github-section" hidden><div class="feed-title"><h2>GitHub에서 찾은 저장소</h2><p>RepoBite에 아직 없는 저장소입니다. 구독하면 바로 이슈를 수집합니다.</p></div><div class="masonry" id="github-feed"></div></section>
+      <section class="feed-section" id="subscribed-section"><div class="feed-title"><h2>구독된 레포 <span class="pix" id="subscribed-count"></span></h2><p>사용자들이 구독한 저장소입니다. 구독하는 순간 바로 수집합니다.</p></div><div class="masonry" id="subscribed-feed"></div></section>
+      <section class="feed-section"><div class="feed-title"><h2>POPULAR <span class="pix" id="popular-count"></span></h2></div><div class="masonry" id="popular-feed"></div></section></div>`;
   },
   topics() {
     const tiles = TOPICS.map(([key, name, glyph]) => {
-      const count = [...repos.values()].filter(r => r.topics.has(key)).length;
+      const count = listedRepos().filter(r => r.topics.has(key)).length;
       return `<button class="topic" data-topic="${key}" aria-pressed="${state.topics.has(key)}"><i>${icon(glyph)}</i>${name}<small>${count}</small></button>`;
     }).join('');
     return flow('topics', `<canvas class="art" data-dither="orb" width="84" height="60" aria-hidden="true"></canvas>
@@ -204,11 +216,11 @@ function renderSide() {
 
 // 저장소 상세 다이얼로그: TypeSafe 스펙 시트 오버레이 (2026-10-23 A·B·C 시안 중 C로 확정)
 const detailBox = document.querySelector('#detail');
-// 수집 전 공용 레포 안내. 구독하면 정기 수집을 기다리지 않고 바로 수집한다.
-const collectNotice = repo => `<section class="win dots collect-notice"><div class="win-bar"><span>COLLECT</span><span>${state.collecting.has(repo.name) ? `${Math.round(state.collecting.get(repo.name))}%` : 'queued'}</span></div><div class="win-body">
+// 수집 전 저장소 안내. 구독하는 순간 바로 수집한다.
+const collectNotice = repo => `<section class="win dots collect-notice"><div class="win-bar"><span>COLLECT</span><span>${state.collecting.has(repo.name) ? `${Math.round(state.collecting.get(repo.name))}%` : 'github'}</span></div><div class="win-body">
   ${state.collecting.has(repo.name)
     ? '<p>지금 이 저장소의 이슈를 수집하고 있습니다. 끝나면 알림으로 알려 드립니다.</p>'
-    : '<p>아직 이슈를 수집하지 않은 저장소입니다. 다음 정기 수집 때 가져오며, <b>구독하면 기다리지 않고 바로 수집</b>합니다.</p>'}</div></section>`;
+    : '<p>RepoBite에 아직 없는 GitHub 저장소입니다. <b>구독하면 바로 이슈를 수집</b>하고, 수집이 끝나면 구독된 레포에 나타납니다.</p>'}</div></section>`;
 
 function subscribe(name) {
   state.subs.add(name);
