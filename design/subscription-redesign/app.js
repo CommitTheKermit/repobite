@@ -354,7 +354,7 @@ function render() {
   document.querySelectorAll('[data-nav]').forEach(a => {
     const current = a.dataset.nav === (name === 'explore' ? 'explore' : 'subs');
     a.toggleAttribute('aria-current', current);
-    a.querySelector('canvas').dataset.color = current ? '--text' : '--dim';
+    a.querySelector('canvas').dataset.color = current ? '--text' : '--muted';
   });
   if ((name === 'level' || name === 'mail') && !state.subs.size) return go(state.topics.size ? 'repos' : 'topics');
   if (name !== 'explore') state.detail = '';

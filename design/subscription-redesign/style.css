@@ -31,9 +31,10 @@ button:disabled { cursor: not-allowed; opacity: .35; }
 .rail a { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 12px; text-decoration: none; color: var(--muted); }
 .rail a[aria-current] { background: var(--raised); color: var(--text); }
 .rail .mark { margin-bottom: 8px; }
-.mark canvas { width: 40px; height: 40px; image-rendering: pixelated; }
-.rail .nav-item { width: 64px; height: auto; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 0 5px; border-radius: 12px; color: var(--dim); font: 16px/1 var(--pixel); }
-.rail .nav-item canvas { width: 52px; height: 52px; image-rendering: pixelated; }
+/* 서비스 로고는 크게(20칸·60px, 한 칸 3px), 메뉴 아이콘은 작게(20칸·40px, 한 칸 2px). 정수배로만 키워 흐리지 않게 한다 */
+.mark canvas { width: 60px; height: 60px; image-rendering: pixelated; }
+.rail .nav-item canvas { width: 40px; height: 40px; image-rendering: pixelated; }
+.rail .nav-item { width: 64px; height: auto; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 0 5px; border-radius: 12px; color: var(--muted); font: 16px/1 var(--pixel); }
 .rail .nav-item[aria-current] { background: var(--raised); color: var(--text); }
 .side { border-left: 1px solid var(--rule); padding: 24px; display: flex; flex-direction: column; gap: 24px; background: var(--bg); position: sticky; top: 0; height: 100vh; overflow: auto; z-index: 1; }
 
