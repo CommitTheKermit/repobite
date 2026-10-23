@@ -30,7 +30,8 @@ button:disabled { cursor: not-allowed; opacity: .35; }
 .rail { border-right: 1px solid var(--rule); display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 20px 0; position: relative; z-index: 2; background: var(--bg); }
 .rail a { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 12px; text-decoration: none; color: var(--muted); }
 .rail a[aria-current] { background: var(--raised); color: var(--text); }
-.rail .mark { margin-bottom: 8px; }
+/* 로고 링크는 레일 공통 40px 상자를 풀어 60px 로고가 넘치지 않고 가운데에 오게 한다 */
+.rail .mark { width: auto; height: auto; margin-bottom: 8px; }
 /* 서비스 로고는 크게(20칸·60px, 한 칸 3px), 메뉴 아이콘은 작게(20칸·40px, 한 칸 2px). 정수배로만 키워 흐리지 않게 한다 */
 .mark canvas { width: 60px; height: 60px; image-rendering: pixelated; }
 .rail .nav-item canvas { width: 40px; height: 40px; image-rendering: pixelated; }
