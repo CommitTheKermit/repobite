@@ -354,14 +354,14 @@ svg {flex-shrink:0;vertical-align:middle}
 @media(max-width:700px){.account-strip{padding:12px 16px 0}.account-strip span{flex:1;min-width:0}}
 
 /* 수집된 저장소 검색과 별개인 GitHub 저장소 찾기 */
-/* GitHub 검색 진입점은 사용자가 요청한 라임색으로 강조한다. */
+/* GitHub 검색 진입점은 배경 없이 밝은 색과 굵기로 강조한다. */
 .repository-heading { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 20px; min-width: 0; }
 .repository-heading .eyebrow { white-space: nowrap; }
-.repository-search-cta { min-height: 52px; padding: 13px 20px; border: 1px solid #c9f36b; border-radius: 10px; background: #c9f36b; color: #141b08; font-size: 16px; font-weight: 750; line-height: 1.5; box-shadow: 4px 4px 0 #000; }
-.repository-search-cta:hover { background: #daf99b; border-color: #daf99b; }
-.rail .rail-search { display: flex; flex-direction: column; gap: 5px; align-items: center; justify-content: center; width: 56px; height: 64px; border-radius: 12px; border-color: #c9f36b; background: #c9f36b; color: #141b08; font: 16px/1 var(--pixel); }
+.repository-search-cta { min-height: 52px; padding: 13px 0; border: 0; border-radius: 0; background: transparent; color: var(--text); font-size: 16px; font-weight: 750; line-height: 1.5; box-shadow: none; }
+.repository-search-cta:hover { text-decoration: underline; text-underline-offset: 5px; }
+.rail .rail-search { display: flex; flex-direction: column; gap: 5px; align-items: center; justify-content: center; width: 56px; height: 64px; border-radius: 12px; border: 0; background: transparent; color: var(--text); box-shadow: none; font: 700 16px/1 var(--pixel); }
 .rail .rail-search svg { width: 27px; height: 27px; }
-.rail .rail-search:hover { background: #daf99b; }
+.rail .rail-search:hover span:last-child { text-decoration: underline; text-underline-offset: 3px; }
 @media (max-width: 767px) {
   .section-head { flex-wrap: wrap; gap: 18px; }
   .repository-heading { width: 100%; gap: 12px; }
