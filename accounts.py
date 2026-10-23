@@ -51,6 +51,26 @@ def subscriptions_key(user_id):
     return "repobite:accounts:subscriptions:" + user_id
 
 
+def collection_acknowledgements_key(user_id):
+    subscriptions_key(user_id)  # 같은 계정 식별자 검증을 적용한다.
+    return "repobite:accounts:collection-seen:" + user_id
+
+
+def collection_acknowledgements(user_id, repos):
+    names = [community.normalize_repo(repo).lower() for repo in repos]
+    if not names:
+        return {}
+    values = community.redis("HMGET", collection_acknowledgements_key(user_id), *names)
+    return dict(zip(names, values))
+
+
+def acknowledge_collection(user_id, repo, completion_id):
+    name = community.normalize_repo(repo).lower()
+    if not isinstance(completion_id, str) or not re.fullmatch(r"[a-f0-9]{64}", completion_id):
+        raise ValueError("수집 완료 알림을 다시 확인하세요.")
+    community.redis("HSET", collection_acknowledgements_key(user_id), name, completion_id)
+
+
 def oauth_credentials():
     client_id = os.environ.get("GITHUB_OAUTH_CLIENT_ID", "")
     client_secret = os.environ.get("GITHUB_OAUTH_CLIENT_SECRET", "")

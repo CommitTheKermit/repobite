@@ -35,6 +35,16 @@ class CollectionTest(unittest.TestCase):
             self.assertEqual(rows[1]['stage'], 'idle')
             self.assertEqual(redis.call_args_list[0].args, ('HMGET', collection.JOBS_KEY, 'a/b', 'c/d'))
 
+    def test_regular_snapshot_refresh_does_not_create_a_new_completion_notification(self):
+        job = {"repo": "owner/repo", "stage": "done", "attempt": 0, "updated_at": "first-batch"}
+        identity = collection.completion_id(job)
+        job["updated_at"] = "next-batch"
+        self.assertEqual(collection.completion_id(job), identity)
+        job["attempt"] = 1
+        self.assertNotEqual(collection.completion_id(job), identity)
+        job["stage"] = "grading"
+        self.assertIsNone(collection.completion_id(job))
+
     def attempt_scenario(self, failures):
         job = {'repo': 'owner/repo', 'stage': 'queued', 'attempt': 0, 'updated_at': 'now'}
         saved = []

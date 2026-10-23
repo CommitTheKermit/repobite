@@ -255,7 +255,7 @@ html:has(dialog[open]) { overflow: hidden; }
 .onboard .panel h1 { font-size: 32px; }
 
 /* 즉시 수집 토스트와 안내 */
-.toasts[popover] { inset: auto 24px 24px auto; margin: 0; padding: 0; border: 0; background: none; overflow: visible; display: grid; gap: 12px; width: 340px; color: var(--text); }
+.toasts[popover] { inset: auto 24px 24px auto; margin: 0; padding: 0; border: 0; background: none; max-height: calc(100dvh - 48px); overflow: auto; display: grid; gap: 12px; width: 340px; color: var(--text); }
 .toasts:not(:popover-open) { display: none; }
 .toast .win-body { font-size: 14px; }
 .toast p { margin: 0; }

@@ -40,6 +40,8 @@ class MemoryRedis:
             created = field not in record
             record[field] = value
             return int(created)
+        if command == "HMGET":
+            return [self.hashes.get(args[0], {}).get(field) for field in args[1:]]
         if command == "HGET":
             return self.hashes.get(args[0], {}).get(args[1])
         if command == "HKEYS":
@@ -292,6 +294,41 @@ class AccountsHTTPTest(AccountsFixture, unittest.TestCase):
         self.assertEqual(self.request("logout", "POST", secret=current)[0], 200)
         self.assertFalse(accounts.session_snapshot(current)["authenticated"])
         self.assertTrue(accounts.session_snapshot(first)["authenticated"])
+
+    def test_collection_acknowledgement_is_durable_user_scoped_and_completion_specific(self):
+        first, second = self.login(10, "first"), self.login(20, "second")
+        for user_id in ("10", "20"):
+            self.db.hashes[accounts.subscriptions_key(user_id)] = {"owner/repo": "owner/repo"}
+        job = {"repo": "owner/repo", "stage": "done", "attempt": 1, "updated_at": "completed-once"}
+        self.db.hashes[collection.JOBS_KEY] = {"owner/repo": json.dumps(job)}
+        row = self.request("collection", secret=first)[1]["jobs"][0]
+        self.assertFalse(row["acknowledged"])
+        payload = {"repo": "Owner/Repo", "completion_id": row["completion_id"], "expected_user_id": "10"}
+        self.assertEqual(self.request("collection_seen", "POST", payload)[0], 401)
+        self.assertEqual(self.request("collection_seen", "POST", payload, first, origin="https://other.example")[0], 403)
+        self.assertEqual(self.request("collection_seen", "POST", {**payload, "expected_user_id": "20"}, first)[0], 409)
+        self.assertEqual(self.request("collection_seen", "POST", {**payload, "repo": "other/repo"}, first)[0], 400)
+        self.assertEqual(self.request("collection_seen", "POST", {**payload, "completion_id": "f" * 64}, first)[0], 400)
+        with patch.object(accounts, "acknowledge_collection", side_effect=OSError):
+            self.assertEqual(self.request("collection_seen", "POST", payload, first)[0], 503)
+        self.assertFalse(self.request("collection", secret=first)[1]["jobs"][0]["acknowledged"])
+        for _ in range(2):
+            status, saved, _ = self.request("collection_seen", "POST", payload, first)
+            self.assertEqual(status, 200)
+            self.assertTrue(saved["acknowledged"])
+        self.assertTrue(self.request("collection", secret=first)[1]["jobs"][0]["acknowledged"])
+        self.assertFalse(self.request("collection", secret=second)[1]["jobs"][0]["acknowledged"])
+        new_session = self.login(10, "first")
+        self.assertTrue(self.request("collection", secret=new_session)[1]["jobs"][0]["acknowledged"])
+        job["updated_at"] = "new-completion"
+        self.db.hashes[collection.JOBS_KEY]["owner/repo"] = json.dumps(job)
+        current = self.request("collection", secret=new_session)[1]["jobs"][0]
+        self.assertNotEqual(current["completion_id"], payload["completion_id"])
+        self.assertFalse(current["acknowledged"])
+        self.assertEqual(self.request("collection_seen", "POST", payload, new_session)[0], 400)
+        job["stage"] = "grading"
+        self.db.hashes[collection.JOBS_KEY]["owner/repo"] = json.dumps(job)
+        self.assertEqual(self.request("collection_seen", "POST", {**payload, "completion_id": current["completion_id"]}, new_session)[0], 400)
 
     def test_cookie_settings_callback_failure_and_safe_service_errors(self):
         status, _, headers = self.request("start")

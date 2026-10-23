@@ -16,8 +16,9 @@ const {chromium} = require(process.env.REPOBITE_PLAYWRIGHT || 'playwright');
       const action = new URL(r.request().url()).searchParams.get('action');
       if (action === 'session') return r.fulfill({json:session});
       // 진행 토스트 없이 첫 조회부터 완료된 작업도 피드를 갱신하고 안내해야 한다.
-      if (action === 'collection') return r.fulfill({json:{user_id:'10',jobs:[{repo:'second/repo',stage:'done',attempt:1}]}});
+      if (action === 'collection') return r.fulfill({json:{user_id:'10',jobs:[{repo:'second/repo',stage:'done',attempt:1,completion_id:'a'.repeat(64),acknowledged:false}]}});
       const body = r.request().postDataJSON();
+      if (action === 'collection_seen') return r.fulfill({json:{repo:body.repo,completion_id:body.completion_id,acknowledged:true}});
       if (action === 'personalization') Object.assign(session.preferences,{difficulty:body.difficulty,experience:body.experience,topics:body.topics});
       if (action === 'onboarding') Object.assign(session.preferences,{email:body.email,delivery_enabled:body.delivery_enabled,onboarding_completed:true});
       return r.fulfill({json:{}});

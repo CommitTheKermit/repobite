@@ -250,32 +250,48 @@ const repositorySearch = mountRepositorySearchDialog(document.querySelector('#re
 });
 
 const toasts = document.querySelector('#toasts');
-function showToasts() {
-  if (toasts.matches(':popover-open')) toasts.hidePopover();
-  if (toasts.children.length) toasts.showPopover();
+function showToasts({bringToFront = false} = {}) {
+  if (!toasts.children.length) { if (toasts.matches(':popover-open')) toasts.hidePopover(); return; }
+  if (bringToFront && toasts.matches(':popover-open')) toasts.hidePopover();
+  if (!toasts.matches(':popover-open')) toasts.showPopover();
 }
 const stageName = stage => ({queued: '수집 준비 중', fetching: '이슈를 가져오는 중', grading: '난이도를 판정하는 중', retrying: '수집을 계속 시도하는 중', done: '수집 완료', failed: '3회 시도 후 수집 실패'})[stage] || '수집 확인 중';
 const progressToasts = new Map();
 const terminalStages = new Map();
+const completionToasts = new Map();
+const acknowledgedCompletions = new Map();
+let collectionStatusPending = false;
+function removeCompletionToast(name, identity) {
+  if (identity && completionToasts.get(name)?.identity !== identity) return;
+  completionToasts.get(name)?.toast.remove();
+  completionToasts.delete(name);
+}
 async function collectionStatus() {
-  if (!client.session?.authenticated) return;
+  if (!client.session?.authenticated || collectionStatusPending) return;
+  const revision = accountRevision;
+  collectionStatusPending = true;
   try {
     const {jobs, user_id} = await client.request('collection');
-    if (user_id !== client.session?.user?.id) return;
+    if (revision !== accountRevision || user_id !== client.session?.user?.id) return;
+    const currentNames = new Set(jobs.map(job => job.repo.toLowerCase()));
+    for (const name of completionToasts.keys()) if (!currentNames.has(name)) removeCompletionToast(name);
     const completed = [];
     for (const job of jobs) {
-      const name = job.repo.toLowerCase();
+      const name = job.repo.toLowerCase(), identity = job.completion_id || name;
       if (['idle', 'done', 'failed'].includes(job.stage)) {
         if (job.stage === 'failed' && terminalStages.get(name) !== 'failed') notify('COLLECT', short(name), `<p>${esc(name)} ${esc(stageName(job.stage))}</p>`);
-        if (job.stage === 'done' && terminalStages.get(name) !== 'done') completed.push(name);
-        if (job.stage !== 'done') terminalStages.set(name, job.stage);
+        if (job.stage === 'done') {
+          if (job.acknowledged || acknowledgedCompletions.get(name) === identity) {
+            removeCompletionToast(name);
+            terminalStages.set(name, 'done:' + identity);
+          } else if (terminalStages.get(name) !== 'done:' + identity) completed.push(job);
+        } else { removeCompletionToast(name); terminalStages.set(name, job.stage); }
         const previous = progressToasts.get(name);
-        if (previous) {
-          previous.remove(); progressToasts.delete(name);
-        }
+        if (previous) { previous.remove(); progressToasts.delete(name); }
         state.collecting.delete(name);
         continue;
       }
+      removeCompletionToast(name);
       terminalStages.delete(name);
       state.collecting.set(name, job.stage);
       let toast = progressToasts.get(name);
@@ -285,14 +301,42 @@ async function collectionStatus() {
     showToasts();
     if (completed.length) {
       await loadFeed();
-      if (user_id !== client.session?.user?.id) return;
-      for (const name of completed) {
-        terminalStages.set(name, 'done');
-        notify('DONE', short(name), `<p><b>${esc(name)}</b> 수집 완료 · ${issues(repos.get(name)?.issues.length || 0)}</p><button class="ghost" data-detail="${esc(name)}">보기</button>`);
+      if (revision !== accountRevision || user_id !== client.session?.user?.id) return;
+      for (const job of completed) {
+        const name = job.repo.toLowerCase(), identity = job.completion_id || name;
+        if (acknowledgedCompletions.get(name) === identity) continue;
+        removeCompletionToast(name);
+        terminalStages.set(name, 'done:' + identity);
+        const toast = notify('DONE', short(name), `<p><b>${esc(name)}</b> 수집 완료 · ${issues(repos.get(name)?.issues.length || 0)}</p><button class="ghost" data-detail="${esc(name)}" data-collection-view="${esc(identity)}">보기</button>`, {persistent: true});
+        completionToasts.set(name, {identity, toast});
       }
     }
     refresh();
   } catch { /* 네트워크 조회 실패를 수집 실패로 표시하지 않는다. 다음 조회에서 확인한다. */ }
+  finally { collectionStatusPending = false; }
+}
+async function viewCollectedRepository(button) {
+  if (!requireLogin()) return;
+  const name = button.dataset.detail, identity = button.dataset.collectionView;
+  const revision = accountRevision, userId = client.session.user.id;
+  button.disabled = true; button.textContent = '확인 중';
+  try {
+    const saved = await client.request('collection_seen', 'POST', {repo: name, completion_id: identity, expected_user_id: userId});
+    if (revision !== accountRevision || client.session?.user?.id !== userId) return;
+    if (!saved.acknowledged || saved.repo !== name || saved.completion_id !== identity) throw Error('알림 확인을 저장하지 못했습니다. 다시 눌러 주세요.');
+    acknowledgedCompletions.set(name, identity);
+    removeCompletionToast(name, identity); showToasts();
+    state.detail = name; state.dlv = 0;
+    if (route() !== 'explore') go('explore');
+    else render();
+  } catch (error) {
+    if (revision !== accountRevision) return;
+    if (error.status === 401 || error.status === 409) {
+      rememberDraft(name); client.invalidate(); accountRevision++; clearPrivate();
+      location.href = '/api/account?action=start'; return;
+    }
+    notify('ACCOUNT', 'NOTICE', `<p>${esc(error.message || '알림 확인을 저장하지 못했습니다. 다시 눌러 주세요.')}</p>`);
+  } finally { if (button.isConnected) { button.disabled = false; button.textContent = '보기'; } }
 }
 // 수집 상태가 바뀌면 다시 그린다. 입력 중이면 입력칸을 건드리지 않도록 목록만 갱신한다.
 function refresh() {
@@ -395,7 +439,7 @@ function renderOnboard() {
   onboardBox.innerHTML = screens[state.obStep]();
   flowSteps = STEPS;
   // 새로 연 다이얼로그가 수집 토스트를 덮지 않도록 토스트를 다시 위로 올린다
-  if (!onboardBox.open) { onboardBox.showModal(); showToasts(); }
+  if (!onboardBox.open) { onboardBox.showModal(); showToasts({bringToFront: true}); }
   window.lucide.createIcons();
   window.paintDither(onboardBox);
 }
@@ -404,14 +448,14 @@ const closeOnboard = () => { state.obStep = ''; onboardBox.close(); };
 const closeDetail = () => { state.detail = ''; detailBox.close(); };
 onboardBox.addEventListener('close', () => { state.obStep = ''; });
 onboardBox.addEventListener('click', event => { if (event.target === onboardBox) closeOnboard(); });
-// 알림 토스트: 완료나 저장 결과를 잠시 보여 준다
-function notify(bar, label, html) {
+// 수집 완료는 확인할 때까지 유지하고, 그 밖의 안내는 잠시 보여 준다.
+function notify(bar, label, html, {persistent = false} = {}) {
   const toast = document.createElement('section');
   toast.className = 'win toast';
   toast.innerHTML = `<div class="win-bar"><span>${bar}</span><span>${esc(label)}</span></div><div class="win-body toast-done">${html}</div>`;
   toasts.append(toast);
-  showToasts();
-  setTimeout(() => { toast.remove(); showToasts(); }, 5000);
+  showToasts({bringToFront: true});
+  if (!persistent) setTimeout(() => { toast.remove(); showToasts(); }, 5000);
   return toast;
 }
 
@@ -422,6 +466,7 @@ document.addEventListener('click', async event => {
   if ('login' in d) return login();
   if ('logout' in d) return logout();
   if (busy || completingOnboarding) return;
+  if ('collectionView' in d) return viewCollectedRepository(b);
   if (d.go && inOnboard) {
     if (!DIALOG_STEPS.some(([key]) => key === d.go)) return closeOnboard();
     state.obStep = d.go;
@@ -545,7 +590,8 @@ function renderAccount() {
 function clearPrivate() {
   state.subs.clear(); state.selection = null; state.topics.clear(); state.email = ''; state.mail = null; state.consent = false; state.onboarded = false;
   state.obStep = ''; state.active = ''; state.level = 1; state.experience = 'new';
-  progressToasts.forEach(t => t.remove()); progressToasts.clear(); terminalStages.clear(); state.collecting.clear(); showToasts();
+  progressToasts.forEach(t => t.remove()); progressToasts.clear();
+  completionToasts.forEach(({toast}) => toast.remove()); completionToasts.clear(); acknowledgedCompletions.clear(); terminalStages.clear(); state.collecting.clear(); showToasts();
 }
 async function logout() {
   accountRevision++;

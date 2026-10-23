@@ -79,6 +79,10 @@ def handle_account(request):
                 user = accounts.require_user(session)
                 names = accounts.subscriptions(user["id"])
                 jobs = collection.statuses(names)
+                seen = accounts.collection_acknowledgements(user["id"], names)
+                for job in jobs:
+                    identity = collection.completion_id(job)
+                    job.update(completion_id=identity, acknowledged=bool(identity and seen.get(job["repo"].lower()) == identity))
                 if any(job["stage"] in collection.ACTIVE for job in jobs):
                     if collection.community.redis("SET", "repobite:collect:wake-limit", "1", "NX", "EX", 15) == "OK":
                         try:
@@ -117,6 +121,15 @@ def handle_account(request):
         elif action == "onboarding" and request.command == "POST":
             saved = accounts.save_preferences(user["id"], payload.get("email"), payload.get("delivery_enabled"), complete=True)
             respond(request, 200, {"preferences": saved})
+        elif action == "collection_seen" and request.command == "POST":
+            name = collection.community.normalize_repo(payload.get("repo")).lower()
+            if name not in {repo.lower() for repo in accounts.subscriptions(user["id"])}:
+                raise ValueError("구독 중인 저장소의 완료 알림만 확인할 수 있습니다.")
+            identity = collection.completion_id(collection.status(name))
+            if not identity or identity != payload.get("completion_id"):
+                raise ValueError("수집 완료 상태가 바뀌었습니다. 잠시 후 다시 확인하세요.")
+            accounts.acknowledge_collection(user["id"], name, identity)
+            respond(request, 200, {"repo": name, "completion_id": identity, "acknowledged": True})
         elif action == "subscriptions":
             if request.command == "POST":
                 result = accounts.subscribe(user["id"], payload.get("repo"))
