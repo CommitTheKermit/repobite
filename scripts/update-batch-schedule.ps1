@@ -6,11 +6,12 @@ $Triggers = @(0, 6, 12, 18 | ForEach-Object {
 # 기존 작업의 계정, 동작, 인증 정보를 보존하고 트리거만 변경한다.
 if ($PromptForCredential) {
     $Task = Get-ScheduledTask -TaskName 'repobite-batch'
-    $Credential = Get-Credential -UserName $Task.Principal.UserId -Message '기존 RepoBite 예약 작업 계정의 Windows 암호를 입력하세요'
-    if (-not $Credential) { throw '예약 변경을 취소했습니다.' }
+    # GUI 인증창 대신 가려진 콘솔 입력을 받아 `ssh -t`로 접속한 원격 터미널에서도 입력할 수 있게 한다.
+    $Password = Read-Host -AsSecureString "기존 RepoBite 예약 작업 계정($($Task.Principal.UserId))의 Windows 암호"
+    if (-not $Password.Length) { throw '예약 변경을 취소했습니다.' }
     try {
-        $null = Set-ScheduledTask -TaskName 'repobite-batch' -Trigger $Triggers -User $Task.Principal.UserId -Password $Credential.GetNetworkCredential().Password
-    } finally { Remove-Variable Credential -ErrorAction SilentlyContinue }
+        $null = Set-ScheduledTask -TaskName 'repobite-batch' -Trigger $Triggers -User $Task.Principal.UserId -Password ([Net.NetworkCredential]::new('', $Password).Password)
+    } finally { Remove-Variable Password -ErrorAction SilentlyContinue }
 } else {
     $null = Set-ScheduledTask -TaskName 'repobite-batch' -Trigger $Triggers
 }
