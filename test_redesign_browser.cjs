@@ -51,7 +51,7 @@ const {chromium} = require(process.env.REPOBITE_PLAYWRIGHT || 'playwright');
     await page.locator('#onboard [data-finish="skip"]').click();
     await page.waitForFunction(()=>!document.querySelector('#onboard').open);
     assert.equal(session.preferences.onboarding_completed,true);
-    assert.match(page.url(),/127\.0\.0\.1:18765\/?$/);
+    assert.equal(new URL(page.url()).hash,'','2단계 다이얼로그를 마쳐도 페이지를 옮기지 않는다');
     await page.locator('[data-close]').click().catch(()=>{});
     await page.goto((process.env.REPOBITE_TEST_URL || 'http://127.0.0.1:18765') + '/#/topics', {waitUntil:'domcontentloaded'});
     const topic=page.locator('#view [data-topic="dev-tools"]');
