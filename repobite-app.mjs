@@ -30,7 +30,8 @@ function ensureRepo(name, description = '', categories = []) {
   if (!repos.has(key)) repos.set(key, {
     name: key, description, topics: new Set(categories), all: [], external: true,
     get collected() { return state.collected.has(key); },
-    get listed() { return this.collected || state.subs.has(key) || state.collecting.has(key); },
+    // 탐색 카드와 개수는 같은 기준을 쓴다. 수집 전 내 구독은 내 구독 화면과 온보딩 선택 목록에서만 보인다.
+    get listed() { return this.collected || state.collecting.has(key); },
     get subscribed() { return publicSubscriptions.has(key) || state.subs.has(key); },
     get issues() { return this.collected ? this.all : []; },
   });
@@ -108,7 +109,7 @@ const matches = (r, query) => (r.name + r.description).toLowerCase().includes(qu
 const githubMatches = query => query.trim().length < 2 ? [] : searchResults.filter(r => !r.listed);
 function exploreList() {
   const groupTopics = state.group.split(' ');
-  const list = listedRepos().filter(r => r.collected).filter(r => (!state.group || [...r.topics].some(t => groupTopics.includes(t))) && matches(r, state.search));
+  const list = listedRepos().filter(r => (!state.group || [...r.topics].some(t => groupTopics.includes(t))) && matches(r, state.search));
   return state.sort === 'name' ? list.sort((a, b) => a.name.localeCompare(b.name)) : list;
 }
 // 수집 전 저장소(아직 RepoBite에 없음)는 이슈 대신 수집 상태를 보여 준다

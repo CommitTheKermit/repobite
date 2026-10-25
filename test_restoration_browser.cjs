@@ -29,7 +29,8 @@ const {chromium} = require(process.env.REPOBITE_PLAYWRIGHT || 'playwright');
     assert.match(await page.locator('#toasts').innerText(), /second\/repo 수집 완료 · 1 issue/);
     assert.equal(feedReads,2);
     await done.click();
-    assert(await page.locator('#detail').isVisible());
+    // 보기는 확인 기록 저장이 끝난 뒤 상세를 연다.
+    await page.locator('#detail').waitFor();
     await page.locator('[data-close]').click();
     await page.evaluate(()=>{location.hash='#/mail';});
     await page.locator('#view [data-finish="skip"]').click();
