@@ -637,29 +637,30 @@ async function mutate(action, body, verify, method = 'POST') {
 async function saveSelectedSubscriptions(revision) {
   if (state.obStep || state.selection === null) return true;
   const selected = new Set(state.selection);
+  const added = [...selected].filter(name => !state.subs.has(name)), removed = [...state.subs].filter(name => !selected.has(name));
+  if (!added.length && !removed.length) return true;
   // 새 구독을 먼저 저장한다. 부분 실패 시 선택은 남겨 재시도할 수 있게 한다.
-  for (const name of selected) {
-    if (revision !== accountRevision) return false;
-    if (!state.subs.has(name) && !(await changeSubscription(name, false))) return false;
-  }
-  for (const name of [...state.subs]) {
-    if (revision !== accountRevision) return false;
-    if (!selected.has(name) && !(await changeSubscription(name, true))) return false;
-  }
-  return revision === accountRevision;
+  // 저장소마다 피드와 수집 상태를 다시 읽지 않고, 저장을 마친 뒤(부분 실패 포함) 한 번만 읽는다.
+  try {
+    for (const [name, remove] of [...added.map(n => [n, false]), ...removed.map(n => [n, true])]) {
+      if (revision !== accountRevision) return false;
+      if (!(await changeSubscription(name, remove, {refresh: false}))) return false;
+    }
+    return revision === accountRevision;
+  } finally { if (revision === accountRevision) { await collectionStatus(); await loadFeed(); } }
 }
 async function savePersonalization() {
   const {level, experience} = state, topics = [...state.topics].sort();
   return mutate('personalization', {difficulty: level, experience, topics}, fresh =>
     fresh.preferences.difficulty === level && fresh.preferences.experience === experience && JSON.stringify(fresh.preferences.topics) === JSON.stringify(topics));
 }
-async function changeSubscription(name, remove) {
+async function changeSubscription(name, remove, {refresh = true} = {}) {
   const ok = await mutate('subscriptions', {repo: name}, fresh => fresh.subscriptions.some(n => n.toLowerCase() === name.toLowerCase()) === !remove, remove ? 'DELETE' : 'POST');
-  if (ok && !remove) {
-    publicSubscriptions.add(name.toLowerCase());
-    await collectionStatus();
+  if (ok && !remove) publicSubscriptions.add(name.toLowerCase());
+  if (ok && refresh) {
+    if (!remove) await collectionStatus();
+    await loadFeed();
   }
-  if (ok) await loadFeed();
   return ok;
 }
 async function loadFeed() {
@@ -739,8 +740,16 @@ async function initialize() {
   await pageLoading.finish();
   document.querySelector('.shell').inert = false;
   await collectionStatus();
-  pollTimer = setInterval(collectionStatus, 5000);
+  pollTimer = setInterval(pollCollection, 5000);
 }
+// 진행 중인 수집이 있으면 5초마다, 없으면 12틱(1분)마다 조회해 다른 기기에서 시작한 수집을 찾는다. 숨은 탭은 조회하지 않는다.
+let idleTicks = 0;
+function pollCollection() {
+  if (document.hidden) return;
+  if (!state.collecting.size && ++idleTicks % 12) return;
+  collectionStatus();
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden) collectionStatus(); });
 window.addEventListener('pagehide', () => { clearInterval(pollTimer); clearTimeout(searchTimer); searchController?.abort(); });
 document.addEventListener('compositionstart', event => { if (event.target.id === 'query') { composingSearch = true; clearTimeout(searchTimer); searchController?.abort(); searchRevision++; } });
 document.addEventListener('compositionend', event => { if (event.target.id === 'query') { composingSearch = false; scheduleSearch(event.target); } });

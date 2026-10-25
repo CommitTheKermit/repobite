@@ -33,6 +33,7 @@ const base = process.env.REPOBITE_TEST_URL || 'http://127.0.0.1:18765';
     await page.goto(base); await notice('second/repo').waitFor();
     await page.waitForTimeout(250);
     const initialToggles = await page.evaluate(()=>window.toastToggles);
+    // 진행 중인 수집이 없으면 12틱마다 조회하므로 100ms 틱에서 5.5초 동안 여러 번 반복 조회된다.
     await page.waitForTimeout(5500);
     assert.equal(await page.locator('[data-collection-view]').count(),2,'완료 알림은 5초 후에도 유지하고 조회가 반복돼도 중복 생성하지 않는다');
     assert.deepEqual(await page.evaluate(()=>window.toastToggles),initialToggles,'반복 조회 때 알림을 껐다 켜지 않는다');

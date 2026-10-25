@@ -16,7 +16,8 @@ const draftKey = 'repobite:redesign-draft:v1';
       const session = {authenticated,user:{id:'10',login:'test'},subscriptions:[],preferences:{email:'',delivery_enabled:false,topics:[],difficulty:1,experience:'new',onboarding_completed:false}};
       const names = ['owner/repo','second/repo','existing/repo'];
       const snapshot = {collected_repos:names,items:names.map((repo,i)=>({repo,number:i+1,title:'이슈',criteria_version:2,grade:{difficulty:1,exclude:false},categories:['dev-tools']}))};
-      await page.route('**/api/repos', r=>r.fulfill({json:{snapshot,subscribed_repos:session.subscriptions}}));
+      let feedReads = 0;
+      await page.route('**/api/repos', r=>{feedReads++; return r.fulfill({json:{snapshot,subscribed_repos:session.subscriptions}});});
       await page.route('https://api.github.com/search/**', r=>r.fulfill({json:{items:[{full_name:'external/repo',private:false,archived:false,has_issues:true,description:'외부 저장소'}]}}));
       await page.route('**/api/account?*', async r => {
         const request = r.request(), action = new URL(request.url()).searchParams.get('action');
@@ -44,7 +45,7 @@ const draftKey = 'repobite:redesign-draft:v1';
         await page.waitForSelector('#page-loading[hidden]',{state:'attached'});
         await page.evaluate(()=>document.fonts.ready);
       }
-      return {page,context,session,errors,writes,failures,open,get loginCalls(){return loginCalls}};
+      return {page,context,session,errors,writes,failures,open,get loginCalls(){return loginCalls},get feedReads(){return feedReads}};
     }
     for (const entry of ['', '/#/subs']) {
       const f = await fixture(); await f.open(entry);
@@ -144,10 +145,12 @@ const draftKey = 'repobite:redesign-draft:v1';
       const box = document.querySelector('#save-loading');
       box.addEventListener('beforetoggle', e=>window.saveLoadingEvents.push(e.newState));
     });
+    const feedReadsBefore = f.feedReads;
     await f.page.locator('[data-finish="skip"]').click();
     await f.page.waitForFunction(()=>location.hash==='#/subs');
     assert.deepEqual(await f.page.evaluate(()=>window.saveLoadingEvents),['open','closed'],'여러 구독·개인화·알림 저장 전체에 로딩을 한 번만 켜고 끈다');
     assert.equal(f.writes.filter(w=>w.action==='subscriptions').length,2);
+    assert.equal(f.feedReads - feedReadsBefore,1,'여러 구독을 저장해도 피드는 저장 후 한 번만 다시 읽는다');
     assert(f.writes.every(w=>w.loading),'각 구독·개인화·알림 저장 도중 로딩이 유지된다');
     for (const width of [1440,1000,390,320]) {
       await f.page.setViewportSize({width,height:900});
