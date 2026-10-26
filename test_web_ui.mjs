@@ -38,3 +38,23 @@ test('수집 시각은 한국 시간으로 표시하고 36시간 초과만 지�
   assert.doesNotMatch(collectionTime('2026-10-24T13:00:00Z'), /지연/);
   for (const value of [null, undefined, '', 'invalid']) assert.equal(collectionTime(value), '수집 시각 미확인');
 });
+
+test('추천 이슈는 기존 조건과 검색·분야를 따르고 최신순과 빈 결과를 표시한다', () => {
+  const item = (number, repo, created_at, extra = {}) => ({number, repo, created_at, title: `추천 ${number}`, grade: {difficulty: 1, exclude: false, readiness: 'ready', reason: '숨길 판정 이유'}, freshness: {eligible: true}, ...extra});
+  const state = {items: [item(1, 'a/one', '2026-10-25'), item(2, 'b/two', '2026-10-26'), item(3, 'a/one', '2026-10-27', {freshness: {eligible: false}})], group: '', search: '', sort: 'recommended'};
+  const list = [{name: 'a/one', description: 'alpha', topics: new Set(['dev-tools'])}, {name: 'b/two', description: 'beta', topics: new Set(['database'])}];
+  const context = vm.createContext({state, listedRepos: () => [...list], matches: (r, q) => (r.name + r.description).includes(q), esc: v => String(v).replace(/</g, '&lt;'), collectionTime});
+  const source = app.slice(app.indexOf('function exploreList('), app.indexOf('// 수집 전 저장소'));
+  vm.runInContext(source, context);
+  assert.deepEqual(Array.from(context.featuredIssues(), i => i.number), [2, 1]);
+  assert.match(context.featuredMarkup(), /지금 손댈 만한 이슈 2건/);
+  assert.doesNotMatch(context.featuredMarkup(), /숨길 판정 이유/);
+  state.group = 'dev-tools';
+  assert.deepEqual(Array.from(context.featuredIssues(), i => i.number), [1]);
+  assert.match(context.featuredMarkup(), /이슈 1건/);
+  state.group = ''; state.search = 'beta';
+  assert.deepEqual(Array.from(context.featuredIssues(), i => i.number), [2]);
+  state.search = 'missing';
+  assert.match(context.featuredMarkup(), /이슈 0건/);
+  assert.match(context.featuredMarkup(), /지금은 조건을 통과한 이슈가 없습니다/);
+});

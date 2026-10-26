@@ -120,6 +120,29 @@ function exploreList() {
   const list = listedRepos().filter(r => (!state.group || [...r.topics].some(t => groupTopics.includes(t))) && matches(r, state.search));
   return state.sort === 'name' ? list.sort((a, b) => a.name.localeCompare(b.name)) : list;
 }
+// 기존 탐색 화면의 good(x)와 같은 추천 조건을 유지한다.
+const good = x => x.grade && !x.grade.exclude && x.grade.difficulty === 1 && x.grade.readiness === 'ready' && x.freshness?.eligible;
+function featuredIssues() {
+  const visible = new Set(exploreList().map(r => r.name));
+  return state.items.filter(good).filter(i => visible.has(i.repo.toLowerCase()))
+    .sort((a, b) => (Date.parse(b.created_at) || 0) - (Date.parse(a.created_at) || 0));
+}
+function featuredMarkup() {
+  const items = featuredIssues();
+  const rows = items.map(i => {
+    const date = new Date(i.created_at);
+    const day = Number.isFinite(date.getTime()) ? `${String(date.getUTCMonth() + 1).padStart(2, '0')}.${String(date.getUTCDate()).padStart(2, '0')}` : '';
+    return `<article class="featured-row"><span class="featured-repo">${esc(i.repo)}</span><a data-track="featured_click" href="https://github.com/${esc(i.repo)}/issues/${Number(i.number)}" target="_blank" rel="noopener noreferrer">#${Number(i.number)} ${esc(i.title)}</a><span class="tag">Lv.1 쉬움</span><time datetime="${esc(i.created_at)}">${day}</time></article>`;
+  }).join('');
+  return `<div class="feed-title featured-heading"><h2>지금 손댈 만한 이슈 ${items.length}건</h2><span class="collection-time" id="collection-time">${esc(collectionTime(state.collected_at))}</span></div>
+    <p class="featured-guide">작업 전에 이슈에 댓글로 작업 의사를 남기면 다른 기여자와 겹치는 것을 줄일 수 있습니다.</p>
+    ${rows || '<p class="empty">지금은 조건을 통과한 이슈가 없습니다. 아래 레포에서 다른 이슈를 둘러보세요.</p>'}`;
+}
+function renderFeatured() {
+  const section = document.querySelector('#featured');
+  if (section) section.innerHTML = featuredMarkup();
+}
+
 // 수집 전 저장소(아직 RepoBite에 없음)는 이슈 대신 수집 상태를 보여 준다
 const collectStatus = r => state.collecting.has(r.name)
   ? `<span class="tag">${esc(stageName(state.collecting.get(r.name)))}</span><span class="collect-bar"><span data-progress="${esc(r.name)}" style="width:${collectProgress.get(r.name) ?? 0}%"></span></span>`
@@ -152,6 +175,7 @@ const exploreCards = list => list.map(r => `<article class="card win"><button cl
 </article>`).join('') || '<p class="empty">일치하는 저장소가 없습니다.</p>';
 // 구독된 레포와 POPULAR를 나눈 피드. 검색과 수집 상태 변경 때 이 부분만 다시 그린다.
 function updateFeeds() {
+  renderFeatured();
   const list = exploreList(), subscribed = list.filter(r => r.subscribed), popular = list.filter(r => !r.subscribed);
   const section = document.querySelector('#subscribed-section');
   if (!section) return;
@@ -183,7 +207,7 @@ const screens = {
         <p class="launch-guide">AI 판정은 틀릴 수 있습니다. 작업 전에 GitHub 원문과 현재 상태를 확인하세요.</p>
       </header>${inline}
       <div class="bar"><select class="sort" id="sort" aria-label="정렬"><option value="recommended">추천순</option><option value="name" ${state.sort === 'name' ? 'selected' : ''}>레포 이름순</option></select><div class="chips" data-fold="groups">${chips}${moreChip('groups')}</div></div>
-      <div class="collection-time" id="collection-time">${esc(collectionTime(state.collected_at))}</div>
+      <section class="feed-section featured" id="featured" aria-label="지금 손댈 만한 이슈"></section>
       <div class="section-head"><div class="repository-heading"><span class="eyebrow">REPOSITORIES / ${listedRepos().length}</span><button class="repository-search-cta" data-external-search>GitHub에서 다른 레포 찾기 ↗</button></div><button class="ghost invert" data-go="topics">레포바이트 이용하기</button></div>
       <section id="repository-not-found" class="repository-not-found win" hidden><div class="win-body"><h2>찾으시는 레포지토리가 없나요?</h2><p>수집 범위 밖의 저장소는 GitHub에서 찾아 구독할 수 있습니다.</p><button class="ghost invert" data-external-search>GitHub에서 레포지토리 찾기</button></div></section>
       <section class="feed-section" id="subscribed-section"><div class="feed-title"><h2>구독된 레포 <span class="pix" id="subscribed-count"></span></h2><p>다른 사용자가 구독한 저장소입니다.</p></div><div class="masonry" id="subscribed-feed"></div></section>

@@ -420,3 +420,16 @@ svg {flex-shrink:0;vertical-align:middle}
 }
 
 .collection-time { color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
+
+.featured { margin-top: 12px; }
+.featured-heading { justify-content: space-between; margin-bottom: 8px; }
+.featured-guide { font-size: 13px; color: var(--muted); margin: 0 0 12px; }
+.featured-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 6px 12px; padding: 16px 0; border-bottom: 1px solid var(--rule); align-items: start; }
+.featured-repo { grid-column: 1 / -1; color: var(--muted); font: 12px var(--mono); overflow-wrap: anywhere; }
+.featured-row a { color: var(--text); overflow-wrap: anywhere; }
+.featured-row time { color: var(--muted); font-size: 12px; }
+@media (max-width: 767px) {
+  .featured-heading { align-items: start; flex-direction: column; gap: 8px; }
+  .featured-row { grid-template-columns: minmax(0, 1fr) auto; }
+  .featured-row a { grid-column: 1 / -1; }
+}
