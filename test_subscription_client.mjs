@@ -34,8 +34,35 @@ test('로그아웃 뒤 늦은 저장 응답은 이전 계정을 복원하지 않
    return ok({...session('10'),subscriptions:['o/r']});
  });
  client.session=session('10');
- const saving=client.save('subscriptions',{repo:'o/r'},()=>true);
+ let committed=false;
+ const saving=client.save('subscriptions',{repo:'o/r'},()=>true,'POST',()=>{committed=true});
  client.invalidate(); finish();
  await assert.rejects(saving,/계정 요청이 변경/);
  assert.equal(client.session,null);
+ assert.equal(committed,false,'로그아웃 후 도착한 응답으로 수집 표시를 복원하지 않는다');
+});
+
+test('구독 접수 상태는 느린 계정 재조회보다 먼저 전달한다',async()=>{
+ let resolveReadback, commit;
+ const client=new SubscriptionClient(async(url,options)=>options.method==='POST'
+   ? ok({repo:'o/r',collection:{repo:'o/r',stage:'queued',attempt:0}})
+   : new Promise(resolve=>{resolveReadback=resolve}));
+ client.session=session('10');
+ const saving=client.save('subscriptions',{repo:'o/r'},s=>s.subscriptions.includes('o/r'),'POST',value=>{commit=value});
+ await new Promise(resolve=>setImmediate(resolve));
+ assert.equal(commit.collection.stage,'queued','재조회가 끝나기 전에 접수된 수집을 표시할 수 있다');
+ resolveReadback(ok({...session('10'),subscriptions:['o/r']}));
+ await saving;
+});
+
+test('저장 거절은 수집을 시작하지 않고 재조회 실패는 이미 접수한 수집을 취소하지 않는다',async()=>{
+ for(const failWrite of [true,false]) {
+   let committed=false;
+   const client=new SubscriptionClient(async(url,options)=>options.method==='POST'&&!failWrite
+     ? ok({collection:{stage:'queued'}})
+     : {ok:false,status:503,json:async()=>({error:'연결 오류'})});
+   client.session=session('10');
+   await assert.rejects(client.save('subscriptions',{repo:'o/r'},()=>true,'POST',()=>{committed=true}),/연결 오류/);
+   assert.equal(committed,!failWrite);
+ }
 });

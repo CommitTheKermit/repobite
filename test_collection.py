@@ -38,6 +38,7 @@ class CollectionTest(unittest.TestCase):
     def test_regular_snapshot_refresh_does_not_create_a_new_completion_notification(self):
         job = {"repo": "owner/repo", "stage": "done", "attempt": 0, "updated_at": "first-batch"}
         identity = collection.completion_id(job)
+        self.assertIsNone(identity, '기존 수집 결과는 완료 알림 식별자를 만들지 않는다')
         job["updated_at"] = "next-batch"
         self.assertEqual(collection.completion_id(job), identity)
         job["attempt"] = 1

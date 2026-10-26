@@ -19,11 +19,13 @@ export class SubscriptionClient {
     this.session = value;
     return value;
   }
-  async save(action, body, verify, method = 'POST') {
+  async save(action, body, verify, method = 'POST', onCommitted = () => {}) {
     const revision = this.revision;
     const owner = this.session?.user?.id;
     if (!owner) throw new Error('GitHub 로그인이 필요합니다.');
-    await this.request(action, method, {...body, expected_user_id: owner});
+    const committed = await this.request(action, method, {...body, expected_user_id: owner});
+    if (revision !== this.revision) throw new Error('계정 요청이 변경됐습니다.');
+    onCommitted(committed);
     const fresh = await this.request('session');
     if (revision !== this.revision) throw new Error('계정 요청이 변경됐습니다.');
     if (!fresh.authenticated || fresh.user?.id !== owner) { const error = new Error('계정이 바뀌었습니다. 새로고침 후 다시 시도하세요.'); error.status = 409; throw error; }

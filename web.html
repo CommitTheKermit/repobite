@@ -50,7 +50,10 @@
 </dialog>
 <dialog id="detail" class="detail"></dialog>
 <dialog id="onboard" class="onboard" aria-label="구독 설정"></dialog>
-<div id="toasts" class="toasts" popover="manual" role="status" aria-live="polite"></div>
+<div id="toasts" class="toasts" popover="manual" role="status" aria-live="polite">
+  <div id="collection-progress" aria-label="진행 중인 수집" hidden></div>
+  <div id="collection-notices" aria-label="완료 알림과 안내" hidden></div>
+</div>
 <div id="page-loading" class="dialog" role="status" aria-label="저장소와 이슈 불러오는 중">
   <section class="win"><div class="win-bar"><span>RepoBite 1.0</span></div><div class="win-body">Loading ...<br>Repositories, Issues<div class="progress"><span style="width:0%">0%</span></div></div></section>
 </div>

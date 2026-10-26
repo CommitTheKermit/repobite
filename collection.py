@@ -34,10 +34,10 @@ def statuses(repos):
 
 
 def completion_id(job):
-    if job["stage"] != "done":
+    if job["stage"] != "done" or not job["attempt"]:
         return None
-    # 기존 snapshot의 정기 갱신은 새로운 구독 수집 완료 알림이 아니다.
-    completed_at = job["updated_at"] if job["attempt"] else "already-collected"
+    # 기존 snapshot의 결과는 새 구독의 수집 완료가 아니다.
+    completed_at = job["updated_at"]
     return hashlib.sha256((job["repo"].lower() + "\0" + str(completed_at)).encode()).hexdigest()
 
 

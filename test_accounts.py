@@ -295,6 +295,19 @@ class AccountsHTTPTest(AccountsFixture, unittest.TestCase):
         self.assertFalse(accounts.session_snapshot(current)["authenticated"])
         self.assertTrue(accounts.session_snapshot(first)["authenticated"])
 
+    def test_existing_snapshot_has_no_new_collection_notification(self):
+        session = self.login(10)
+        self.db.hashes[accounts.subscriptions_key("10")] = {"owner/repo": "owner/repo"}
+        self.db.values[accounts.community.SNAPSHOT_KEY] = json.dumps({
+            "collected_repos": ["owner/repo"], "collected_at": "previous-batch"})
+        row = self.request("collection", secret=session)[1]["jobs"][0]
+        self.assertEqual(row["stage"], "done")
+        self.assertEqual(row["attempt"], 0)
+        self.assertIsNone(row["completion_id"])
+        self.assertFalse(row["acknowledged"])
+        payload = {"repo": "owner/repo", "completion_id": "legacy-snapshot", "expected_user_id": "10"}
+        self.assertEqual(self.request("collection_seen", "POST", payload, session)[0], 400)
+
     def test_collection_acknowledgement_is_durable_user_scoped_and_completion_specific(self):
         first, second = self.login(10, "first"), self.login(20, "second")
         for user_id in ("10", "20"):

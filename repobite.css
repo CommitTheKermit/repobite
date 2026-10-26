@@ -255,8 +255,12 @@ html:has(dialog[open]) { overflow: hidden; }
 .onboard .panel h1 { font-size: 32px; }
 
 /* 즉시 수집 토스트와 안내 */
-.toasts[popover] { inset: auto 24px 24px auto; margin: 0; padding: 0; border: 0; background: none; max-height: calc(100dvh - 48px); overflow: auto; display: grid; gap: 12px; width: 340px; color: var(--text); }
+.toasts[popover] { --toast-limit: calc(100dvh - 48px); inset: auto 24px 24px auto; margin: 0; padding: 0; border: 0; background: none; max-height: var(--toast-limit); overflow: hidden; display: flex; flex-direction: column; gap: 12px; width: 340px; color: var(--text); }
 .toasts:not(:popover-open) { display: none; }
+#collection-progress, #collection-notices { display: grid; gap: 12px; min-height: 0; overflow: auto; }
+#collection-progress { flex: none; max-height: var(--toast-limit); }
+#collection-notices { max-height: 40dvh; }
+#collection-progress[hidden], #collection-notices[hidden] { display: none; }
 .toast .win-body { font-size: 14px; }
 .toast p { margin: 0; }
 .toast .progress { height: 24px; margin-top: 12px; }
@@ -310,7 +314,7 @@ html:has(dialog[open]) { overflow: hidden; }
   .rail { height: var(--rail-header); flex-direction: row; justify-content: flex-start; padding: 8px 16px 32px; border-right: 0; border-bottom: 1px solid var(--rule); gap: 8px; }
   .rail .mark { margin: 0 8px 0 0; }
   .os-tag { display: none; }
-  .toasts[popover] { inset: auto 12px 12px 12px; width: auto; }
+  .toasts[popover] { --toast-limit: calc(100dvh - var(--rail-header) - 24px); inset: auto 12px 12px 12px; width: auto; }
   .onboard { width: 100vw; height: 100vh; max-height: 100vh; margin: 0; border: 0; box-shadow: none; }
   .onboard .flow { padding: 16px 16px 24px; }
   .onboard .panel h1 { font-size: 26px; }

@@ -273,8 +273,12 @@ const repositorySearch = mountRepositorySearchDialog(document.querySelector('#re
 });
 
 const toasts = document.querySelector('#toasts');
+const collectionProgress = document.querySelector('#collection-progress');
+const collectionNotices = document.querySelector('#collection-notices');
 function showToasts({bringToFront = false} = {}) {
-  if (!toasts.children.length) { if (toasts.matches(':popover-open')) toasts.hidePopover(); return; }
+  collectionProgress.hidden = !collectionProgress.children.length;
+  collectionNotices.hidden = !collectionNotices.children.length;
+  if (collectionProgress.hidden && collectionNotices.hidden) { if (toasts.matches(':popover-open')) toasts.hidePopover(); return; }
   if (bringToFront && toasts.matches(':popover-open')) toasts.hidePopover();
   if (!toasts.matches(':popover-open')) toasts.showPopover();
 }
@@ -283,31 +287,64 @@ const progressToasts = new Map();
 const terminalStages = new Map();
 const completionToasts = new Map();
 const acknowledgedCompletions = new Map();
-let collectionStatusPending = false;
+let collectionStatusPending;
+let collectionSubscriptionRevision = 0;
 function removeCompletionToast(name, identity) {
   if (identity && completionToasts.get(name)?.identity !== identity) return;
   completionToasts.get(name)?.toast.remove();
   completionToasts.delete(name);
 }
-async function collectionStatus() {
-  if (!client.session?.authenticated || collectionStatusPending) return;
+function showCollectionProgress(job, {priority = false} = {}) {
+  const name = job.repo.toLowerCase();
+  removeCompletionToast(name);
+  terminalStages.delete(name);
+  state.collecting.set(name, job.stage);
+  let toast = progressToasts.get(name);
+  if (!toast) {
+    toast = document.createElement('section'); toast.className = 'win toast';
+    collectionProgress.prepend(toast); progressToasts.set(name, toast);
+  }
+  trackProgress(name);
+  const percent = collectProgress.get(name);
+  toast.innerHTML = `<div class="win-bar"><span>COLLECT</span><span>${esc(short(name))}</span></div><div class="win-body"><p><b>${esc(name)}</b> 구독 즉시 수집 · ${esc(stageName(job.stage))}</p><div class="progress"><span data-progress="${esc(name)}" style="width:${percent}%">${Math.round(percent)}%</span></div></div>`;
+  if (priority) {
+    collectionProgress.prepend(toast);
+    collectionProgress.scrollTop = 0;
+  }
+  showToasts();
+}
+async function collectionStatus({afterSubscription = false} = {}) {
+  if (!client.session?.authenticated) return;
+  if (collectionStatusPending) {
+    await collectionStatusPending;
+    // 구독 전에 시작된 조회가 끝나면 새 구독을 포함한 상태를 반드시 읽는다.
+    if (afterSubscription) return collectionStatus();
+    return;
+  }
+  collectionStatusPending = readCollectionStatus();
+  try { await collectionStatusPending; }
+  finally { collectionStatusPending = undefined; }
+}
+async function readCollectionStatus() {
   const revision = accountRevision;
-  collectionStatusPending = true;
+  const subscriptionRevision = collectionSubscriptionRevision;
   try {
     const {jobs, user_id} = await client.request('collection');
-    if (revision !== accountRevision || user_id !== client.session?.user?.id) return;
+    if (revision !== accountRevision || user_id !== client.session?.user?.id || subscriptionRevision !== collectionSubscriptionRevision) return;
     const currentNames = new Set(jobs.map(job => job.repo.toLowerCase()));
     for (const name of completionToasts.keys()) if (!currentNames.has(name)) removeCompletionToast(name);
     const completed = [];
     for (const job of jobs) {
-      const name = job.repo.toLowerCase(), identity = job.completion_id || name;
+      const name = job.repo.toLowerCase(), identity = job.attempt > 0 ? job.completion_id : null;
+      // 조회 실패나 잠시 비어 있는 상태 응답으로 접수된 수집 로딩을 끄지 않는다.
+      if (job.stage === 'idle' && state.collecting.has(name)) continue;
       if (['idle', 'done', 'failed'].includes(job.stage)) {
         if (job.stage === 'failed' && terminalStages.get(name) !== 'failed') notify('COLLECT', short(name), `<p>${esc(name)} ${esc(stageName(job.stage))}</p>`);
         if (job.stage === 'done') {
-          if (job.acknowledged || acknowledgedCompletions.get(name) === identity) {
+          if (!identity || job.acknowledged || acknowledgedCompletions.get(name) === identity) {
             removeCompletionToast(name);
             terminalStages.set(name, 'done:' + identity);
-          } else if (terminalStages.get(name) !== 'done:' + identity) completed.push(job);
+          } else if (terminalStages.get(name) !== 'done:' + identity) completed.push({...job, wasCollecting: state.collecting.has(name)});
         } else { removeCompletionToast(name); terminalStages.set(name, job.stage); }
         const previous = progressToasts.get(name);
         if (previous) {
@@ -320,31 +357,23 @@ async function collectionStatus() {
         state.collecting.delete(name);
         continue;
       }
-      removeCompletionToast(name);
-      terminalStages.delete(name);
-      state.collecting.set(name, job.stage);
-      let toast = progressToasts.get(name);
-      if (!toast) { toast = document.createElement('section'); toast.className = 'win toast'; toasts.append(toast); progressToasts.set(name, toast); }
-      trackProgress(name);
-      const percent = collectProgress.get(name);
-      toast.innerHTML = `<div class="win-bar"><span>COLLECT</span><span>${esc(short(name))}</span></div><div class="win-body"><p><b>${esc(name)}</b> 구독 즉시 수집 · ${esc(stageName(job.stage))}</p><div class="progress"><span data-progress="${esc(name)}" style="width:${percent}%">${Math.round(percent)}%</span></div></div>`;
+      showCollectionProgress(job);
     }
     showToasts();
     if (completed.length) {
       await loadFeed();
-      if (revision !== accountRevision || user_id !== client.session?.user?.id) return;
+      if (revision !== accountRevision || user_id !== client.session?.user?.id || subscriptionRevision !== collectionSubscriptionRevision) return;
       for (const job of completed) {
-        const name = job.repo.toLowerCase(), identity = job.completion_id || name;
+        const name = job.repo.toLowerCase(), identity = job.completion_id;
         if (acknowledgedCompletions.get(name) === identity) continue;
         removeCompletionToast(name);
         terminalStages.set(name, 'done:' + identity);
-        const toast = notify('DONE', short(name), `<p><b>${esc(name)}</b> 수집 완료 · ${issues(repos.get(name)?.issues.length || 0)}</p><button class="ghost" data-detail="${esc(name)}" data-collection-view="${esc(identity)}">보기</button>`, {persistent: true});
+        const toast = notify('DONE', short(name), `<p><b>${esc(name)}</b> 수집 완료 · ${issues(repos.get(name)?.issues.length || 0)}</p><button class="ghost" data-detail="${esc(name)}" data-collection-view="${esc(identity)}">보기</button>`, {persistent: true, priority: job.wasCollecting});
         completionToasts.set(name, {identity, toast});
       }
     }
     refresh();
   } catch { /* 네트워크 조회 실패를 수집 실패로 표시하지 않는다. 다음 조회에서 확인한다. */ }
-  finally { collectionStatusPending = false; }
 }
 async function viewCollectedRepository(button) {
   if (!requireLogin()) return;
@@ -409,7 +438,7 @@ function renderDetail() {
   if (!repo) { if (detailBox.open) detailBox.close(); return; }
   detailBox.setAttribute('aria-label', `${repo.name} 상세`);
   detailBox.innerHTML = detailView(repo, detailParts(repo));
-  if (!detailBox.open) detailBox.showModal();
+  if (!detailBox.open) { detailBox.showModal(); showToasts({bringToFront: true}); }
   window.lucide.createIcons();
 }
 detailBox.addEventListener('close', () => { state.detail = ''; });
@@ -480,12 +509,13 @@ const closeDetail = () => { state.detail = ''; detailBox.close(); };
 onboardBox.addEventListener('close', () => { state.obStep = ''; });
 onboardBox.addEventListener('click', event => { if (event.target === onboardBox) closeOnboard(); });
 // 수집 완료는 확인할 때까지 유지하고, 그 밖의 안내는 잠시 보여 준다.
-function notify(bar, label, html, {persistent = false} = {}) {
+function notify(bar, label, html, {persistent = false, priority = false} = {}) {
   const toast = document.createElement('section');
   toast.className = 'win toast';
   toast.innerHTML = `<div class="win-bar"><span>${bar}</span><span>${esc(label)}</span></div><div class="win-body toast-done">${html}</div>`;
-  toasts.append(toast);
-  showToasts({bringToFront: true});
+  if (priority) { collectionNotices.prepend(toast); collectionNotices.scrollTop = 0; }
+  else collectionNotices.append(toast);
+  showToasts();
   if (!persistent) setTimeout(() => { toast.remove(); showToasts(); }, 5000);
   return toast;
 }
@@ -637,14 +667,14 @@ async function logout() {
     clearPrivate(); sessionStorage.removeItem(DRAFT); accountError = ''; render();
   } catch (error) { accountError = error.message; renderAccount(); }
 }
-async function mutate(action, body, verify, method = 'POST') {
+async function mutate(action, body, verify, method = 'POST', onCommitted) {
   if (!requireLogin()) return false;
   if (busy) return false;
   const revision = accountRevision;
   busy = true; render();
   if (!completingOnboarding) savingIndicator.start();
   try {
-    const fresh = await client.save(action, body, verify, method);
+    const fresh = await client.save(action, body, verify, method, onCommitted);
     if (revision !== accountRevision) return false;
     state.subs = new Set(fresh.subscriptions.map(n => n.toLowerCase()));
     state.subs.forEach(n => ensureRepo(n));
@@ -677,7 +707,7 @@ async function saveSelectedSubscriptions(revision) {
       if (!(await changeSubscription(name, remove, {refresh: false}))) return false;
     }
     return revision === accountRevision;
-  } finally { if (revision === accountRevision) { await collectionStatus(); await loadFeed(); } }
+  } finally { if (revision === accountRevision) { await collectionStatus({afterSubscription: true}); await loadFeed(); } }
 }
 async function savePersonalization() {
   const {level, experience} = state, topics = [...state.topics].sort();
@@ -685,10 +715,16 @@ async function savePersonalization() {
     fresh.preferences.difficulty === level && fresh.preferences.experience === experience && JSON.stringify(fresh.preferences.topics) === JSON.stringify(topics));
 }
 async function changeSubscription(name, remove, {refresh = true} = {}) {
-  const ok = await mutate('subscriptions', {repo: name}, fresh => fresh.subscriptions.some(n => n.toLowerCase() === name.toLowerCase()) === !remove, remove ? 'DELETE' : 'POST');
+  const ok = await mutate('subscriptions', {repo: name}, fresh => fresh.subscriptions.some(n => n.toLowerCase() === name.toLowerCase()) === !remove, remove ? 'DELETE' : 'POST', result => {
+    const job = result.collection;
+    if (!remove && job?.repo?.toLowerCase() === name.toLowerCase() && ['queued', 'fetching', 'grading', 'retrying'].includes(job.stage)) {
+      collectionSubscriptionRevision++;
+      showCollectionProgress(job, {priority: true});
+    }
+  });
   if (ok && !remove) publicSubscriptions.add(name.toLowerCase());
   if (ok && refresh) {
-    if (!remove) await collectionStatus();
+    if (!remove) await collectionStatus({afterSubscription: true});
     await loadFeed();
   }
   return ok;
