@@ -58,3 +58,16 @@ test('추천 이슈는 기존 조건과 검색·분야를 따르고 최신순과
   assert.match(context.featuredMarkup(), /이슈 0건/);
   assert.match(context.featuredMarkup(), /지금은 조건을 통과한 이슈가 없습니다/);
 });
+
+test('공유 미리보기는 정식 절대 주소와 1200x630 PNG를 사용한다', () => {
+  for (const [property, content] of Object.entries({'og:type':'website', 'og:site_name':'RepoBite', 'og:url':'https://repobite.vercel.app/', 'og:title':'RepoBite | 초보자가 바로 손댈 수 있는 오픈소스 이슈', 'og:image':'https://repobite.vercel.app/og.png', 'og:image:width':'1200', 'og:image:height':'630'})) {
+    assert(html.includes(`<meta property="${property}" content="${content}">`));
+  }
+  assert.match(html, /name="description" content="[^"]+"/);
+  assert.match(html, /property="og:description" content="[^"]+"/);
+  assert.match(html, /name="twitter:card" content="summary_large_image"/);
+  const png = readFileSync(new URL('./og.png', import.meta.url));
+  assert.equal(png.subarray(0,8).toString('hex'), '89504e470d0a1a0a');
+  assert.equal(png.readUInt32BE(16), 1200); assert.equal(png.readUInt32BE(20), 630);
+  assert(png.length <= 300 * 1024);
+});
