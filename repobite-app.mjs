@@ -41,7 +41,7 @@ function ensureRepo(name, description = '', categories = []) {
   return repo;
 }
 
-const state = { collected_at: null, items: [], obStep: '', collected: new Set(), collecting: new Map(), searchOpen: false, open: new Set(), detail: '', dlv: 0, group: '', sort: 'recommended', search: '', onboarded: false, topics: new Set(), subs: new Set(), selection: null, experience: 'new', level: 1, email: '', consent: false, mail: null, active: '', filter: 1, query: '', error: '' };
+const state = { obStep: '', collected: new Set(), collecting: new Map(), searchOpen: false, open: new Set(), detail: '', dlv: 0, group: '', sort: 'recommended', search: '', onboarded: false, topics: new Set(), subs: new Set(), selection: null, experience: 'new', level: 1, email: '', consent: false, mail: null, active: '', filter: 1, query: '', error: '' };
 const view = document.querySelector('#view'), stack = document.querySelector('#stack');
 const esc = value => String(value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const short = name => name.split('/')[1];
@@ -136,42 +136,11 @@ const listedRepos = () => [...repos.values()].filter(r => r.listed);
 const matches = (r, query) => (r.name + r.description).toLowerCase().includes(query.toLowerCase());
 // RepoBite에 없는 GitHub 저장소는 두 글자 이상 검색했을 때만 결과로 보여 준다
 const githubMatches = query => query.trim().length < 2 ? [] : searchResults.filter(r => !r.listed);
-// 스냅샷의 UTC 수집 시각만 표시한다. 정적 폴백의 시각은 추정하지 않는다.
-function collectionTime(value, now = Date.now()) {
-  if (typeof value !== 'string' || !value.trim()) return '수집 시각 미확인';
-  const date = new Date(value);
-  if (!Number.isFinite(date.getTime())) return '수집 시각 미확인';
-  const formatted = new Intl.DateTimeFormat('ko-KR', {timeZone: 'Asia/Seoul', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false}).format(date);
-  return `${formatted} 수집${now - date.getTime() > 36 * 60 * 60 * 1000 ? ' · 최근 수집이 지연되고 있습니다' : ''}`;
-}
 function exploreList() {
   const groupTopics = state.group.split(' ');
   const list = listedRepos().filter(r => (!state.group || [...r.topics].some(t => groupTopics.includes(t))) && matches(r, state.search));
   return state.sort === 'name' ? list.sort((a, b) => a.name.localeCompare(b.name)) : list;
 }
-// 기존 탐색 화면의 good(x)와 같은 추천 조건을 유지한다.
-const good = x => x.grade && !x.grade.exclude && x.grade.difficulty === 1 && x.grade.readiness === 'ready' && x.freshness?.eligible;
-function featuredIssues() {
-  const visible = new Set(exploreList().map(r => r.name));
-  return state.items.filter(good).filter(i => visible.has(i.repo.toLowerCase()))
-    .sort((a, b) => (Date.parse(b.created_at) || 0) - (Date.parse(a.created_at) || 0));
-}
-function featuredMarkup() {
-  const items = featuredIssues();
-  const rows = items.map(i => {
-    const date = new Date(i.created_at);
-    const day = Number.isFinite(date.getTime()) ? `${String(date.getUTCMonth() + 1).padStart(2, '0')}.${String(date.getUTCDate()).padStart(2, '0')}` : '';
-    return `<article class="featured-row"><span class="featured-repo">${esc(i.repo)}</span><a data-track="featured_click" href="https://github.com/${esc(i.repo)}/issues/${Number(i.number)}" target="_blank" rel="noopener noreferrer">#${Number(i.number)} ${esc(i.title)}</a><span class="tag">Lv.1 쉬움</span><time datetime="${esc(i.created_at)}">${day}</time></article>`;
-  }).join('');
-  return `<div class="feed-title featured-heading"><h2>지금 손댈 만한 이슈 ${items.length}건</h2><span class="collection-time" id="collection-time">${esc(collectionTime(state.collected_at))}</span></div>
-    <p class="featured-guide">작업 전에 이슈에 댓글로 작업 의사를 남기면 다른 기여자와 겹치는 것을 줄일 수 있습니다.</p>
-    ${rows || '<p class="empty">지금은 조건을 통과한 이슈가 없습니다. 아래 레포에서 다른 이슈를 둘러보세요.</p>'}`;
-}
-function renderFeatured() {
-  const section = document.querySelector('#featured');
-  if (section) section.innerHTML = featuredMarkup();
-}
-
 // 수집 전 저장소(아직 RepoBite에 없음)는 이슈 대신 수집 상태를 보여 준다
 const collectStatus = r => state.collecting.has(r.name)
   ? `<span class="tag">${esc(stageName(state.collecting.get(r.name)))}</span><span class="collect-bar"><span data-progress="${esc(r.name)}" style="width:${collectProgress.get(r.name) ?? 0}%"></span></span>`
@@ -204,7 +173,6 @@ const exploreCards = list => list.map(r => `<article class="card win"><button cl
 </article>`).join('') || '<p class="empty">일치하는 저장소가 없습니다.</p>';
 // 구독된 레포와 POPULAR를 나눈 피드. 검색과 수집 상태 변경 때 이 부분만 다시 그린다.
 function updateFeeds() {
-  renderFeatured();
   const list = exploreList(), subscribed = list.filter(r => r.subscribed), popular = list.filter(r => !r.subscribed);
   const section = document.querySelector('#subscribed-section');
   if (!section) return;
@@ -228,15 +196,8 @@ const screens = {
     const chips = [['전체', '']].concat(GROUPS).map(([label, value]) => `<button class="chip" data-group="${value}" aria-pressed="${state.group === value}">${label}${value ? '' : ` <span class="pix">${listedRepos().length}</span>`}</button>`).join('');
     // 오른쪽 패널이 숨는 좁은 화면에서는 돋보기 버튼으로 필터 바 위에 검색칸을 펼친다
     const inline = state.searchOpen ? `<div class="inline-search" id="collected-repository-search"><label class="search-box">${icon('search')}<input class="search" id="explore-search-m" type="search" placeholder="수집된 저장소에서 검색" aria-label="수집된 저장소 검색" value="${esc(state.search)}"></label><button class="ghost" data-search-close>닫기</button></div>` : '';
-    return `<div class="explore">
-      <header class="launch-intro">
-        <h1>처음 기여하기 좋은 오픈소스 이슈를 골라드립니다</h1>
-        <p>라벨이 아니라 이슈 본문을 AI가 읽고, 처음 기여할 오픈소스 이슈를 찾도록 도와드립니다.</p>
-        <p class="launch-guide">난이도: Lv.1 쉬움 · Lv.2 보통 · Lv.3 어려움 · 작업 전에 GitHub에서 닫힘·담당자·연결된 PR을 다시 확인하세요.</p>
-        <p class="launch-guide">AI 판정은 틀릴 수 있습니다. 작업 전에 GitHub 원문과 현재 상태를 확인하세요.</p>
-      </header>${inline}
+    return `<div class="explore">${inline}
       <div class="bar"><select class="sort" id="sort" aria-label="정렬"><option value="recommended">추천순</option><option value="name" ${state.sort === 'name' ? 'selected' : ''}>레포 이름순</option></select><div class="chips" data-fold="groups">${chips}${moreChip('groups')}</div></div>
-      <section class="feed-section featured" id="featured" aria-label="지금 손댈 만한 이슈"></section>
       <div class="section-head"><div class="repository-heading"><span class="eyebrow">REPOSITORIES / ${listedRepos().length}</span><button class="repository-search-cta" data-external-search>GitHub에서 다른 레포 찾기 ↗</button></div><button class="ghost invert" data-go="topics">레포바이트 이용하기</button></div>
       <section id="repository-not-found" class="repository-not-found win" hidden><div class="win-body"><h2>찾으시는 레포지토리가 없나요?</h2><p>수집 범위 밖의 저장소는 GitHub에서 찾아 구독할 수 있습니다.</p><button class="ghost invert" data-external-search>GitHub에서 레포지토리 찾기</button></div></section>
       <section class="feed-section" id="subscribed-section"><div class="feed-title"><h2>구독된 레포 <span class="pix" id="subscribed-count"></span></h2><p>다른 사용자가 구독한 저장소입니다.</p></div><div class="masonry" id="subscribed-feed"></div></section>
@@ -779,8 +740,6 @@ async function loadFeed() {
     if (!response.ok) throw Error('공개 이슈를 불러오지 못했습니다.');
     data = await response.json();
   }
-  state.collected_at = data.collected_at ?? null;
-  state.items = data.items || [];
   publicSubscriptions.clear(); subscribed.forEach(n => publicSubscriptions.add(n.toLowerCase()));
   state.collected = new Set((data.collected_repos || data.items?.map(i => i.repo) || []).map(n => n.toLowerCase()));
   repos.forEach(r => { r.all = []; });
