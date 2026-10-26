@@ -114,8 +114,30 @@ function exploreList() {
 }
 // 수집 전 저장소(아직 RepoBite에 없음)는 이슈 대신 수집 상태를 보여 준다
 const collectStatus = r => state.collecting.has(r.name)
-  ? `<span class="tag">${esc(stageName(state.collecting.get(r.name)))}</span>`
+  ? `<span class="tag">${esc(stageName(state.collecting.get(r.name)))}</span><span class="collect-bar"><span data-progress="${esc(r.name)}" style="width:${collectProgress.get(r.name) ?? 0}%"></span></span>`
   : '<span class="tag">구독하면 바로 수집</span>';
+// 시안의 퍼센트 막대. 서버는 단계만 알려 주므로 시간에 따라 99%까지만 다가가고, 100%는 수집 완료(done)를 받은 뒤에만 그린다.
+// ponytail: 새로고침하면 0%부터 다시 시작한다. 서버가 실제 진행률을 주면 그 값으로 바꾼다.
+const collectProgress = new Map();
+let progressTimer;
+function drawProgress(name) {
+  const percent = collectProgress.get(name) ?? 0;
+  document.querySelectorAll(`[data-progress="${CSS.escape(name)}"]`).forEach(bar => {
+    bar.style.width = `${percent}%`;
+    if (bar.parentElement.classList.contains('progress')) bar.textContent = `${Math.round(percent)}%`;
+  });
+}
+function trackProgress(name) {
+  if (!collectProgress.has(name)) collectProgress.set(name, 0);
+  progressTimer ??= setInterval(() => collectProgress.forEach((percent, key) => {
+    collectProgress.set(key, percent + (99 - percent) * 0.006);
+    drawProgress(key);
+  }), 150);
+}
+function untrackProgress(name) {
+  collectProgress.delete(name);
+  if (!collectProgress.size) { clearInterval(progressTimer); progressTimer = undefined; }
+}
 const exploreCards = list => list.map(r => `<article class="card win"><button class="card-hit" data-detail="${esc(r.name)}" aria-haspopup="dialog">
         <span class="win-bar"><span>${esc(short(r.name))}</span><span>${r.collected ? issues(r.issues.length) : state.collecting.has(r.name) ? 'collecting' : 'github'}</span></span>${repoMedia(r.name)}
         <span class="card-body"><span class="card-meta">${owner(r.name)}<span><b>${esc(r.name)}</b><small>${esc(r.description)}</small></span></span><span class="tags">${r.collected ? levelTags(r.issues) : collectStatus(r)}</span></span></button>
@@ -288,7 +310,13 @@ async function collectionStatus() {
           } else if (terminalStages.get(name) !== 'done:' + identity) completed.push(job);
         } else { removeCompletionToast(name); terminalStages.set(name, job.stage); }
         const previous = progressToasts.get(name);
-        if (previous) { previous.remove(); progressToasts.delete(name); }
+        if (previous) {
+          progressToasts.delete(name);
+          // 완료는 100%를 잠깐 보여 준 뒤 닫고, 실패는 바로 닫는다.
+          if (job.stage === 'done') { collectProgress.set(name, 100); drawProgress(name); setTimeout(() => { previous.remove(); showToasts(); }, 400); }
+          else previous.remove();
+        }
+        untrackProgress(name);
         state.collecting.delete(name);
         continue;
       }
@@ -297,7 +325,9 @@ async function collectionStatus() {
       state.collecting.set(name, job.stage);
       let toast = progressToasts.get(name);
       if (!toast) { toast = document.createElement('section'); toast.className = 'win toast'; toasts.append(toast); progressToasts.set(name, toast); }
-      toast.innerHTML = `<div class="win-bar"><span>COLLECT</span><span>${esc(short(name))}</span></div><div class="win-body"><p><b>${esc(name)}</b> · ${esc(stageName(job.stage))}</p></div>`;
+      trackProgress(name);
+      const percent = collectProgress.get(name);
+      toast.innerHTML = `<div class="win-bar"><span>COLLECT</span><span>${esc(short(name))}</span></div><div class="win-body"><p><b>${esc(name)}</b> 구독 즉시 수집 · ${esc(stageName(job.stage))}</p><div class="progress"><span data-progress="${esc(name)}" style="width:${percent}%">${Math.round(percent)}%</span></div></div>`;
     }
     showToasts();
     if (completed.length) {
@@ -591,7 +621,7 @@ function renderAccount() {
 function clearPrivate() {
   state.subs.clear(); state.selection = null; state.topics.clear(); state.email = ''; state.mail = null; state.consent = false; state.onboarded = false;
   state.obStep = ''; state.active = ''; state.level = 1; state.experience = 'new';
-  progressToasts.forEach(t => t.remove()); progressToasts.clear();
+  progressToasts.forEach(t => t.remove()); progressToasts.clear(); [...collectProgress.keys()].forEach(untrackProgress);
   completionToasts.forEach(({toast}) => toast.remove()); completionToasts.clear(); acknowledgedCompletions.clear(); terminalStages.clear(); state.collecting.clear(); showToasts();
 }
 async function logout() {
