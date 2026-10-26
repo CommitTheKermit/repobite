@@ -13,6 +13,7 @@ from collection_worker import CollectionLock
 import radar
 import repository_discovery
 from public_feed import public_items
+from repository_categories import categorize_repositories
 
 
 def discovered_repositories(root):
@@ -39,8 +40,8 @@ def discovered_repositories(root):
     return names
 
 
-def public_repositories(names):
-    """이번 실행에서 공개인 저장소만 수집한다. 등록과 구독 자체는 보존한다."""
+def public_repository_info(names):
+    """공개 저장소의 분류 근거를 조회한다. 등록과 구독 자체는 보존한다."""
     public = {}
     for key, name in names.items():
         try:
@@ -52,7 +53,7 @@ def public_repositories(names):
         if not isinstance(info, dict) or type(info.get("private")) is not bool:
             raise ValueError("저장소의 공개 상태를 확인하지 못했습니다.")
         if not info["private"]:
-            public[key] = name
+            public[key] = info
     return public
 
 
@@ -74,12 +75,14 @@ def collect_batch(root=radar.ROOT, since="24h", workers=4, lock=None):
         name = community.normalize_repo(value)
         names.setdefault(name.lower(), name)
     # gh가 비공개 레포 권한을 갖고 있어도 수집하거나 공개하지 않는다.
-    names = public_repositories(names)
+    repository_info = public_repository_info(names)
+    names = {key: name for key, name in names.items() if key in repository_info}
     discovered = [name for name in discovered if name.lower() in names]
     data = root / ".radar-community"
     data.mkdir(exist_ok=True)
     # ponytail: 기존 스케줄러처럼 동시에 한 배치만 실행. 여러 실행기가 생기면 DB 잠금 추가.
     items = []
+    repositories = {}
     if names:
         with tempfile.TemporaryDirectory(dir=data) as directory:
             repos = Path(directory) / "repos.txt"
@@ -90,10 +93,11 @@ def collect_batch(root=radar.ROOT, since="24h", workers=4, lock=None):
             if result := radar.batch(args):
                 return result
         issues = [row for row in radar.read_jsonl(args.issues) if row["repo"].lower() in names]
-        items = public_items(issues, radar.read_jsonl(args.grades))
+        repositories = categorize_repositories(repository_info, data / 'repository-categories.json')
+        items = public_items(issues, radar.read_jsonl(args.grades), repositories)
     snapshot = {"items": items,
                 "collected_repos": list(names), "collected_at": community.timestamp(),
-                "discovered_repos": discovered}
+                "discovered_repos": discovered, "repositories": repositories}
     # 구독 도중 들어온 즉시 수집은 같은 잠금이 해제된 뒤 저장소 단위로 병합한다.
     lock.check()
     encoded = json.dumps(snapshot, ensure_ascii=False)

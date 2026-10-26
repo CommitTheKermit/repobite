@@ -11,6 +11,7 @@ import community
 import collection
 import radar
 from public_feed import public_items
+from repository_categories import categorize_repositories
 
 
 class CollectionLock(AbstractContextManager):
@@ -72,13 +73,15 @@ def collect_repository(repo, root, progress):
     # 정기 수동 메일 초안에서도 즉시 수집 후보를 사용할 수 있도록 같은 후보 파일에 병합한다.
     if radar.candidates(argparse.Namespace(input=grades, output=Path(root) / '.radar-community' / 'candidates.jsonl')):
         raise RuntimeError('후보 저장 실패')
-    return public_items(radar.read_jsonl(issues), radar.read_jsonl(grades))
+    repositories = categorize_repositories({repo: info}, Path(root) / '.radar-community' / 'repository-categories.json')
+    return public_items(radar.read_jsonl(issues), radar.read_jsonl(grades), repositories), repositories
 
 
-def merge_repository(repo, items, lock):
+def merge_repository(repo, items, lock, repositories=None):
     lock.check()
     snapshot = json.loads(community.redis('GET', community.SNAPSHOT_KEY) or '{}')
     snapshot['items'] = [item for item in snapshot.get('items', []) if item['repo'].lower() != repo] + items
+    snapshot.setdefault('repositories', {}).update(repositories or {})
     snapshot['collected_repos'] = sorted({name.lower() for name in snapshot.get('collected_repos', [])} | {repo})
     snapshot['collected_at'] = community.timestamp()
     # JSON 배열은 Python에서 보존하고 잠금 소유권 확인과 쓰기는 Redis 안에서 함께 수행한다.
@@ -108,8 +111,8 @@ def drain(root=radar.ROOT):
                     job['attempt'] += 1
                     save_job(job, 'fetching')
                     try:
-                        items = collect_repository(job['repo'], root, lambda stage: save_job(job, stage))
-                        merge_repository(job['repo'], items, lock)
+                        items, repositories = collect_repository(job['repo'], root, lambda stage: save_job(job, stage))
+                        merge_repository(job['repo'], items, lock, repositories)
                         save_job(job, 'done')
                         break
                     except (OSError, ValueError, RuntimeError, KeyError, TypeError, radar.subprocess.SubprocessError):

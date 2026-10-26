@@ -58,7 +58,7 @@ class CollectionTest(unittest.TestCase):
                 job.update(json.loads(args[-1])); saved.append(dict(job)); return 1
             raise AssertionError(command)
         lock = Mock()
-        attempts = [RuntimeError('429')] * failures + [[]]
+        attempts = [RuntimeError('429')] * failures + [([], {})]
         with patch.object(community,'redis',side_effect=redis), patch.object(worker,'CollectionLock',return_value=nullcontext(lock)), patch.object(worker,'collect_repository',side_effect=attempts) as collect, patch.object(worker,'merge_repository') as merge, patch.object(worker.time,'sleep'):
             worker.drain()
             self.assertEqual(collect.call_count, min(failures + 1, 3))

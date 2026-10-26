@@ -745,11 +745,16 @@ async function loadFeed() {
   }
   publicSubscriptions.clear(); subscribed.forEach(n => publicSubscriptions.add(n.toLowerCase()));
   state.collected = new Set((data.collected_repos || data.items?.map(i => i.repo) || []).map(n => n.toLowerCase()));
-  repos.forEach(r => { r.all = []; });
+  repos.forEach(r => { r.all = []; r.topics.clear(); });
   state.collected.forEach(n => ensureRepo(n));
+  // 이슈가 0건이어도 수집을 마친 저장소의 설명과 카테고리를 복원한다.
+  for (const [name, metadata] of Object.entries(data.repositories || {})) {
+    if (state.collected.has(name.toLowerCase())) ensureRepo(name, metadata.description, metadata.categories || []);
+  }
   window.ISSUES = [];
   for (const item of data.items || []) {
-    const repo = ensureRepo(item.repo, item.description, item.categories || []);
+    const metadata = data.repositories?.[item.repo.toLowerCase()] || item;
+    const repo = ensureRepo(item.repo, metadata.description, metadata.categories || []);
     if (item.repository_image && /^https:\/\//.test(item.repository_image)) window.REPO_IMAGES[repo.name] = item.repository_image;
     if (item.criteria_version !== 2 || item.error || item.grade?.exclude !== false || ![1,2,3].includes(item.grade?.difficulty)) continue;
     const issue = {repo: repo.name, n: Number(item.number), t: item.title, lv: item.grade.difficulty};
