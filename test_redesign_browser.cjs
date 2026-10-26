@@ -126,7 +126,8 @@ const {chromium} = require(process.env.REPOBITE_PLAYWRIGHT || 'playwright');
     await page.locator('#repository-search').getByRole('searchbox').fill('new');
     await page.locator('[data-search-repository="new/repo"]').click();
     await page.waitForFunction(()=>location.hash==='#/explore');
-    assert(await page.locator('#detail').isVisible());
+    // 해시 변경 뒤 hashchange 렌더에서 상세가 열리므로 표시될 때까지 기다린다.
+    await page.locator('#detail').waitFor();
     assert.deepEqual(errors,[]);
     console.log('통과: 1440/1000/390 넘침 없음, 상세·구독·2단계 저장, 이유 비노출, 수집 범위 검색 격리·외부 검색 대화상자·빈 결과·검색 제한·상세 선택, 재시도 후 실패 표시');
   } finally {await browser.close();}
