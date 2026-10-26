@@ -433,3 +433,20 @@ svg {flex-shrink:0;vertical-align:middle}
   .featured-row { grid-template-columns: minmax(0, 1fr) auto; }
   .featured-row a { grid-column: 1 / -1; }
 }
+
+.rail-feedback { display: flex; flex-direction: column; align-items: center; gap: 2px; border: 0; background: none; color: var(--muted); font-size: 11px; padding: 6px; }
+.rail-feedback > span:first-child { font-size: 24px; line-height: 1; }
+.feedback { color: var(--text); width: min(520px, calc(100vw - 24px)); max-height: calc(100dvh - 32px); padding: 0; }
+.feedback::backdrop { background: rgb(9 9 11 / .78); }
+.feedback .win-bar { align-items: center; }
+.feedback .win-bar button { border: 0; background: none; color: inherit; font-size: 24px; padding: 0 4px; }
+.feedback h2 { margin: 0 0 12px; font-size: 22px; }
+.feedback p { font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+.feedback textarea { display: block; width: 100%; max-width: 100%; margin: 8px 0; padding: 10px; background: var(--bg); color: var(--text); border: 1px solid var(--rule-strong); font: inherit; resize: vertical; }
+@media (max-width: 767px) {
+  .rail { gap: 4px; padding-inline: 12px; }
+  .rail .mark { margin-right: 0; }
+  .rail .nav-item, .rail .rail-add { width: 44px; }
+  .rail-feedback { width: 36px; flex: none; }
+  .search-toggle { width: 28px; }
+}

@@ -71,3 +71,46 @@ test('공유 미리보기는 정식 절대 주소와 1200x630 PNG를 사용한�
   assert.equal(png.readUInt32BE(16), 1200); assert.equal(png.readUInt32BE(20), 630);
   assert(png.length <= 300 * 1024);
 });
+
+const measurementSource = app.slice(app.indexOf('function track('), app.indexOf('const go ='));
+test('방문은 탭에서 한 번 전송하며 저장소와 네트워크 장애를 무시한다', async () => {
+  const sent = [], values = new Map();
+  const context = vm.createContext({fetch: (url, options) => {sent.push({url, options}); return Promise.reject(Error('offline'));}, sessionStorage: {getItem: k => values.get(k), setItem: (k,v) => values.set(k,v)}});
+  vm.runInContext(measurementSource, context);
+  context.trackVisit(); context.trackVisit();
+  await Promise.resolve();
+  assert.equal(sent.length, 1); assert.equal(sent[0].options.keepalive, true);
+  assert.equal(sent[0].url, '/api/events');
+  assert.equal(JSON.parse(sent[0].options.body).name, 'visit');
+  context.sessionStorage = {getItem() {throw Error('denied');}};
+  context.trackVisit(); await Promise.resolve();
+  assert.equal(sent.length, 2);
+  context.fetch = () => {throw Error('offline');};
+  assert.doesNotThrow(() => context.track('issue_click'));
+});
+test('추천·상세 링크의 클릭과 페이지 로드에 집계가 연결된다', () => {
+  assert.match(app, /data-track="featured_click"/);
+  assert.match(app.slice(app.indexOf('function detailView(')), /data-track="issue_click"/);
+  assert.match(app, /if \(link\) track\(link.dataset.track\)/);
+  assert.match(app, /trackVisit\(\);\s*await initialize/);
+});
+test('의견은 중복 전송을 막고 실패 시 입력 유지, 성공 시 비우고 닫는다', async () => {
+  const input = {value: '의견', readOnly: false}, button = {disabled: false}, status = {textContent: ''};
+  const form = {querySelector: q => q === 'textarea' ? input : q === '[type="submit"]' ? button : status};
+  let resolve, closed = 0, notified = 0, calls = 0;
+  const context = vm.createContext({fetch: () => {calls++; return new Promise(r => {resolve = r;});}, feedbackBox: {close() {closed++;}}, notify() {notified++;}});
+  vm.runInContext(measurementSource, context);
+  const event = {preventDefault() {}, currentTarget: form};
+  const pending = context.submitFeedback(event);
+  assert.equal(button.disabled, true); assert.equal(input.readOnly, true);
+  await context.submitFeedback(event); assert.equal(calls, 1);
+  resolve({ok: false, json: async () => ({error: '잠시 후 다시 시도하세요.'})}); await pending;
+  assert.equal(input.value, '의견'); assert.equal(status.textContent, '잠시 후 다시 시도하세요.');
+  assert.equal(closed, 0); assert.equal(button.disabled, false); assert.equal(input.readOnly, false);
+  context.fetch = async () => ({ok: true, json: async () => ({})});
+  await context.submitFeedback(event);
+  assert.equal(input.value, ''); assert.equal(closed, 1); assert.equal(notified, 1);
+  input.value = '연결 실패'; context.fetch = async () => {throw Error('연결 실패 안내');};
+  await context.submitFeedback(event);
+  assert.equal(input.value, '연결 실패'); assert.equal(status.textContent, '연결 실패 안내');
+});

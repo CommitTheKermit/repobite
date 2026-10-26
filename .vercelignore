@@ -37,3 +37,7 @@
 !loading-indicator.mjs
 
 !og.png
+
+!metrics.py
+!api/events.py
+!api/feedback.py

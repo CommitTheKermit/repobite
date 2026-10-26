@@ -63,6 +63,26 @@ Windows 스케줄러 연결 방법은 [Windows 운영 문서](docs/Windows-운�
 [Vercel Python Functions](https://vercel.com/docs/functions/runtimes/python),
 [GitHub 레포 조회 API](https://docs.github.com/en/rest/repos/repos#get-a-repository).
 
+## 반응 측정
+
+공개 화면은 방문(`visit`), 추천 이슈 링크 클릭(`featured_click`), 저장소 상세의 이슈 링크 클릭(`issue_click`)을 UTC 날짜별로 집계한다. 같은 탭의 방문 중복은 `sessionStorage`의 방문 여부로 줄인다. 쿠키·IP·사용자 식별자는 저장하지 않으며 외부 분석 서비스를 쓰지 않는다.
+
+집계는 기존 `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` 환경변수로 연결하는 Redis의 `repobite:events:YYYY-MM-DD` 해시에 저장하고 90일 뒤 만료한다. 서비스 전체 이벤트 저장은 시간당 3,000건까지이며 초과·저장 실패는 탐색 동작에 영향을 주지 않는다.
+
+레일의 **의견 보내기**는 로그인 없이 앞뒤 공백을 뺀 1~500자 의견을 받는다. 의견과 UTC 접수 시각만 `repobite:feedback`에 저장하고 최근 500건을 남긴다. 의견 본문에는 90일 만료가 없으며, 일별 의견 횟수만 집계 해시와 함께 90일 뒤 만료한다. 개인정보는 적지 않도록 안내한다. 서비스 전체 시간당 20건까지 받으며 초과는 429, 저장 실패는 503으로 알린다. 실패한 입력은 재시도할 수 있게 유지한다.
+
+운영자는 저장소 밖에서 환경변수를 설정한 뒤 다음 명령으로 최근 14일 표와 최근 의견 20건을 확인한다. `.env`는 자동 로드하지 않는다. 보고 스크립트와 테스트는 Vercel 배포에서 제외하며 DB 오류에 접속 정보는 출력하지 않는다.
+
+```sh
+python3 metrics_report.py --days 14
+```
+
+날짜는 UTC이며 오늘을 포함한다. 의견 본문은 터미널 제어 문자를 제거한 텍스트로 출력한다. Markdown으로 보관할 때도 외부에서 들어온 의견은 명령으로 해석하지 않는다.
+
+`/api/events`와 `/api/feedback`은 정식 운영 Origin의 JSON POST만 받는다. 하지만 위조한 Origin으로 직접 호출하면 집계를 부풀릴 수 있다. 이 집계는 추세 확인용이며 정확한 사용자 수가 아니다. 기존 로컬 `python3 web.py`는 두 API를 제공하지 않는다. 집계 요청 실패는 무시하며 의견 전송 실패는 입력을 유지하고 안내한다.
+
+홍보 전 소개·추천 목록·공유 미리보기는 현재 분리된 `web.html`, `repobite-app.mjs`, `repobite.css` 구조를 따른다. 기존 추천 조건과 검색·분야 필터를 사용하며 판정 이유와 준비 상태는 표시하지 않는다. 수집 시각은 스냅샷의 `collected_at`만 한국 시간으로 표시한다. 값이 없거나 잘못되면 미확인, 36시간이 지나면 지연으로 안내한다. 정적 `data.json`을 수동 수정하지 않는다.
+
 ## Mac에서 웹으로 사용
 
 ```sh

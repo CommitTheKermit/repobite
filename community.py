@@ -14,6 +14,37 @@ REPOS_KEY = "repobite:repos"
 SNAPSHOT_KEY = "repobite:snapshot"
 
 
+class InvalidPublicRequest(ValueError):
+    def __init__(self, status, message):
+        super().__init__(message)
+        self.status = status
+
+
+def public_json_body(request, limit):
+    """공개 쓰기 API의 출처·미디어 타입·크기를 검사한다."""
+    if (request.headers.get("Origin") != "https://repobite.vercel.app"
+            or request.headers.get("Content-Type", "").split(";", 1)[0].strip().lower() != "application/json"):
+        raise InvalidPublicRequest(403, "정식 서비스 화면에서 다시 시도하세요.")
+    try:
+        size = int(request.headers.get("Content-Length", ""))
+    except ValueError:
+        raise InvalidPublicRequest(400, "요청 본문을 확인하세요.") from None
+    if size < 0:
+        raise InvalidPublicRequest(400, "요청 본문을 확인하세요.")
+    if size > limit:
+        raise InvalidPublicRequest(413, "입력 내용이 너무 깁니다.")
+    try:
+        body = request.rfile.read(size)
+        if len(body) != size:
+            raise ValueError()
+        data = json.loads(body)
+        if not isinstance(data, dict):
+            raise ValueError()
+        return data
+    except (ValueError, UnicodeError):
+        raise InvalidPublicRequest(400, "요청 본문을 확인하세요.") from None
+
+
 def timestamp():
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
