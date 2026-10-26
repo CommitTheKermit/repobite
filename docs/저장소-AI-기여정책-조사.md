@@ -45,6 +45,13 @@
 
 미확인 19개: akitaonrails/ai-memory, NationalSecurityAgency/ghidra, stablyai/orca, Comfy-Org/ComfyUI, codecrafters-io/build-your-own-x, sindresorhus/awesome, public-apis/public-apis, freeCodeCamp/freeCodeCamp, EbookFoundation/free-programming-books, openclaw/openclaw, donnemartin/system-design-primer, nilbuild/developer-roadmap, jwasham/coding-interview-university, obra/superpowers, mattpocock/skills, practical-tutorials/project-based-learning, affaan-m/ECC, NousResearch/hermes-agent, react/react.
 
+## 추가 확인 (수집 목록 밖, 2026-10-26)
+
+| 저장소 | 확인 커밋 | 내용 |
+|---|---|---|
+| Q00/ouroboros | `05d2718` (2026-10-25) | AI 정책 없음. 새 기능은 이슈로 먼저 논의한다. PR 템플릿에 AI 사용 항목이 없다. `AGENTS.md`·`CLAUDE.md`는 개발용 에이전트 지침이다. 기획서 1절의 기여 사례(PR #2177, #2199)가 나온 저장소다. |
+| epoko77-ai/im-not-ai | `b37e020` (2026-10-12) | CONTRIBUTING, AI 정책, PR 템플릿이 없다. `CLAUDE.md`는 유지보수용 에이전트 지침이다. README는 이슈·PR 기여를 받고 기여자를 `CONTRIBUTORS.md`에 기록한다. 사용자 계정의 `CommitTheKermit/im-not-ai`는 이 저장소의 포크(2026-09-22 기준)다. |
+
 ## 시사점
 
 1. **추천해도 PR로 이어질 수 없는 저장소가 있다.** hono와 pocketbase는 외부 PR을 받지 않는다. ghostty와 bookorbit는 사전 승인이 없으면 PR이 닫힌다. 이 4곳은 추천에서 빼거나 "PR 전 승인 필요"를 표시해야 한다.
