@@ -32,7 +32,7 @@ test('메인은 저장소 탐색으로 시작하며 소개와 전체 쉬움 추�
 });
 
 test('공유 미리보기는 정식 절대 주소와 1200x630 PNG를 사용한다', () => {
-  for (const [property, content] of Object.entries({'og:type':'website', 'og:site_name':'RepoBite', 'og:url':'https://repobite.vercel.app/', 'og:title':'RepoBite | 관심 있는 저장소에서 시작하는 기여', 'og:image':'https://repobite.vercel.app/og.png', 'og:image:width':'1200', 'og:image:height':'630'})) {
+  for (const [property, content] of Object.entries({'og:type':'website', 'og:site_name':'RepoBite', 'og:url':'https://repobite.vercel.app/', 'og:title':'RepoBite | 관심 있는 저장소에서 시작하는 기여', 'og:image':'https://repobite.vercel.app/og.png?v=45bb58cd', 'og:image:width':'1200', 'og:image:height':'630'})) {
     assert(html.includes(`<meta property="${property}" content="${content}">`));
   }
   assert.match(html, /name="description" content="[^"]+"/);
