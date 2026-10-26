@@ -26,3 +26,15 @@ test('첫 화면은 서비스 목적과 원문 확인 안내를 표시한다', (
   assert.match(app, /<h1>처음 기여하기 좋은 오픈소스 이슈를 골라드립니다<\/h1>/);
   assert.match(app, /작업 전에 GitHub 원문과 현재 상태를 확인하세요/);
 });
+
+const collectionSource = app.slice(app.indexOf('function collectionTime('), app.indexOf('function exploreList('));
+const clock = Date.parse('2026-10-26T01:00:00Z');
+const timeContext = vm.createContext({Intl, Date: class extends Date { static now() { return clock; } }});
+vm.runInContext(collectionSource, timeContext);
+const collectionTime = value => timeContext.collectionTime(value);
+test('수집 시각은 한국 시간으로 표시하고 36시간 초과만 지연으로 알린다', () => {
+  assert.equal(collectionTime('2026-10-26T00:00:00Z'), '10월 26일 09:00 수집');
+  assert.match(collectionTime('2026-10-24T12:59:59Z'), /최근 수집이 지연되고 있습니다$/);
+  assert.doesNotMatch(collectionTime('2026-10-24T13:00:00Z'), /지연/);
+  for (const value of [null, undefined, '', 'invalid']) assert.equal(collectionTime(value), '수집 시각 미확인');
+});

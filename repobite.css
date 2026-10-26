@@ -418,3 +418,5 @@ svg {flex-shrink:0;vertical-align:middle}
 @media (max-width: 767px) {
   .launch-intro { margin-inline: -4px; padding-top: 24px; }
 }
+
+.collection-time { color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
