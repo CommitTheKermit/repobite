@@ -83,6 +83,35 @@ const subIssues = () => [...onboardingRepositories()].flatMap(name => repos.get(
 const route = () => location.hash.replace('#/', '') || 'explore';
 const levelTags = list => [1, 2, 3].map(n => [n, list.filter(i => i.lv === n).length]).filter(([, c]) => c).map(([n, c]) => `<span class="tag">Lv.${n} ${LEVELS[n - 1]} ${c}</span>`).join('');
 const issueRow = i => `<a class="issue-row" href="https://github.com/${esc(i.repo)}/issues/${i.n}" target="_blank" rel="noopener noreferrer"><span class="inv">Lv.${i.lv} ${LEVELS[i.lv - 1]}</span><span class="pix">#${i.n}</span><b>${esc(i.t)}</b></a>`;
+// 집계 실패는 탐색과 링크 이동을 막지 않는다.
+function track(name) {
+  try {
+    Promise.resolve(fetch('/api/events', {method: 'POST', keepalive: true, headers: {'Content-Type': 'application/json'}, body: JSON.stringify({name})})).catch(() => {});
+  } catch {}
+}
+function trackVisit() {
+  try {
+    if (sessionStorage.getItem('repobite-visited')) return;
+    sessionStorage.setItem('repobite-visited', '1');
+  } catch {}
+  track('visit');
+}
+async function submitFeedback(event) {
+  event.preventDefault();
+  const form = event.currentTarget, input = form.querySelector('textarea'), button = form.querySelector('[type="submit"]'), status = form.querySelector('[data-feedback-status]');
+  if (button.disabled) return;
+  button.disabled = true; input.readOnly = true; status.textContent = '보내는 중입니다.';
+  try {
+    const response = await fetch('/api/feedback', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({text: input.value})});
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw Error(data.error || '의견을 보내지 못했습니다. 잠시 후 다시 시도하세요.');
+    input.value = ''; status.textContent = ''; feedbackBox.close();
+    notify('FEEDBACK', 'THANK YOU', '<p>의견을 보냈습니다. 고맙습니다.</p>');
+  } catch (error) {
+    status.textContent = error.message || '의견을 보내지 못했습니다. 잠시 후 다시 시도하세요.';
+  } finally { button.disabled = false; input.readOnly = false; }
+}
+
 const go = name => { location.hash = `#/${name}`; };
 
 // 상세에서 여는 온보딩 다이얼로그는 저장소가 정해져 있으므로 난이도와 알림 두 단계만 쓴다
@@ -423,7 +452,7 @@ function detailParts(repo) {
 }
 function detailView(repo, p) {
     const cells = p.list.map(i => `<article><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><span class="inv">Lv.${i.lv} ${LEVELS[i.lv - 1]}</span><span class="pix">#${i.n}</span></div>
-      <h3 style="font-size:17px;line-height:1.4;margin:12px 0 10px;letter-spacing:-.01em">${esc(i.t)}</h3><a href="https://github.com/${esc(i.repo)}/issues/${i.n}" target="_blank" rel="noopener noreferrer" style="color:var(--muted);font-size:13px">GitHub에서 열기 ↗</a></article>`).join('');
+      <h3 style="font-size:17px;line-height:1.4;margin:12px 0 10px;letter-spacing:-.01em">${esc(i.t)}</h3><a data-track="issue_click" href="https://github.com/${esc(i.repo)}/issues/${i.n}" target="_blank" rel="noopener noreferrer" style="color:var(--muted);font-size:13px">GitHub에서 열기 ↗</a></article>`).join('');
     return `<section class="overlay">${p.close}
       <div class="overlay-top"><div class="overlay-title"><span class="eyebrow">REPOSITORY</span><h2>${esc(short(repo.name))}</h2><span class="card-meta" style="margin-top:16px">${owner(repo.name)}<span><b class="detail-name">${esc(repo.name)}</b><small>${esc(repo.description)}</small></span></span>${p.topics}<div class="overlay-cta">${p.cta}${p.github}</div></div>
         <div class="spec"><span class="cross tl"></span><span class="cross br"></span><div class="full">${repoMedia(repo.name, 'spec-media')}</div>
@@ -449,7 +478,7 @@ function renderStack(name) {
   stack.classList.toggle('stack', name !== 'subs');
   if (name === 'subs') {
     stack.innerHTML = state.subs.size ? `<section class="win" style="--i:0"><div class="win-bar"><span>SUBSCRIBED</span><span>${state.subs.size}</span></div><div class="win-body"><div class="sub-list">${[...state.subs].map(n => `<button class="sub-row" data-active="${esc(n)}" aria-current="${n === state.active}">${avatar(n)}<span><b>${esc(short(n))}</b><small>${esc(n.split('/')[0])}</small></span><span class="pix">${repos.get(n).issues.length}</span></button>`).join('')}</div></div></section>
-      <section class="win dots" style="--i:1"><div class="win-bar"><span>MAIL</span><span>${state.mail ? 'ON' : 'OFF'}</span></div><div class="win-body"><dl class="kv"><dt>받는 난이도</dt><dd>Lv.${state.level} ${LEVELS[state.level - 1]}</dd><dt>받는 주소</dt><dd>${esc(state.mail || '없음')}</dd><dt>발송</dt><dd>하루 최대 3개</dd></dl><button class="ghost" data-go="level" style="margin-top:16px">알림 설정 바꾸기</button></div></section>` : '';
+      <section class="win dots" style="--i:1"><div class="win-bar"><span>MAIL</span><span>${state.mail ? 'ON' : 'OFF'}</span></div><div class="win-body"><dl class="kv"><dt>받는 난이도</dt><dd>Lv.${state.level} ${LEVELS[state.level - 1]}</dd><dt>받는 주소</dt><dd>${esc(state.mail || '없음')}</dd><dt>발송</dt><dd>매일 오전 11시 (한국 시간) · 하루 최대 3개</dd></dl><button class="ghost" data-go="level" style="margin-top:16px">알림 설정 바꾸기</button></div></section>` : '';
     return;
   }
   const index = STEPS.findIndex(([key]) => key === name);
@@ -457,7 +486,7 @@ function renderStack(name) {
     topics: ['관심 분야', [...state.topics].map(t => TOPIC_NAME[t])],
     repos: [`${onboardingRepositories().size}개 저장소 선택`, [...onboardingRepositories()].map(short)],
     level: [`Lv.${state.level} ${LEVELS[state.level - 1]}`, [EXPERIENCES.find(([key]) => key === state.experience)[1]]],
-    mail: [state.consent ? (state.email || '이메일 입력 전') : '알림 없이 구독', ['하루 최대 3개']],
+    mail: [state.consent ? (state.email || '이메일 입력 전') : '알림 없이 구독', ['매일 오전 11시 · 한국 시간 · 하루 최대 3개']],
   };
   stack.innerHTML = STEPS.slice(0, index + 1).map(([key, word], i) => {
     const [caption, tags] = detail[key];
@@ -521,6 +550,10 @@ function notify(bar, label, html, {persistent = false, priority = false} = {}) {
 }
 
 document.addEventListener('click', async event => {
+  const link = event.target.closest('a[data-track]');
+  if (link) track(link.dataset.track);
+  if (event.target.closest('[data-feedback-open]')) { feedbackBox.showModal(); return; }
+  if (event.target.closest('[data-feedback-close]')) { feedbackBox.close(); return; }
   const b = event.target.closest('button');
   if (!b || b.disabled) return;
   const d = b.dataset, inOnboard = !!b.closest('#onboard');
@@ -825,4 +858,8 @@ window.addEventListener('pagehide', () => { clearInterval(pollTimer); clearTimeo
 document.addEventListener('compositionstart', event => { if (event.target.id === 'query') { composingSearch = true; clearTimeout(searchTimer); searchController?.abort(); searchRevision++; } });
 document.addEventListener('compositionend', event => { if (event.target.id === 'query') { composingSearch = false; scheduleSearch(event.target); } });
 
+const feedbackBox = document.querySelector('#feedback');
+feedbackBox.querySelector('form').addEventListener('submit', submitFeedback);
+feedbackBox.addEventListener('click', event => { if (event.target === feedbackBox) feedbackBox.close(); });
+trackVisit();
 await initialize();

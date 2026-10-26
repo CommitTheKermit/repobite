@@ -2,7 +2,17 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>RepoBite</title>
+<title>RepoBite | 관심 있는 저장소에서 시작하는 기여</title>
+<meta name="description" content="관심 있는 오픈소스 저장소를 구독하고, 난이도에 맞는 이슈를 찾아보세요.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="RepoBite">
+<meta property="og:url" content="https://repobite.vercel.app/">
+<meta property="og:title" content="RepoBite | 관심 있는 저장소에서 시작하는 기여">
+<meta property="og:description" content="관심 있는 오픈소스 저장소를 구독하고, 난이도에 맞는 이슈를 찾아보세요.">
+<meta property="og:image" content="https://repobite.vercel.app/og.png?v=45bb58cd">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
 
 
 <link rel="stylesheet" href="/repobite.css">
@@ -14,6 +24,7 @@
     <a class="nav-item" href="#/explore" data-nav="explore" aria-label="탐색"><canvas data-dither="compass" width="20" height="20" aria-hidden="true"></canvas><span>explore</span></a>
     <a class="nav-item" href="#/subs" data-nav="subs" aria-label="내 구독"><canvas data-dither="bookmark" width="20" height="20" aria-hidden="true"></canvas><span>my</span></a>
     <button class="rail-add" data-external-search aria-label="GitHub에서 다른 저장소 찾기"><canvas data-dither="plus" width="20" height="20" aria-hidden="true"></canvas><span>add</span></button>
+    <button class="rail-feedback" data-feedback-open aria-label="의견 보내기"><span aria-hidden="true">✉</span><span>의견</span></button>
     <button class="search-toggle" data-search-open aria-label="수집된 저장소 검색" aria-expanded="false" aria-controls="collected-repository-search"><span data-lucide="search"></span></button>
     <div class="account-strip" id="account-strip"></div>
   </nav>
@@ -47,6 +58,17 @@
       <div data-search-results></div>
     </div>
   </div>
+</dialog>
+<dialog id="feedback" class="feedback win" aria-labelledby="feedback-title">
+  <div class="win-bar"><span>FEEDBACK</span><button type="button" data-feedback-close aria-label="의견 닫기">×</button></div>
+  <form class="win-body">
+    <h2 id="feedback-title">의견 보내기</h2>
+    <p id="feedback-guide">서비스에 대한 의견을 남겨주세요. 답장이 필요하지 않은 익명 의견이며 개인정보는 적지 마세요.</p>
+    <label for="feedback-text">의견</label>
+    <textarea id="feedback-text" maxlength="500" required aria-describedby="feedback-guide" rows="6"></textarea>
+    <p data-feedback-status role="status" aria-live="polite"></p>
+    <button class="ghost invert" type="submit">보내기</button>
+  </form>
 </dialog>
 <dialog id="detail" class="detail"></dialog>
 <dialog id="onboard" class="onboard" aria-label="구독 설정"></dialog>

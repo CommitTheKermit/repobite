@@ -188,8 +188,8 @@ def validate_delivery_id(value):
         raise ValueError("전달 식별자를 확인하세요.")
 
 
-def record_delivery(user_id, digest_id, day, items, confirmed_at, state="operator_confirmed"):
-    """서버 outbox 전용. 운영자 확인만 저장하며 공개 API에서는 호출하지 않는다."""
+def record_delivery(user_id, digest_id, day, items, confirmed_at, state="operator_confirmed", provider_id=None):
+    """서버 outbox 전용. 운영자 확인과 제공자 접수를 구분하고 실제 수신으로 간주하지 않는다."""
     key = delivery_key(user_id)
     validate_delivery_id(digest_id)
     try:
@@ -198,8 +198,10 @@ def record_delivery(user_id, digest_id, day, items, confirmed_at, state="operato
             raise ValueError()
     except (TypeError, ValueError):
         raise ValueError("운영자 확인 날짜와 시각을 확인하세요.") from None
-    if state != "operator_confirmed":
-        raise ValueError("운영자가 발송을 확인한 기록만 동기화할 수 있습니다.")
+    if state not in ("operator_confirmed", "provider_accepted"):
+        raise ValueError("발송 기록의 상태를 확인하세요.")
+    if state == "provider_accepted" and (not isinstance(provider_id, str) or not re.fullmatch(r'[A-Za-z0-9_-]{8,128}', provider_id)):
+        raise ValueError("제공자 접수 식별자를 확인하세요.")
     if not isinstance(items, list) or not 0 < len(items) <= accounts.DAILY_LIMIT:
         raise ValueError("수동 발송 항목을 확인하세요.")
     identities = set()
@@ -214,6 +216,8 @@ def record_delivery(user_id, digest_id, day, items, confirmed_at, state="operato
     normalized = [{"repo": repo, "number": number} for repo, number in sorted(identities)]
     record = {"id": digest_id, "day": day, "items": normalized, "confirmed_at": confirmed_at,
               "state": state, "attestation_basis": "operator_confirmation", "provider_delivery_verified": False}
+    if state == "provider_accepted":
+        record.update(attestation_basis="provider_acceptance", provider_id=provider_id)
     value = json.dumps(record, ensure_ascii=False, sort_keys=True)
     created = community.redis("HSETNX", key, digest_id, value)
     if not created:
@@ -297,7 +301,9 @@ def user_contributions(user_id):
     deliveries = user_deliveries(user_id)
     return {"records": records, "deliveries": deliveries,
             "summary": {"tracked_issues": len(records), "merged_pr_count": len(merged),
-            "operator_confirmed_digest_count": len(deliveries), "provider_delivery_verified": False,
+            "operator_confirmed_digest_count": sum(d['state'] == 'operator_confirmed' for d in deliveries),
+            "provider_accepted_digest_count": sum(d['state'] == 'provider_accepted' for d in deliveries),
+            "provider_delivery_verified": False,
             "success_basis": "verified_github_author_id_and_merged_at_unique_pr_url",
             "issue_link_basis": "user_declared", "delivery_conversion_measured": False,
             "automatic_level_expansion": False}}

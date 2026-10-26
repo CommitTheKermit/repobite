@@ -102,7 +102,7 @@ class ManualDelivery:
                 current = self.db.execute(
                     'SELECT * FROM digests WHERE user_id=? AND day=?',
                     (user_id, day)).fetchone()
-                if current and current['state'] == 'operator_confirmed':
+                if current and current['state'] != 'prepared':
                     continue
                 sent = {(row['repo'], row['number']) for row in self.db.execute(
                     'SELECT repo,number FROM sent_issues WHERE user_id=?', (user_id,))}
@@ -187,6 +187,8 @@ class ManualDelivery:
             if row['state'] == 'operator_confirmed':
                 self.db.rollback()
                 return False
+            if row['state'] != 'prepared':
+                raise ValueError('자동 발송이 시작된 초안은 수동 확인할 수 없습니다')
             for item in json.loads(row['items']):
                 repo, number = radar.issue_key(item)
                 self.db.execute('INSERT INTO sent_issues VALUES (?,?,?,?)',

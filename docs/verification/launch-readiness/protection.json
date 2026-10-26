@@ -1,0 +1,9 @@
+{
+  "name": "repobite",
+  "ssoProtection": {
+    "deploymentType": "all_except_custom_domains"
+  },
+  "passwordProtection": null,
+  "trustedIps": null,
+  "optionsAllowlist": null
+}

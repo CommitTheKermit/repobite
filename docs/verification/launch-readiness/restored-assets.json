@@ -1,0 +1,47 @@
+[
+  {
+    "path": "/",
+    "status": 200,
+    "content_type": "text/html; charset=utf-8",
+    "redirect": "",
+    "matches_local": true,
+    "bytes": 5842,
+    "sha256": "2aa0fb1fdb0542203c4405c37f31364783b967d4d4b58ad85c78a236829cb4e4"
+  },
+  {
+    "path": "/repobite-app.mjs",
+    "status": 200,
+    "content_type": "application/javascript; charset=utf-8",
+    "redirect": "",
+    "matches_local": true,
+    "bytes": 59713,
+    "sha256": "c993cd0de37b6f0a4fc33556e69ec19f6bb7ee7a0222467dc7985c05f9e76052"
+  },
+  {
+    "path": "/repobite.css",
+    "status": 200,
+    "content_type": "text/css; charset=utf-8",
+    "redirect": "",
+    "matches_local": true,
+    "bytes": 33659,
+    "sha256": "740afe29863aea90e49d8dd9e9bbc329484ae71e9fe3bf05f7ea1ab944ea2e3b"
+  },
+  {
+    "path": "/og.png",
+    "status": 200,
+    "content_type": "image/png",
+    "redirect": "",
+    "matches_local": true,
+    "bytes": 29510,
+    "sha256": "d3e119296ec2c13255dd1cde6c8282acfb026f035527d2f02a26d46bf0c0954f"
+  },
+  {
+    "path": "/data.json",
+    "status": 200,
+    "content_type": "application/json; charset=utf-8",
+    "redirect": "",
+    "matches_local": true,
+    "bytes": 1009309,
+    "sha256": "286d2818b03312140535e62d56c1bb693ba310a3dfc39046cd8929e88e2a7957"
+  }
+]
