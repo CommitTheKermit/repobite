@@ -167,7 +167,13 @@ const screens = {
     const chips = [['전체', '']].concat(GROUPS).map(([label, value]) => `<button class="chip" data-group="${value}" aria-pressed="${state.group === value}">${label}${value ? '' : ` <span class="pix">${listedRepos().length}</span>`}</button>`).join('');
     // 오른쪽 패널이 숨는 좁은 화면에서는 돋보기 버튼으로 필터 바 위에 검색칸을 펼친다
     const inline = state.searchOpen ? `<div class="inline-search" id="collected-repository-search"><label class="search-box">${icon('search')}<input class="search" id="explore-search-m" type="search" placeholder="수집된 저장소에서 검색" aria-label="수집된 저장소 검색" value="${esc(state.search)}"></label><button class="ghost" data-search-close>닫기</button></div>` : '';
-    return `<div class="explore">${inline}
+    return `<div class="explore">
+      <header class="launch-intro">
+        <h1>처음 기여하기 좋은 오픈소스 이슈를 골라드립니다</h1>
+        <p>라벨이 아니라 이슈 본문을 AI가 읽고, 처음 기여할 오픈소스 이슈를 찾도록 도와드립니다.</p>
+        <p class="launch-guide">난이도: Lv.1 쉬움 · Lv.2 보통 · Lv.3 어려움 · 작업 전에 GitHub에서 닫힘·담당자·연결된 PR을 다시 확인하세요.</p>
+        <p class="launch-guide">AI 판정은 틀릴 수 있습니다. 작업 전에 GitHub 원문과 현재 상태를 확인하세요.</p>
+      </header>${inline}
       <div class="bar"><select class="sort" id="sort" aria-label="정렬"><option value="recommended">추천순</option><option value="name" ${state.sort === 'name' ? 'selected' : ''}>레포 이름순</option></select><div class="chips" data-fold="groups">${chips}${moreChip('groups')}</div></div>
       <div class="section-head"><div class="repository-heading"><span class="eyebrow">REPOSITORIES / ${listedRepos().length}</span><button class="repository-search-cta" data-external-search>GitHub에서 다른 레포 찾기 ↗</button></div><button class="ghost invert" data-go="topics">레포바이트 이용하기</button></div>
       <section id="repository-not-found" class="repository-not-found win" hidden><div class="win-body"><h2>찾으시는 레포지토리가 없나요?</h2><p>수집 범위 밖의 저장소는 GitHub에서 찾아 구독할 수 있습니다.</p><button class="ghost invert" data-external-search>GitHub에서 레포지토리 찾기</button></div></section>

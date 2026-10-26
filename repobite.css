@@ -408,3 +408,13 @@ svg {flex-shrink:0;vertical-align:middle}
 .repository-search-placeholder canvas { width: 80px; height: 80px; image-rendering: pixelated; margin-bottom: 12px; }
 .repository-search-placeholder b { font-size: 18px; }
 .repository-search-placeholder span { color: var(--muted); font-size: 14px; }
+
+/* 첫 방문 소개는 필터 바 위의 일반 문서 흐름에 둔다. */
+.launch-intro { padding: 40px 0 8px; overflow-wrap: anywhere; }
+.launch-intro h1 { max-width: 760px; margin: 0 0 16px; font-size: clamp(24px, 3vw, 36px); line-height: 1.4; letter-spacing: -.03em; }
+.launch-intro p { margin: 8px 0; }
+.launch-guide { font-size: 13px; color: var(--muted); }
+.launch-intro ~ .bar { padding-top: 16px; }
+@media (max-width: 767px) {
+  .launch-intro { margin-inline: -4px; padding-top: 24px; }
+}
