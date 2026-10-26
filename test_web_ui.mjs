@@ -22,7 +22,7 @@ test('GitHub 검색 제한을 빈 성공 결과로 숨기지 않는다',async()=
 const app = readFileSync(new URL('./repobite-app.mjs', import.meta.url), 'utf8');
 const html = readFileSync(new URL('./web.html', import.meta.url), 'utf8');
 test('메인은 저장소 탐색으로 시작하며 소개와 전체 쉬움 추천 목록을 표시하지 않는다', () => {
-  assert.match(html, /<title>RepoBite \| 초보자가 바로 손댈 수 있는 오픈소스 이슈<\/title>/);
+  assert.match(html, /<title>RepoBite \| 관심 있는 저장소에서 시작하는 기여<\/title>/);
   const explore = app.slice(app.indexOf('  explore() {'), app.indexOf('  topics() {'));
   assert.doesNotMatch(explore, /launch-intro|id="featured"|처음 기여하기 좋은|AI 판정은 틀릴/);
   assert.match(explore, /레포바이트 이용하기/);
@@ -32,7 +32,7 @@ test('메인은 저장소 탐색으로 시작하며 소개와 전체 쉬움 추�
 });
 
 test('공유 미리보기는 정식 절대 주소와 1200x630 PNG를 사용한다', () => {
-  for (const [property, content] of Object.entries({'og:type':'website', 'og:site_name':'RepoBite', 'og:url':'https://repobite.vercel.app/', 'og:title':'RepoBite | 초보자가 바로 손댈 수 있는 오픈소스 이슈', 'og:image':'https://repobite.vercel.app/og.png', 'og:image:width':'1200', 'og:image:height':'630'})) {
+  for (const [property, content] of Object.entries({'og:type':'website', 'og:site_name':'RepoBite', 'og:url':'https://repobite.vercel.app/', 'og:title':'RepoBite | 관심 있는 저장소에서 시작하는 기여', 'og:image':'https://repobite.vercel.app/og.png', 'og:image:width':'1200', 'og:image:height':'630'})) {
     assert(html.includes(`<meta property="${property}" content="${content}">`));
   }
   assert.match(html, /name="description" content="[^"]+"/);
