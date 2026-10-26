@@ -12,8 +12,9 @@ import time
 import accounts
 import community
 from collection_worker import CollectionLock
+from contribution_tracking import record_delivery, StateConflict
 import email_optout
-from manual_delivery import ManualDelivery, KST, korean_day
+from manual_delivery import ManualDelivery, KST
 import radar
 from resend_delivery import digest_payload, send_email
 
@@ -154,7 +155,6 @@ def run(state, root=radar.ROOT, dry_run=False):
                 print(json.dumps({'prepared': len(prepared), 'blocked_accounts': len(blocked), 'sent': 0}))
                 return 0
             result = send_prepared(store, subscribers, recheck=accounts.delivery_subscribers)
-            from contribution_tracking import record_delivery
             store.sync_deliveries(record_delivery)
             print(json.dumps(result))
             return int(result['pending'] > 0)
@@ -181,7 +181,7 @@ def main():
             print('Resend가 확인 메일을 접수했습니다. 받은편지함에서 실제 수신을 확인하세요.')
             return 0
         return run(args.state, dry_run=args.dry_run)
-    except (OSError, RuntimeError, ValueError, KeyError, TypeError, sqlite3.Error):
+    except (OSError, RuntimeError, ValueError, KeyError, TypeError, sqlite3.Error, StateConflict):
         print('자동 발송 미완료: 키·계정 DB·수집 결과·미확인 접수 상태를 점검하세요.', file=sys.stderr)
         return 1
 
