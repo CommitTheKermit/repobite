@@ -41,3 +41,5 @@
 !metrics.py
 !api/events.py
 !api/feedback.py
+!email_optout.py
+!api/email_unsubscribe.py

@@ -15,6 +15,7 @@ import uuid
 from urllib.parse import urlsplit
 
 from api.account import handle_account
+from api.email_unsubscribe import handle_unsubscribe
 from api.contributions import handle_contributions
 import community
 import home_status
@@ -232,6 +233,8 @@ class Handler(BaseHTTPRequestHandler):
             return
         if urlsplit(self.path).path == "/api/account":
             handle_account(self)
+        elif urlsplit(self.path).path == "/api/email_unsubscribe":
+            handle_unsubscribe(self)
         elif urlsplit(self.path).path == "/api/contributions":
             handle_contributions(self)
         elif self.path == "/":
@@ -263,6 +266,10 @@ class Handler(BaseHTTPRequestHandler):
             self.reply(404, {"error": "페이지가 없습니다."})
 
     def do_POST(self):
+        if urlsplit(self.path).path == "/api/email_unsubscribe":
+            if self.local_request():
+                handle_unsubscribe(self)
+            return
         if urlsplit(self.path).path == "/api/account":
             if self.local_request():
                 handle_account(self)

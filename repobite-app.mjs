@@ -449,7 +449,7 @@ function renderStack(name) {
   stack.classList.toggle('stack', name !== 'subs');
   if (name === 'subs') {
     stack.innerHTML = state.subs.size ? `<section class="win" style="--i:0"><div class="win-bar"><span>SUBSCRIBED</span><span>${state.subs.size}</span></div><div class="win-body"><div class="sub-list">${[...state.subs].map(n => `<button class="sub-row" data-active="${esc(n)}" aria-current="${n === state.active}">${avatar(n)}<span><b>${esc(short(n))}</b><small>${esc(n.split('/')[0])}</small></span><span class="pix">${repos.get(n).issues.length}</span></button>`).join('')}</div></div></section>
-      <section class="win dots" style="--i:1"><div class="win-bar"><span>MAIL</span><span>${state.mail ? 'ON' : 'OFF'}</span></div><div class="win-body"><dl class="kv"><dt>받는 난이도</dt><dd>Lv.${state.level} ${LEVELS[state.level - 1]}</dd><dt>받는 주소</dt><dd>${esc(state.mail || '없음')}</dd><dt>발송</dt><dd>하루 최대 3개</dd></dl><button class="ghost" data-go="level" style="margin-top:16px">알림 설정 바꾸기</button></div></section>` : '';
+      <section class="win dots" style="--i:1"><div class="win-bar"><span>MAIL</span><span>${state.mail ? 'ON' : 'OFF'}</span></div><div class="win-body"><dl class="kv"><dt>받는 난이도</dt><dd>Lv.${state.level} ${LEVELS[state.level - 1]}</dd><dt>받는 주소</dt><dd>${esc(state.mail || '없음')}</dd><dt>발송</dt><dd>매일 오전 11시 (한국 시간) · 하루 최대 3개</dd></dl><button class="ghost" data-go="level" style="margin-top:16px">알림 설정 바꾸기</button></div></section>` : '';
     return;
   }
   const index = STEPS.findIndex(([key]) => key === name);
@@ -457,7 +457,7 @@ function renderStack(name) {
     topics: ['관심 분야', [...state.topics].map(t => TOPIC_NAME[t])],
     repos: [`${onboardingRepositories().size}개 저장소 선택`, [...onboardingRepositories()].map(short)],
     level: [`Lv.${state.level} ${LEVELS[state.level - 1]}`, [EXPERIENCES.find(([key]) => key === state.experience)[1]]],
-    mail: [state.consent ? (state.email || '이메일 입력 전') : '알림 없이 구독', ['하루 최대 3개']],
+    mail: [state.consent ? (state.email || '이메일 입력 전') : '알림 없이 구독', ['매일 오전 11시 · 한국 시간 · 하루 최대 3개']],
   };
   stack.innerHTML = STEPS.slice(0, index + 1).map(([key, word], i) => {
     const [caption, tags] = detail[key];

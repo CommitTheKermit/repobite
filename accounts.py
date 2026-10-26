@@ -205,7 +205,7 @@ def save_preferences(user_id, email, delivery_enabled, complete=False):
     subscriptions_key(user_id)
     email = normalize_email(email)
     if type(delivery_enabled) is not bool:
-        raise ValueError("수동 이메일 수신 여부를 선택하세요.")
+        raise ValueError("이메일 수신 여부를 선택하세요.")
     if delivery_enabled and not email:
         raise ValueError("수신할 이메일 주소를 입력하세요.")
     previous = preferences(user_id)
@@ -287,7 +287,7 @@ def subscription_repositories():
 
 
 def delivery_subscribers():
-    """운영자 수동 발송 초안용 서버 내부 조회. 공개 API에 연결하지 않는다."""
+    """동의한 수신자의 서버 내부 조회. 공개 API에 연결하지 않는다."""
     recipients = []
     for user_id in community.redis("HKEYS", USERS_KEY) or []:
         saved = preferences(user_id)
