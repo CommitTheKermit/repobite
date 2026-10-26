@@ -9,6 +9,8 @@ import json
 from pathlib import Path
 import tempfile
 import threading
+from subprocess import CompletedProcess
+from urllib.error import HTTPError
 from unittest.mock import patch
 
 import radar
@@ -27,6 +29,37 @@ def rejects(function, *args):
     except ValueError:
         return
     raise AssertionError("잘못된 입력이 통과했습니다")
+
+
+def test_github_http_status_is_separate_from_error_text():
+    for line in ("HTTP/2.0 200 OK\nX-Test: fixture\n\n", "HTTP/1.1 200 OK\r\n\r\n"):
+        with patch.object(radar.subprocess, "run", return_value=CompletedProcess(
+                [], 0, line + '{"private":false}', "")) as command:
+            assert radar.gh_json("repos/a/b", include_status=True) == {"private": False}
+            assert "--include" in command.call_args.args[0]
+    for status in (401, 403, 404, 429, 500, 503):
+        response = f'HTTP/2.0 {status} Error\n\n{{"message":"private diagnostic"}}'
+        with patch.object(radar.subprocess, "run", return_value=CompletedProcess([], 1, response, "secret")):
+            try:
+                radar.gh_json("repos/a/b", include_status=True)
+            except radar.GitHubAPIError as error:
+                assert error.status == status
+                assert "private diagnostic" not in str(error) and "secret" not in str(error)
+            else:
+                raise AssertionError("HTTP 실패를 성공으로 처리했습니다")
+    for response in ('{"status":"404"}', 'HTTP/2.0 200 OK\n\n{"private":false}'):
+        with patch.object(radar.subprocess, "run", return_value=CompletedProcess([], 1, response, "HTTP 404")):
+            try:
+                radar.gh_json("repos/a/b", include_status=True)
+            except radar.GitHubAPIError:
+                raise AssertionError("오류 문자열에서 HTTP 상태를 추측했습니다")
+            except RuntimeError:
+                pass
+            else:
+                raise AssertionError("CLI 실패를 성공으로 처리했습니다")
+    with patch.object(radar.subprocess, "run", return_value=CompletedProcess([], 0, '{"ok":true}', "")) as command:
+        assert radar.gh_json("repos/a/b") == {"ok": True}
+        assert "--include" not in command.call_args.args[0]
 
 
 def test_filters_and_collection():
@@ -105,20 +138,37 @@ def test_schema_and_grading():
     with tempfile.TemporaryDirectory() as directory:
         source, target = Path(directory) / "issues.jsonl", Path(directory) / "grades.jsonl"
         source.write_text(json.dumps(issue) + "\n" + json.dumps({**issue, "number": 2}) + "\n")
-        args = argparse.Namespace(input=source, output=target, model=radar.MODEL)
+        args = argparse.Namespace(input=source, output=target, model=radar.MODEL, workers=2)
+        for invalid in (0, 17, True, "4"):
+            rejects(radar.grade, argparse.Namespace(workers=invalid))
 
         def fake_grade(row, model):
             if row["number"] == 2:
                 raise ValueError("invalid model response")
             return GOOD
 
-        with (patch.object(radar, "grade_issue", side_effect=fake_grade),
+        with (patch.object(radar, "ThreadPoolExecutor", wraps=radar.ThreadPoolExecutor) as pool,
+              patch.object(radar, "grade_issue", side_effect=fake_grade),
               patch.object(radar.freshness, "apply_freshness", side_effect=lambda rows: rows)):
             assert radar.grade(args) == 1
+            pool.assert_called_once_with(max_workers=2)
         rows = radar.read_jsonl(target)
         assert rows[0]["grade"] == GOOD and rows[1]["grade"] is None
         assert rows[0]["criteria_version"] == radar.CRITERIA_VERSION
         assert radar.aggregate(rows)["failed"] == 1
+        http_failure = radar.vertex.VertexHTTPError(
+            HTTPError("secret-url", 429, "secret-message", {},
+                      io.BytesIO(b'{"error":{"status":"RESOURCE_EXHAUSTED"}}')), 5)
+        failure_log = io.StringIO()
+        with (patch.object(radar, "grade_issue", side_effect=http_failure),
+              patch.object(radar.freshness, "apply_freshness", side_effect=lambda rows: rows),
+              redirect_stderr(failure_log)):
+            assert radar.grade(args) == 1
+        failed_row = radar.read_jsonl(target)[1]
+        assert failed_row["error"] == "HTTPError"
+        assert failed_row["error_details"]["http_status"] == 429
+        assert '"http_status": 429' in failure_log.getvalue()
+        assert "secret" not in failure_log.getvalue()
         with (patch.object(radar, "grade_issue", return_value=GOOD) as model,
               patch.object(radar.freshness, "apply_freshness", side_effect=lambda rows: rows)):
             assert radar.grade(args) == 0
@@ -301,6 +351,7 @@ def test_candidates_and_batch():
 
 if __name__ == "__main__":
     with redirect_stderr(io.StringIO()):
+        test_github_http_status_is_separate_from_error_text()
         test_filters_and_collection()
         test_schema_and_grading()
         test_grading_parallelism()

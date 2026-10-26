@@ -1,99 +1,88 @@
-// 실행: node test_web_ui.mjs. 사용자 탐색과 공용 레포 표시 계약 검사.
-import assert from 'node:assert/strict';
+import test from 'node:test';
 import {readFileSync} from 'node:fs';
-import {runInNewContext} from 'node:vm';
+import vm from 'node:vm';
+import assert from 'node:assert/strict';
+import {issueMatches} from './subscription-client.mjs';
+import {searchRepositories} from './repository-autocomplete.mjs';
 
+test('공개 이슈는 현행 판정 중 선택 난이도와 일치하는 항목만 표시한다',()=>{
+  const current={criteria_version:2,grade:{difficulty:2,exclude:false}};
+  assert.equal(issueMatches(current,2),true);
+  for(const row of [{...current,criteria_version:null},{...current,error:'failed'},{...current,grade:{difficulty:2,exclude:true}}]) assert.equal(issueMatches(row,2),false);
+});
+test('탐색 검색은 활성 공개 저장소만 반환한다',async()=>{
+  const repo={full_name:'owner/repo',private:false,archived:false,has_issues:true};
+  const rows=await searchRepositories(async()=>({ok:true,json:async()=>({items:[repo,{...repo,private:true},{...repo,archived:true},{...repo,disabled:true},{...repo,has_issues:false},{...repo,full_name:'<script>/invalid'}]})}),'repo');
+  assert.deepEqual(rows,[repo]);
+});
+test('GitHub 검색 제한을 빈 성공 결과로 숨기지 않는다',async()=>{
+  await assert.rejects(searchRepositories(async()=>({ok:false,status:429}),'repo'),/검색 한도/);
+});
+
+const app = readFileSync(new URL('./repobite-app.mjs', import.meta.url), 'utf8');
 const html = readFileSync(new URL('./web.html', import.meta.url), 'utf8');
-assert.match(html, /data-filter="ai-ml agents-automation"/);
-assert.match(html, /id="search"/);
-assert.match(html, /id="sort"/);
-assert.match(html, /id="clear"/);
-assert.match(html, /selected=selected===r\.repo\?'':r\.repo/);
-assert.match(html, /document\.querySelectorAll\('\.card'\)/);
-assert.doesNotMatch(html, /selected=selected===r\.repo\?'':r\.repo;cards\(\)/);
-assert.match(html, /a\.href=x\.url/);
-assert.match(html, /x\.user\?'@'\+x\.user:'작성자 미상'/);
-assert.match(html, /x\.created_at\.slice\(5,10\)\.replace\('-','\.'\)/);
-assert.match(html, /x\.grade\?\.difficulty\?'난이도 '\+x\.grade\.difficulty:'난이도 미정'/);
-assert.match(html, /ready:'바로 착수',needs_info:'확인 필요',undecided:'판단 보류'/);
-assert.match(html, /if\(x\.error\)return'판정 실패'/);
-assert.match(html, /if\(!x\.grade\)return'미판정'/);
-assert.match(html, /if\(x\.grade\.exclude\)return'제외'/);
-assert.match(html, /make\('div','repo-head'\)/);
-assert.match(html, /r\.description\+' · '\+repoStatus\(r\)/);
-assert.match(html, /av\.onerror=\(\)=>av\.hidden=true/);
-assert.match(html, /slot=make\('span','avatar-slot'\)/);
-assert.match(html, /readJSON\('\/data\.json'\)/);
-assert.match(html, /opengraph\.githubassets\.com\/1\//);
-assert.match(html, /avatars\.githubusercontent\.com/);
-assert.match(html, /r\.repository_image\|\|social/);
-assert.match(html, /img\.className='social'/);
-assert.match(html, /img\.naturalWidth\*p\.clientHeight>img\.naturalHeight\*p\.clientWidth/);
-assert.match(html, /fallback\.hidden=true/);
-assert.match(html, /img\.hidden=true;fallback\.hidden=false/);
-assert.match(html, /const cardCache=new Map/);
-assert.match(html, /let b=cardCache\.get\(r\.repo\)/);
-assert.match(html, /cardCache\.set\(r\.repo,b\)/);
-assert.match(html, /\.side\{position:sticky;top:0;width:360px;height:100vh;overflow-y:auto/);
-assert.match(html, /\['e',0\],\['m',1\],\['h',2\]/);
-assert.doesNotMatch(html, /\/api\/run/);
-assert.doesNotMatch(html, /id="collect"/);
-assert.doesNotMatch(html, /id="grade"/);
-console.log('통과: 탐색·검색·정렬·레포 선택·원본 이슈 이동과 운영 기능 비노출');
+test('메인은 저장소 탐색으로 시작하며 소개와 전체 쉬움 추천 목록을 표시하지 않는다', () => {
+  assert.match(html, /<title>RepoBite \| 관심 있는 저장소에서 시작하는 기여<\/title>/);
+  const explore = app.slice(app.indexOf('  explore() {'), app.indexOf('  topics() {'));
+  assert.doesNotMatch(explore, /launch-intro|id="featured"|처음 기여하기 좋은|AI 판정은 틀릴/);
+  assert.match(explore, /레포바이트 이용하기/);
+  assert.match(explore, /data-go="topics"/);
+  assert.match(explore, /subscribed-section/);
+  assert.match(explore, /popular-feed/);
+});
 
-const functions = html.slice(html.indexOf('function allRepos()'), html.indexOf('function cards()'));
-runInNewContext(functions + `
-  let list=allRepos();
-  assert.equal(list.length,3);
-  assert.equal(list.filter(r=>r.community).length,2);
-  assert.equal(repoStatus(list.find(r=>r.repo==='new/pending')),'수집 대기');
-  assert.equal(repoStatus(list.find(r=>r.repo==='new/empty')),'수집 완료 · 조건에 맞는 이슈 없음');
-  assert.equal(repos().length,3);
-  submitted.push({repo:'A/B',description:'duplicate'});
-  assert.equal(allRepos().length,3);
-  assert.equal(allRepos().find(r=>r.repo==='a/b').issues.length,1);
-  query='pending';assert.equal(repos().length,1);
-  query='';sort='recent';assert.equal(repos()[0].repo,'a/b');
-`, {assert, state:{items:[{repo:'a/b',description:'base',categories:[],created_at:'2026-09-16'}]},
-    submitted:[{repo:'new/pending',description:''},{repo:'new/empty',description:''}],
-    collected:new Set(['new/empty']),tags:[],query:'',sort:'recommended',good:()=>false});
-console.log('통과: 공용/기본 구분·대기/빈 결과 구분·대소문자 중복 병합·검색·정렬');
+test('공유 미리보기는 정식 절대 주소와 1200x630 PNG를 사용한다', () => {
+  for (const [property, content] of Object.entries({'og:type':'website', 'og:site_name':'RepoBite', 'og:url':'https://repobite.vercel.app/', 'og:title':'RepoBite | 관심 있는 저장소에서 시작하는 기여', 'og:image':'https://repobite.vercel.app/og.png?v=45bb58cd', 'og:image:width':'1200', 'og:image:height':'630'})) {
+    assert(html.includes(`<meta property="${property}" content="${content}">`));
+  }
+  assert.match(html, /name="description" content="[^"]+"/);
+  assert.match(html, /property="og:description" content="[^"]+"/);
+  assert.match(html, /name="twitter:card" content="summary_large_image"/);
+  const png = readFileSync(new URL('./og.png', import.meta.url));
+  assert.equal(png.subarray(0,8).toString('hex'), '89504e470d0a1a0a');
+  assert.equal(png.readUInt32BE(16), 1200); assert.equal(png.readUInt32BE(20), 630);
+  assert(png.length <= 300 * 1024);
+});
 
-// 검색은 저장하지 않고 선택한 정식 이름만 기존 등록 입력란에 전달한다.
-const nodes=new Map;
-function element(){return {value:'',textContent:'',children:[],attributes:{},
-  append(...children){this.children.push(...children)},
-  replaceChildren(...children){this.children=children},
-  setAttribute(key,value){this.attributes[key]=value},
-  querySelectorAll(){return this.children.map(li=>li.children[0])},focus(){this.focused=true}}}
-const $=id=>{if(!nodes.has(id))nodes.set(id,element());return nodes.get(id)};
-let response,requestURL;
-const searchCode=html.slice(html.indexOf('let repoSearchController;'),html.indexOf("$('search-repos').onclick"));
-const search=runInNewContext(searchCode+';({searchRepositories,clearRepoSearch})',{
-  $,AbortController,setTimeout,clearTimeout,fetch:async url=>{requestURL=url;return response},
-  make:(tag,cls,text)=>Object.assign(element(),{tag,textContent:text})});
-const found={full_name:'owner/project',description:'<script>text only</script>',private:false,archived:false,has_issues:true};
-response={ok:true,json:async()=>({items:[found,{...found,private:true},{...found,archived:true},{...found,has_issues:false}]})};
-$('repo-query').value='project';
-await search.searchRepositories();
-assert.equal(new URL(requestURL).searchParams.get('q'),'project in:name is:public archived:false');
-assert.equal($('repo-results').children.length,1);
-assert.equal($('repo-input').value,'');
-const choice=$('repo-results').children[0].children[0];
-assert.equal(choice.children[1].textContent,found.description);
-choice.onclick();assert.equal($('repo-input').value,'owner/project');
-assert.equal(choice.attributes['aria-pressed'],true);
-response={ok:false,status:403};await search.searchRepositories();
-assert.match($('repo-search-status').textContent,/요청 한도/);
-assert.equal($('search-repos').disabled,false);
-response={ok:true,json:async()=>({items:[]})};await search.searchRepositories();
-assert.match($('repo-search-status').textContent,/담을 수 있는 레포가 없습니다/);
-let release,started;
-const jsonStarted=new Promise(resolve=>started=resolve);
-response={ok:true,json:()=>new Promise(resolve=>{release=resolve;started()})};
-const pending=search.searchRepositories();await jsonStarted;
-search.clearRepoSearch();release({items:[found]});await pending;
-assert.equal($('repo-results').children.length,0);
-assert.equal($('repo-search-status').textContent,'');
-assert.match(readFileSync(new URL('./web.py',import.meta.url),'utf8'),/connect-src 'self' https:\/\/api\.github\.com/);
-console.log('통과: 이름 검색·등록 가능 결과·선택 시 입력·요청 제한·빈 결과·늦은 응답 무시');
+const measurementSource = app.slice(app.indexOf('function track('), app.indexOf('const go ='));
+test('방문은 탭에서 한 번 전송하며 저장소와 네트워크 장애를 무시한다', async () => {
+  const sent = [], values = new Map();
+  const context = vm.createContext({fetch: (url, options) => {sent.push({url, options}); return Promise.reject(Error('offline'));}, sessionStorage: {getItem: k => values.get(k), setItem: (k,v) => values.set(k,v)}});
+  vm.runInContext(measurementSource, context);
+  context.trackVisit(); context.trackVisit();
+  await Promise.resolve();
+  assert.equal(sent.length, 1); assert.equal(sent[0].options.keepalive, true);
+  assert.equal(sent[0].url, '/api/events');
+  assert.equal(JSON.parse(sent[0].options.body).name, 'visit');
+  context.sessionStorage = {getItem() {throw Error('denied');}};
+  context.trackVisit(); await Promise.resolve();
+  assert.equal(sent.length, 2);
+  context.fetch = () => {throw Error('offline');};
+  assert.doesNotThrow(() => context.track('issue_click'));
+});
+test('상세 이슈 링크와 방문을 집계하며 제거한 추천 클릭은 전송하지 않는다', () => {
+  assert.doesNotMatch(app, /data-track="featured_click"/);
+  assert.match(app.slice(app.indexOf('function detailView(')), /data-track="issue_click"/);
+  assert.match(app, /if \(link\) track\(link.dataset.track\)/);
+  assert.match(app, /trackVisit\(\);\s*await initialize/);
+});
+test('의견은 중복 전송을 막고 실패 시 입력 유지, 성공 시 비우고 닫는다', async () => {
+  const input = {value: '의견', readOnly: false}, button = {disabled: false}, status = {textContent: ''};
+  const form = {querySelector: q => q === 'textarea' ? input : q === '[type="submit"]' ? button : status};
+  let resolve, closed = 0, notified = 0, calls = 0;
+  const context = vm.createContext({fetch: () => {calls++; return new Promise(r => {resolve = r;});}, feedbackBox: {close() {closed++;}}, notify() {notified++;}});
+  vm.runInContext(measurementSource, context);
+  const event = {preventDefault() {}, currentTarget: form};
+  const pending = context.submitFeedback(event);
+  assert.equal(button.disabled, true); assert.equal(input.readOnly, true);
+  await context.submitFeedback(event); assert.equal(calls, 1);
+  resolve({ok: false, json: async () => ({error: '잠시 후 다시 시도하세요.'})}); await pending;
+  assert.equal(input.value, '의견'); assert.equal(status.textContent, '잠시 후 다시 시도하세요.');
+  assert.equal(closed, 0); assert.equal(button.disabled, false); assert.equal(input.readOnly, false);
+  context.fetch = async () => ({ok: true, json: async () => ({})});
+  await context.submitFeedback(event);
+  assert.equal(input.value, ''); assert.equal(closed, 1); assert.equal(notified, 1);
+  input.value = '연결 실패'; context.fetch = async () => {throw Error('연결 실패 안내');};
+  await context.submitFeedback(event);
+  assert.equal(input.value, '연결 실패'); assert.equal(status.textContent, '연결 실패 안내');
+});

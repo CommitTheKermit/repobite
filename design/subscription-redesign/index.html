@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RepoBite 시안</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="shell">
+  <nav class="rail" aria-label="주요 메뉴">
+    <a class="mark" href="#/explore" aria-label="RepoBite 메인으로"><canvas data-dither="logo" width="20" height="20" aria-hidden="true"></canvas></a>
+    <a class="nav-item" href="#/explore" data-nav="explore" aria-label="탐색"><canvas data-dither="compass" width="20" height="20" aria-hidden="true"></canvas><span>explore</span></a>
+    <a class="nav-item" href="#/subs" data-nav="subs" aria-label="내 구독"><canvas data-dither="bookmark" width="20" height="20" aria-hidden="true"></canvas><span>my</span></a>
+    <button class="rail-search" data-search-open aria-label="저장소 검색"><span data-lucide="search"></span></button>
+  </nav>
+  <main class="desk">
+    <canvas class="field" data-dither="field" data-color="--rule-strong" aria-hidden="true"></canvas>
+    <span class="os-tag" aria-hidden="true">RB.OS1</span>
+    <div id="view"></div>
+  </main>
+  <aside class="side" aria-label="진행 요약">
+    <div id="stack" class="stack"></div>
+  </aside>
+</div>
+<dialog id="detail" class="detail"></dialog>
+<dialog id="onboard" class="onboard" aria-label="구독 설정"></dialog>
+<div id="toasts" class="toasts" popover="manual" role="status" aria-live="polite"></div>
+<div class="dialog" id="dialog" role="status" aria-live="polite" hidden>
+  <section class="win">
+    <div class="win-bar"><span>RepoBite 1.0</span></div>
+    <div class="win-body"><div id="dialog-text"></div><div class="progress"><span id="dialog-bar"></span></div></div>
+  </section>
+</div>
+<script src="https://unpkg.com/lucide@0.453.0/dist/umd/lucide.min.js"></script>
+<script src="data.js"></script>
+<script src="dither.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

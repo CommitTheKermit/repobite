@@ -72,6 +72,17 @@ def main():
                 assert time.monotonic() < deadline, "작업이 종료되지 않았습니다"
                 time.sleep(.01)
 
+        assert request('/api/account?action=session') == (200, b'{"authenticated": false}')
+        assert request('/api/account?action=session', headers={'Host': 'attacker.example'})[0] == 403
+        assert request('/api/account?action=preferences', {'email': 'x@example.test'})[0] == 403
+        for page in ['subscriptions.html','onboarding-repositories.html','onboarding-difficulty.html','onboarding-notifications.html','subscription-tokens.css','subscription-components.css','subscription-pages.mjs','subscription-client.mjs']:
+            assert request('/'+page)[0] == 200
+        assert request('/account-ui.mjs')[0] == 200
+        assert request('/repository-autocomplete.mjs')[0] == 200
+        assert request('/contribution-ui.mjs')[0] == 200
+        assert request('/api/contributions')[0] == 401
+        assert request('/api/contributions', headers={'Host': 'attacker.example'})[0] == 403
+        assert request('/api/contributions?action=start', {})[0] == 403
         expect_full = False
 
         def fake_process(command, **kwargs):
@@ -114,10 +125,8 @@ def main():
             assert request("/.env")[0] == request("/../radar.py")[0] == 404
             with patch.object(web.community, "feed", return_value={"repos": [], "snapshot": None}):
                 assert request("/api/repos")[0] == 200
-            with patch.object(web.community, "register", return_value={"created": True, "repo": {"repo": "a/b"}}) as register:
-                assert request("/api/repos", {"repo": "a/b"})[0] == 201
-                assert request("/api/repos", {"repo": "a/b"}, {"Origin": "https://attacker.example"})[0] == 403
-                register.assert_called_once_with("a/b")
+            assert request("/api/repos", {"repo": "a/b"})[0] == 405
+            assert request("/api/repos", {"repo": "a/b"}, {"Origin": "https://attacker.example"})[0] == 403
             assert request("/api/state", headers={"Host": "attacker.example"})[0] == 403
             for headers in ({"Origin": "https://attacker.example"}, {"Origin": ""},
                             {"Content-Type": "text/plain"}, {"X-Radar-Request": ""}):

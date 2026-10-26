@@ -1,0 +1,50 @@
+{
+  "base": "http://127.0.0.1:18765",
+  "checks": [
+    {
+      "width": 1440,
+      "dialog": {
+        "x": 400,
+        "y": 110,
+        "width": 640,
+        "height": 680
+      },
+      "loading": {
+        "x": 500,
+        "y": 478,
+        "width": 440,
+        "height": 165
+      }
+    },
+    {
+      "width": 390,
+      "dialog": {
+        "x": 18,
+        "y": 110,
+        "width": 354,
+        "height": 680
+      },
+      "loading": {
+        "x": 47,
+        "y": 478,
+        "width": 296,
+        "height": 165
+      }
+    },
+    {
+      "width": 320,
+      "dialog": {
+        "x": 18,
+        "y": 110,
+        "width": 284,
+        "height": 680
+      },
+      "loading": {
+        "x": 47,
+        "y": 478,
+        "width": 226,
+        "height": 165
+      }
+    }
+  ]
+}

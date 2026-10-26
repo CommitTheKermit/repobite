@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from contextlib import contextmanager
+from contextlib import redirect_stderr
 import io
 import json
 import os
@@ -53,6 +54,41 @@ def main():
                                     sleep=delays.append) == {"ok": True}
     assert len(attempts) == 2
     assert delays == [3]
+
+    diagnostics_log = io.StringIO()
+    attempts.clear()
+    delays.clear()
+
+    def exhausted_open(request, timeout):
+        attempts.append(request)
+        body = {"error": {"status": "RESOURCE_EXHAUSTED", "message": "PRIVATE_PROMPT hidden-token",
+                          "details": [{"@type": "type.googleapis.com/google.rpc.ErrorInfo",
+                                       "reason": "RATE_LIMIT_EXCEEDED",
+                                       "metadata": {"token": "hidden-token"}}]}}
+        raise HTTPError(request.full_url, 429, "hidden-token", {},
+                        io.BytesIO(json.dumps(body).encode()))
+
+    with (patch.object(vertex, "project_id", return_value="sample-project"),
+          patch.object(vertex, "access_token", return_value="hidden-token"),
+          redirect_stderr(diagnostics_log)):
+        try:
+            vertex.generate_json("PRIVATE_PROMPT", schema, open_url=exhausted_open, sleep=delays.append)
+            raise AssertionError("재시도 소진은 실패해야 합니다")
+        except vertex.VertexHTTPError as error:
+            assert error.code == 429
+            assert error.diagnostics["attempts"] == 5
+            assert error.diagnostics["api_status"] == "RESOURCE_EXHAUSTED"
+            assert error.diagnostics["reason"] == "RATE_LIMIT_EXCEEDED"
+            assert "hidden-token" not in str(error)
+    assert len(attempts) == 5 and delays == [1, 2, 4, 8]
+    log = diagnostics_log.getvalue()
+    assert log.count("http_status=429") == 5 and "retry=false" in log
+    assert "hidden-token" not in log and "PRIVATE_PROMPT" not in log
+    assert "sample-project" not in log and "https://" not in log
+    for body in (b"not json", b"[]", b'{"error":{"details":null}}'):
+        failure = vertex.VertexHTTPError(HTTPError("secret-url", 403, "secret", {}, io.BytesIO(body)), 1)
+        assert failure.diagnostics["http_status"] == 403
+        assert failure.diagnostics["cause"] == "권한 또는 API 사용 설정 오류"
     with tempfile.NamedTemporaryFile("w", encoding="utf-8", delete_on_close=False) as file:
         json.dump({"project_id": "service-account-project"}, file)
         file.flush()

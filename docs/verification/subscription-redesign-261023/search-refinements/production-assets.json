@@ -1,0 +1,37 @@
+[
+  {
+    "path": "/",
+    "status": 200,
+    "sha256_matches": true
+  },
+  {
+    "path": "/repobite.css",
+    "status": 200,
+    "sha256_matches": true
+  },
+  {
+    "path": "/repobite-app.mjs",
+    "status": 200,
+    "sha256_matches": true
+  },
+  {
+    "path": "/repobite-dither.js",
+    "status": 200,
+    "sha256_matches": true
+  },
+  {
+    "path": "/repository-search-dialog.mjs",
+    "status": 200,
+    "sha256_matches": true
+  },
+  {
+    "path": "/loading-indicator.mjs",
+    "status": 200,
+    "sha256_matches": true
+  },
+  {
+    "path": "/data.json",
+    "status": 200,
+    "sha256_matches": true
+  }
+]

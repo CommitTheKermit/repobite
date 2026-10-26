@@ -1,4 +1,7 @@
-"""GitHub 이슈 수집, 독립된 두 축 판정, 표본 리포트. Python 3.14 표준 라이브러리."""
+"""GitHub 이슈 수집, v2 본문 구체성 판정, 표본 리포트. Python 3.14 표준 라이브러리.
+
+difficulty는 구현 난이도가 아닌 본문 구체성 1/2/3이고 readiness는 이에 대응한다.
+"""
 
 import argparse
 from collections import Counter
@@ -135,14 +138,31 @@ def normalize_issue(repo, issue, repository_image=""):
             "repository_image": repository_image}
 
 
-def gh_json(endpoint, *options):
-    result = subprocess.run(["gh", "api", "--hostname", "github.com", endpoint, *options],
+class GitHubAPIError(RuntimeError):
+    def __init__(self, status):
+        self.status = status
+        super().__init__(f"GitHub API 실패 (HTTP {status})")
+
+
+def gh_json(endpoint, *options, include_status=False):
+    result = subprocess.run(["gh", "api", "--hostname", "github.com", endpoint, *options,
+                             *(["--include"] if include_status else [])],
                             capture_output=True, text=True, encoding="utf-8", timeout=180)
+    body = result.stdout
+    if include_status:
+        headers, separator, body = body.replace("\r\n", "\n").partition("\n\n")
+        status_line = headers.split("\n", 1)[0]
+        match = re.fullmatch(r"HTTP/\d+(?:\.\d+)? ([1-5][0-9]{2})(?: .*)?", status_line)
+        if not separator or not match:
+            raise RuntimeError("GitHub HTTP 상태를 확인하지 못했습니다")
+        status = int(match[1])
+        if not 200 <= status < 300:
+            raise GitHubAPIError(status)
     if result.returncode:
         # 외부 stderr에는 인증값 또는 이슈 본문이 섞일 수 있어 그대로 출력하지 않는다.
         raise RuntimeError(f"gh api 실패 (종료 코드 {result.returncode})")
     try:
-        return json.loads(result.stdout)
+        return json.loads(body)
     except ValueError:
         raise ValueError("gh api가 잘못된 JSON을 반환했습니다") from None
 
@@ -331,6 +351,9 @@ def reusable_grades(rows, issues, model):
 
 
 def grade(args):
+    workers = getattr(args, "workers", 16)
+    if type(workers) is not int or not 1 <= workers <= 16:
+        raise ValueError("동시 판정 수는 1-16이어야 합니다")
     if args.input.resolve() == args.output.resolve():
         raise ValueError("입력과 출력 경로가 같을 수 없습니다")
     issues = unique_issues(read_jsonl(args.input))
@@ -359,16 +382,21 @@ def grade(args):
             return {**issue, **metadata, "grade": grade_issue(issue, args.model)}
         except (OSError, ValueError, RuntimeError, subprocess.TimeoutExpired) as error:
             # 실패도 행으로 남겨 report에서 판정 누락을 숨기지 않는다.
-            return {**issue, **metadata, "grade": None, "error": type(error).__name__}
+            failure = {**issue, **metadata, "grade": None, "error": type(error).__name__}
+            if isinstance(error, vertex.VertexHTTPError):
+                failure.update(error="HTTPError", error_details=error.diagnostics)
+            return failure
 
     results = dict(reused)
     failed = 0
-    with ThreadPoolExecutor(max_workers=16) as pool:
-        for index, row in enumerate(pool.map(judge, selected, buffersize=16), 1):
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        for index, row in enumerate(pool.map(judge, selected, buffersize=workers), 1):
             results[issue_key(row)] = row
             failed += row["grade"] is None
             print(f"판정 {index}/{len(selected)}: {row['repo']}#{row['number']} "
-                  f"{'실패 ' + row['error'] if row['grade'] is None else '완료'}", file=sys.stderr)
+                  f"{'실패 ' + row['error'] if row['grade'] is None else '완료'}"
+                  + (" " + json.dumps(row["error_details"], ensure_ascii=False)
+                     if "error_details" in row else ""), file=sys.stderr)
     ordered = [results[issue_key(issue)] for issue in issues if issue_key(issue) in results]
     ordered = freshness.apply_freshness(ordered)
     with atomic_output(args.output) as stream:
@@ -483,7 +511,7 @@ def batch(args):
     if result := collect(collect_args):
         return result
     grade_args = argparse.Namespace(input=args.issues, output=args.grades, reuse=args.grades,
-                                    model=args.model, all_issues=False)
+                                    model=args.model, all_issues=False, workers=getattr(args, "workers", 16))
     if result := grade(grade_args):
         return result
     return candidates(argparse.Namespace(input=args.grades, output=args.candidates))
@@ -505,6 +533,7 @@ def main():
     grade_parser.add_argument("--model", default=MODEL, help=f"Vertex AI 판정 모델 (기본: {MODEL})")
     grade_parser.add_argument("--reuse", type=Path, help="정확히 일치하는 성공 판정을 재사용할 JSONL (기본: 기존 출력)")
     grade_parser.add_argument("--all", dest="all_issues", action="store_true", help="100건·레포당 20건 상한 없이 전체 판정")
+    grade_parser.add_argument("--workers", type=int, choices=range(1, 17), default=16, help="동시 판정 수 (기본 16)")
     grade_parser.set_defaults(run=grade)
     report_parser = commands.add_parser("report", help="교차표, 비율, 레포 집중도, 사람 판정 비교")
     report_parser.add_argument("--input", type=Path, default=Path("grades.jsonl"))
@@ -521,6 +550,7 @@ def main():
     batch_parser.add_argument("--grades", type=Path, default=Path("grades.jsonl"))
     batch_parser.add_argument("--candidates", type=Path, default=Path("candidates.jsonl"))
     batch_parser.add_argument("--model", default=MODEL, help=f"Vertex AI 판정 모델 (기본: {MODEL})")
+    batch_parser.add_argument("--workers", type=int, choices=range(1, 17), default=16, help="동시 판정 수 (기본 16)")
     batch_parser.set_defaults(run=batch)
     args = parser.parse_args()
     try:

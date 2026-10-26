@@ -11,7 +11,7 @@ foreach ($Name in @(
     "UPSTASH_REDIS_REST_URL",
     "UPSTASH_REDIS_REST_TOKEN"
 )) {
-    if (-not [Environment]::GetEnvironmentVariable($Name, "Process")) {
+    if (-not $env:REPOBITE_TEST_PROBE -and -not [Environment]::GetEnvironmentVariable($Name, "Process")) {
         $Value = [Environment]::GetEnvironmentVariable($Name, "User")
         if ($Value) { [Environment]::SetEnvironmentVariable($Name, $Value, "Process") }
     }
@@ -48,16 +48,34 @@ if (-not $env:REPOBITE_TEST_PROBE) {
 
 $ExitCode = 1
 try {
+    $PythonArguments = $null
     if ($env:UPSTASH_REDIS_REST_URL -and $env:UPSTASH_REDIS_REST_TOKEN) {
-        & py -3.14 community_batch.py
-        $ExitCode = $LASTEXITCODE
+        $PythonArguments = @('community_batch.py')
     } elseif ($env:UPSTASH_REDIS_REST_URL -or $env:UPSTASH_REDIS_REST_TOKEN) {
         if (-not $env:REPOBITE_TEST_PROBE) {
             [Console]::Error.WriteLine("공용 DB 환경변수 두 개를 모두 설정하세요.")
         }
     } else {
-        & py -3.14 radar.py batch
-        $ExitCode = $LASTEXITCODE
+        $PythonArguments = @('radar.py', 'batch')
+    }
+    if ($PythonArguments) {
+        $PythonCommand = Get-Command py -ErrorAction Stop
+        # Native console output can bypass Start-Transcript. Route both streams
+        # through PowerShell without treating Python stderr as a terminating error.
+        $PreviousErrorAction = $ErrorActionPreference
+        $PreviousEncoding = [Console]::OutputEncoding
+        $PreviousPythonEncoding = $env:PYTHONIOENCODING
+        try {
+            $ErrorActionPreference = 'Continue'
+            [Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)
+            $env:PYTHONIOENCODING = 'utf-8'
+            & $PythonCommand -3.14 @PythonArguments 2>&1 | ForEach-Object { Write-Output $_.ToString() }
+            $ExitCode = $LASTEXITCODE
+        } finally {
+            $ErrorActionPreference = $PreviousErrorAction
+            [Console]::OutputEncoding = $PreviousEncoding
+            $env:PYTHONIOENCODING = $PreviousPythonEncoding
+        }
     }
 } catch {
     if (-not $env:REPOBITE_TEST_PROBE) { [Console]::Error.WriteLine($_.Exception.Message) }

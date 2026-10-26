@@ -1,0 +1,396 @@
+{
+  "layout": [
+    {
+      "variant": "reference",
+      "viewport": 1440,
+      "screen": "explore",
+      "x": 72,
+      "y": 0,
+      "width": 1008,
+      "height": 3164.5,
+      "text": "\ucd94\ucc9c\uc21c\n\ub808\ud3ec \uc774\ub984\uc21c\n\uc804\uccb4\n25\nAI\n\ud504\ub808\uc784\uc6cc\ud06c\n\ub370\uc774\ud130\n\uac1c\ubc1c \ub3c4\uad6c\n\uc778\ud504\ub77c\n\ubcf4\uc548\n\uc571\n\ubbf8\ub514\uc5b4\nREPOSITORIES / 25\n\ub0b4 \uad6c\ub3c5 \ubcf4\uae30\n\uad6c\ub3c5\ub41c \ub808\ud3ec 5\n\n\ub2e4\ub978 \uc0ac\uc6a9\uc790\uac00 \uad6c\ub3c5\ud55c \uc800\uc7a5\uc18c\uc785\ub2c8\ub2e4.\n\nopenmaic\n2 issues\nthu-maic/openmaic\n\uba40\ud2f0 \uc5d0\uc774\uc804\ud2b8 \ud559\uc2b5 \uc11c\ube44\uc2a4\n\ubcf4\ud1b5 2\nopenviking\n2 issues\nvolcengine/openviking\nAI \uc5d0\uc774\uc804\ud2b8\uc6a9 \ucee8\ud14d\uc2a4\ud2b8 \ub370\uc774"
+    },
+    {
+      "variant": "reference",
+      "viewport": 1440,
+      "screen": "topics",
+      "x": 72,
+      "y": 0,
+      "width": 1008,
+      "height": 963.09375,
+      "text": "\u00d7\nSTEP 01 / 04\n\uc5b4\ub5a4 \ubd84\uc57c\uc758 \uc774\uc288\uac00\n\uad81\uae08\ud558\uc138\uc694?\n\n\uace0\ub978 \ubd84\uc57c\uc758 \uc800\uc7a5\uc18c\ub97c \ub2e4\uc74c \ud654\uba74\uc5d0\uc11c \ubcf4\uc5ec \ub4dc\ub9bd\ub2c8\ub2e4. \uc22b\uc790\ub294 \ubd84\uc57c\ubcc4 \uc800\uc7a5\uc18c \uc218\uc785\ub2c8\ub2e4.\n\nAI \u00b7 \uba38\uc2e0\ub7ec\ub2dd\n7\n\uc5d0\uc774\uc804\ud2b8\n3\n\uac80\uc0c9 \u00b7 \uc9c0\uc2dd\n3\n\uac1c\ubc1c \ub3c4\uad6c\n4\n\uc6f9 \ud504\ub808\uc784\uc6cc\ud06c\n6\nUI \u00b7 \ub514\uc790\uc778\n2\n\ubc31\uc5d4\ub4dc \u00b7 API\n2\n\ubcf4\uc548 \u00b7 \uc778\uc99d\n2\n\ub370\uc774\ud130\ubca0\uc774\uc2a4\n1\n\uc5d0\ub514\ud130 \u00b7 \ud130\ubbf8\ub110\n1\n\ub370\uc2a4\ud06c\ud1b1 \uc571\n4\n\ubaa8\ub2c8\ud130\ub9c1\n2\n\uc778\ud504\ub77c\n3\n\uc0dd\uc0b0\uc131\n2\n\ubbf8\ub514\uc5b4\n2\n\ubaa8\ubc14\uc77c"
+    },
+    {
+      "variant": "reference",
+      "viewport": 1440,
+      "screen": "repos",
+      "x": 72,
+      "y": 0,
+      "width": 1008,
+      "height": 1018.09375,
+      "text": "\u2039\n\u00d7\nSTEP 02 / 04\n\uc5b4\ub5a4 \uc800\uc7a5\uc18c\ub97c\n\uad6c\ub3c5\ud560\uae4c\uc694?\n\nAI \u00b7 \uba38\uc2e0\ub7ec\ub2dd\uc758 \uc800\uc7a5\uc18c\uc785\ub2c8\ub2e4.\n\nthu-maic/openmaic\n\uba40\ud2f0 \uc5d0\uc774\uc804\ud2b8 \ud559\uc2b5 \uc11c\ube44\uc2a4\n2 issues\nvolcengine/openviking\nAI \uc5d0\uc774\uc804\ud2b8\uc6a9 \ucee8\ud14d\uc2a4\ud2b8 \ub370\uc774\ud130\ubca0\uc774\uc2a4\n2 issues\nml-explore/mlx\nApple Silicon\uc6a9 \ubc30\uc5f4\u00b7\uba38\uc2e0\ub7ec\ub2dd \ud504\ub808\uc784\uc6cc\ud06c\n2 issues\nmlc-ai/web-llm\n\ube0c\ub77c\uc6b0\uc800 "
+    },
+    {
+      "variant": "reference",
+      "viewport": 1440,
+      "screen": "level",
+      "x": 72,
+      "y": 0,
+      "width": 1008,
+      "height": 1336.65625,
+      "text": "\u2039\n\u00d7\nSTEP 03 / 04\n\uc624\ud508 \uc18c\uc2a4 \uae30\uc5ec\ub294\n\uc5bc\ub9c8\ub098 \ud574 \ubcf4\uc168\uc5b4\uc694?\n\n\uacbd\ud5d8\uc5d0 \ub9de\ucdb0 \ub09c\uc774\ub3c4\ub97c \ucd94\ucc9c\ud569\ub2c8\ub2e4. \ucd94\ucc9c\uc740 \uc544\ub798\uc5d0\uc11c \uc9c1\uc811 \ubc14\uafc0 \uc218 \uc788\uc2b5\ub2c8\ub2e4.\n\n\uc624\ud508 \uc18c\uc2a4 \uae30\uc5ec\uac00 \ucc98\uc74c\uc785\ub2c8\ub2e4\n\ud504\ub85c\uc81d\ud2b8 \uac1c\ubc1c \uacbd\ud5d8\uc774 \uc788\uc2b5\ub2c8\ub2e4\n\uc624\ud508 \uc18c\uc2a4 \uae30\uc5ec \uacbd\ud5d8\uc774 \uc788\uc2b5\ub2c8\ub2e4\nLv.1 \uc26c\uc6c0\n0\nLv.2 \ubcf4\ud1b5\n4\nLv.3 \uc5b4\ub824\uc6c0\n0\n4 / 4 issues\nISSUE\n#1438\nOUTPUT\nLV.2\nREPOSITORY\nTHU-MAI"
+    },
+    {
+      "variant": "reference",
+      "viewport": 1440,
+      "screen": "mail",
+      "x": 72,
+      "y": 0,
+      "width": 1008,
+      "height": 900,
+      "text": "\u2039\n\u00d7\nSTEP 04 / 04\n\uc0c8 \uc774\uc288\ub97c \uba54\uc77c\ub85c\n\ubc1b\uc544 \ubcfc\uae4c\uc694?\n\n\uad6c\ub3c5\ud55c \uc800\uc7a5\uc18c 2\uacf3\uc5d0\uc11c Lv.2 \ubcf4\ud1b5 \uc774\uc288\uac00 \uc0dd\uae30\uba74 \ubcf4\ub0b4 \ub4dc\ub9bd\ub2c8\ub2e4.\n\n1\n2\n3\n\ud558\ub8e8 \ucd5c\ub300 3\uac1c, \uc870\uac74\uc5d0 \ub9de\ub294 \uc774\uc288\uac00 \uc5c6\uc73c\uba74 \ubcf4\ub0b4\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4\n\uc54c\ub9bc \uc774\uba54\uc77c\n\uc120\ud0dd\ud55c \uc870\uac74\uc758 \uc774\uc288\ub97c \uc774\uba54\uc77c\ub85c \ubc1b\ub294 \ub370 \ub3d9\uc758\ud569\ub2c8\ub2e4.\n\uc54c\ub9bc\ubc1b\uae30\n\uc54c\ub9bc \uc5c6\uc774 \uad6c\ub3c5\ud558\uae30"
+    },
+    {
+      "variant": "reference",
+      "viewport": 1440,
+      "screen": "subs",
+      "x": 72,
+      "y": 0,
+      "width": 1008,
+      "height": 681.15625,
+      "text": "MY SUBSCRIPTIONS\n\ub0b4 \uad6c\ub3c5\n2 REPOS / LV.2 / MAIL ON\n\ucc98\uc74c\ubd80\ud130 \ub2e4\uc2dc \uc124\uc815\nthu-maic/openmaic\n\n\uba40\ud2f0 \uc5d0\uc774\uc804\ud2b8 \ud559\uc2b5 \uc11c\ube44\uc2a4\n\n\uad6c\ub3c5 \ud574\uc81c\nISSUES\n2\nTOPICS\nAI \u00b7 \uba38\uc2e0\ub7ec\ub2dd\n\uc5d0\uc774\uc804\ud2b8\nMATCH LV.2\nLv.1 \uc26c\uc6c0\n0\nLv.2 \ubcf4\ud1b5\n2\nLv.3 \uc5b4\ub824\uc6c0\n0\nLv.2 \ubcf4\ud1b5\n#1438\n[Bug]: Docker: named volume /app/d"
+    },
+    {
+      "variant": "reference",
+      "viewport": 1440,
+      "screen": "detail",
+      "x": 180,
+      "y": 52.765625,
+      "width": 1080,
+      "height": 794.46875,
+      "text": "\u00d7\nREPOSITORY\nopenmaic\nthu-maic/openmaic\n\uba40\ud2f0 \uc5d0\uc774\uc804\ud2b8 \ud559\uc2b5 \uc11c\ube44\uc2a4\nAI \u00b7 \uba38\uc2e0\ub7ec\ub2dd\n\uc5d0\uc774\uc804\ud2b8\n\uad6c\ub3c5 \uc911 \u00b7 \ub0b4 \uad6c\ub3c5 \ubcf4\uae30\nGitHub \u2197\nISSUES\n2\nTOPICS\n2\nLv.1 \uc26c\uc6c0\n0\nLv.2 \ubcf4\ud1b5\n2\nLv.3 \uc5b4\ub824\uc6c0\n0\n\uc804\uccb4\n2\n\uc26c\uc6c0\n0\n\ubcf4\ud1b5\n2\n\uc5b4\ub824\uc6c0\n0\nLv.2 \ubcf4\ud1b5\n#1438\n[Bug]: Docker: named volume /app/data is c"
+    },
+    {
+      "variant": "current",
+      "viewport": 1440,
+      "screen": "explore",
+      "x": 72,
+      "y": 0,
+      "width": 1008,
+      "height": 3176.5,
+      "text": "\ucd94\ucc9c\uc21c\n\ub808\ud3ec \uc774\ub984\uc21c\n\uc804\uccb4\n25\nAI\n\ud504\ub808\uc784\uc6cc\ud06c\n\ub370\uc774\ud130\n\uac1c\ubc1c \ub3c4\uad6c\n\uc778\ud504\ub77c\n\ubcf4\uc548\n\uc571\n\ubbf8\ub514\uc5b4\nREPOSITORIES / 25\nGitHub\uc5d0\uc11c \ub2e4\ub978 \uc800\uc7a5\uc18c \ucc3e\uae30 \u2197\n\ub0b4 \uad6c\ub3c5 \ubcf4\uae30\n\uad6c\ub3c5\ub41c \ub808\ud3ec 5\n\n\ub2e4\ub978 \uc0ac\uc6a9\uc790\uac00 \uad6c\ub3c5\ud55c \uc800\uc7a5\uc18c\uc785\ub2c8\ub2e4.\n\nopenmaic\n2 issues\nthu-maic/openmaic\n\uba40\ud2f0 \uc5d0\uc774\uc804\ud2b8 \ud559\uc2b5 \uc11c\ube44\uc2a4\nLv.2 \ubcf4\ud1b5 2\nopenviking\n2 issues\nvolcengine/o"
+    },
+    {
+      "variant": "current",
+      "viewport": 1440,
+      "screen": "topics",
+      "x": 72,
+      "y": 0,
+      "width": 1008,
+      "height": 963.09375,
+      "text": "\u00d7\nSTEP 01 / 04\n\uc5b4\ub5a4 \ubd84\uc57c\uc758 \uc774\uc288\uac00\n\uad81\uae08\ud558\uc138\uc694?\n\n\uace0\ub978 \ubd84\uc57c\uc758 \uc800\uc7a5\uc18c\ub97c \ub2e4\uc74c \ud654\uba74\uc5d0\uc11c \ubcf4\uc5ec \ub4dc\ub9bd\ub2c8\ub2e4. \uc22b\uc790\ub294 \ubd84\uc57c\ubcc4 \uc800\uc7a5\uc18c \uc218\uc785\ub2c8\ub2e4.\n\nAI \u00b7 \uba38\uc2e0\ub7ec\ub2dd\n7\n\uc5d0\uc774\uc804\ud2b8\n3\n\uac80\uc0c9 \u00b7 \uc9c0\uc2dd\n3\n\uac1c\ubc1c \ub3c4\uad6c\n4\n\uc6f9 \ud504\ub808\uc784\uc6cc\ud06c\n6\nUI \u00b7 \ub514\uc790\uc778\n2\n\ubc31\uc5d4\ub4dc \u00b7 API\n2\n\ubcf4\uc548 \u00b7 \uc778\uc99d\n2\n\ub370\uc774\ud130\ubca0\uc774\uc2a4\n1\n\uc5d0\ub514\ud130 \u00b7 \ud130\ubbf8\ub110\n1\n\ub370\uc2a4\ud06c\ud1b1 \uc571\n4\n\ubaa8\ub2c8\ud130\ub9c1\n2\n\uc778\ud504\ub77c\n3\n\uc0dd\uc0b0\uc131\n2\n\ubbf8\ub514\uc5b4\n2\n\ubaa8\ubc14\uc77c"
+    },
+    {
+      "variant": "current",
+      "viewport": 1440,
+      "screen": "repos",
+      "x": 72,
+      "y": 0,
+      "width": 1008,
+      "height": 1018.09375,
+      "text": "\u2039\n\u00d7\nSTEP 02 / 04\n\uc5b4\ub5a4 \uc800\uc7a5\uc18c\ub97c\n\uad6c\ub3c5\ud560\uae4c\uc694?\n\nAI \u00b7 \uba38\uc2e0\ub7ec\ub2dd\uc758 \uc800\uc7a5\uc18c\uc785\ub2c8\ub2e4.\n\nthu-maic/openmaic\n\uba40\ud2f0 \uc5d0\uc774\uc804\ud2b8 \ud559\uc2b5 \uc11c\ube44\uc2a4\n2 issues\nvolcengine/openviking\nAI \uc5d0\uc774\uc804\ud2b8\uc6a9 \ucee8\ud14d\uc2a4\ud2b8 \ub370\uc774\ud130\ubca0\uc774\uc2a4\n2 issues\nml-explore/mlx\nApple Silicon\uc6a9 \ubc30\uc5f4\u00b7\uba38\uc2e0\ub7ec\ub2dd \ud504\ub808\uc784\uc6cc\ud06c\n2 issues\nmlc-ai/web-llm\n\ube0c\ub77c\uc6b0\uc800 "
+    },
+    {
+      "variant": "current",
+      "viewport": 1440,
+      "screen": "level",
+      "x": 72,
+      "y": 0,
+      "width": 1008,
+      "height": 1336.65625,
+      "text": "\u2039\n\u00d7\nSTEP 03 / 04\n\uc624\ud508 \uc18c\uc2a4 \uae30\uc5ec\ub294\n\uc5bc\ub9c8\ub098 \ud574 \ubcf4\uc168\uc5b4\uc694?\n\n\uacbd\ud5d8\uc5d0 \ub9de\ucdb0 \ub09c\uc774\ub3c4\ub97c \ucd94\ucc9c\ud569\ub2c8\ub2e4. \ucd94\ucc9c\uc740 \uc544\ub798\uc5d0\uc11c \uc9c1\uc811 \ubc14\uafc0 \uc218 \uc788\uc2b5\ub2c8\ub2e4.\n\n\uc624\ud508 \uc18c\uc2a4 \uae30\uc5ec\uac00 \ucc98\uc74c\uc785\ub2c8\ub2e4\n\ud504\ub85c\uc81d\ud2b8 \uac1c\ubc1c \uacbd\ud5d8\uc774 \uc788\uc2b5\ub2c8\ub2e4\n\uc624\ud508 \uc18c\uc2a4 \uae30\uc5ec \uacbd\ud5d8\uc774 \uc788\uc2b5\ub2c8\ub2e4\nLv.1 \uc26c\uc6c0\n0\nLv.2 \ubcf4\ud1b5\n4\nLv.3 \uc5b4\ub824\uc6c0\n0\n4 / 4 issues\nISSUE\n#1438\nOUTPUT\nLV.2\nREPOSITORY\nTHU-MAI"
+    },
+    {
+      "variant": "current",
+      "viewport": 1440,
+      "screen": "mail",
+      "x": 72,
+      "y": 0,
+      "width": 1008,
+      "height": 900,
+      "text": "\u2039\n\u00d7\nSTEP 04 / 04\n\uc0c8 \uc774\uc288\ub97c \uba54\uc77c\ub85c\n\ubc1b\uc544 \ubcfc\uae4c\uc694?\n\n\uad6c\ub3c5\ud55c \uc800\uc7a5\uc18c 2\uacf3\uc5d0\uc11c Lv.2 \ubcf4\ud1b5 \uc774\uc288\uac00 \uc0dd\uae30\uba74 \ubcf4\ub0b4 \ub4dc\ub9bd\ub2c8\ub2e4.\n\n1\n2\n3\n\ud558\ub8e8 \ucd5c\ub300 3\uac1c, \uc870\uac74\uc5d0 \ub9de\ub294 \uc774\uc288\uac00 \uc5c6\uc73c\uba74 \ubcf4\ub0b4\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4\n\uc54c\ub9bc \uc774\uba54\uc77c\n\uc120\ud0dd\ud55c \uc870\uac74\uc758 \uc774\uc288\ub97c \uc774\uba54\uc77c\ub85c \ubc1b\ub294 \ub370 \ub3d9\uc758\ud569\ub2c8\ub2e4.\n\uc54c\ub9bc\ubc1b\uae30\n\uc54c\ub9bc \uc5c6\uc774 \uad6c\ub3c5\ud558\uae30"
+    },
+    {
+      "variant": "current",
+      "viewport": 1440,
+      "screen": "subs",
+      "x": 72,
+      "y": 0,
+      "width": 1008,
+      "height": 681.15625,
+      "text": "MY SUBSCRIPTIONS\n\ub0b4 \uad6c\ub3c5\n2 REPOS / LV.2 / MAIL ON\n\ucc98\uc74c\ubd80\ud130 \ub2e4\uc2dc \uc124\uc815\nthu-maic/openmaic\n\n\uba40\ud2f0 \uc5d0\uc774\uc804\ud2b8 \ud559\uc2b5 \uc11c\ube44\uc2a4\n\n\uad6c\ub3c5 \ud574\uc81c\nISSUES\n2\nTOPICS\nAI \u00b7 \uba38\uc2e0\ub7ec\ub2dd\n\uc5d0\uc774\uc804\ud2b8\nMATCH LV.2\nLv.1 \uc26c\uc6c0\n0\nLv.2 \ubcf4\ud1b5\n2\nLv.3 \uc5b4\ub824\uc6c0\n0\nLv.2 \ubcf4\ud1b5\n#1438\n[Bug]: Docker: named volume /app/d"
+    },
+    {
+      "variant": "current",
+      "viewport": 1440,
+      "screen": "detail",
+      "x": 180,
+      "y": 52.765625,
+      "width": 1080,
+      "height": 794.46875,
+      "text": "\u00d7\nREPOSITORY\nopenmaic\nthu-maic/openmaic\n\uba40\ud2f0 \uc5d0\uc774\uc804\ud2b8 \ud559\uc2b5 \uc11c\ube44\uc2a4\nAI \u00b7 \uba38\uc2e0\ub7ec\ub2dd\n\uc5d0\uc774\uc804\ud2b8\n\uad6c\ub3c5 \uc911 \u00b7 \ub0b4 \uad6c\ub3c5 \ubcf4\uae30\nGitHub \u2197\nISSUES\n2\nTOPICS\n2\nLv.1 \uc26c\uc6c0\n0\nLv.2 \ubcf4\ud1b5\n2\nLv.3 \uc5b4\ub824\uc6c0\n0\n\uc804\uccb4\n2\nLv.1 \uc26c\uc6c0\n0\nLv.2 \ubcf4\ud1b5\n2\nLv.3 \uc5b4\ub824\uc6c0\n0\nLv.2 \ubcf4\ud1b5\n#1438\n[Bug]: Docker: named volume"
+    },
+    {
+      "variant": "reference",
+      "viewport": 390,
+      "screen": "explore",
+      "x": 0,
+      "y": 86,
+      "width": 390,
+      "height": 8615.5,
+      "text": "\ucd94\ucc9c\uc21c\n\ub808\ud3ec \uc774\ub984\uc21c\n\uc804\uccb4\n25\nAI\n+7 \ub354\ubcf4\uae30\nREPOSITORIES / 25\n\ub0b4 \uad6c\ub3c5 \ubcf4\uae30\n\uad6c\ub3c5\ub41c \ub808\ud3ec 5\n\n\ub2e4\ub978 \uc0ac\uc6a9\uc790\uac00 \uad6c\ub3c5\ud55c \uc800\uc7a5\uc18c\uc785\ub2c8\ub2e4.\n\nopenmaic\n2 issues\nthu-maic/openmaic\n\uba40\ud2f0 \uc5d0\uc774\uc804\ud2b8 \ud559\uc2b5 \uc11c\ube44\uc2a4\n\ubcf4\ud1b5 2\nopenviking\n2 issues\nvolcengine/openviking\nAI \uc5d0\uc774\uc804\ud2b8\uc6a9 \ucee8\ud14d\uc2a4\ud2b8 \ub370\uc774\ud130\ubca0\uc774\uc2a4\n\ubcf4\ud1b5 2\nhister\n2 iss"
+    },
+    {
+      "variant": "reference",
+      "viewport": 390,
+      "screen": "topics",
+      "x": 0,
+      "y": 86,
+      "width": 390,
+      "height": 899.71875,
+      "text": "\u00d7\nSTEP 01 / 04\n\uc5b4\ub5a4 \ubd84\uc57c\uc758 \uc774\uc288\uac00\n\uad81\uae08\ud558\uc138\uc694?\n\n\uace0\ub978 \ubd84\uc57c\uc758 \uc800\uc7a5\uc18c\ub97c \ub2e4\uc74c \ud654\uba74\uc5d0\uc11c \ubcf4\uc5ec \ub4dc\ub9bd\ub2c8\ub2e4. \uc22b\uc790\ub294 \ubd84\uc57c\ubcc4 \uc800\uc7a5\uc18c \uc218\uc785\ub2c8\ub2e4.\n\nAI \u00b7 \uba38\uc2e0\ub7ec\ub2dd\n7\n\uc5d0\uc774\uc804\ud2b8\n3\n\uac80\uc0c9 \u00b7 \uc9c0\uc2dd\n3\n\uac1c\ubc1c \ub3c4\uad6c\n4\n\uc6f9 \ud504\ub808\uc784\uc6cc\ud06c\n6\nUI \u00b7 \ub514\uc790\uc778\n2\n\ubc31\uc5d4\ub4dc \u00b7 API\n2\n\ubcf4\uc548 \u00b7 \uc778\uc99d\n2\n\ub370\uc774\ud130\ubca0\uc774\uc2a4\n1\n\uc5d0\ub514\ud130 \u00b7 \ud130\ubbf8\ub110\n1\n\ub370\uc2a4\ud06c\ud1b1 \uc571\n4\n\ubaa8\ub2c8\ud130\ub9c1\n2\n\uc778\ud504\ub77c\n3\n\uc0dd\uc0b0\uc131\n2\n\ubbf8\ub514\uc5b4\n2\n\ubaa8\ubc14\uc77c"
+    },
+    {
+      "variant": "reference",
+      "viewport": 390,
+      "screen": "repos",
+      "x": 0,
+      "y": 86,
+      "width": 390,
+      "height": 883.71875,
+      "text": "\u2039\n\u00d7\nSTEP 02 / 04\n\uc5b4\ub5a4 \uc800\uc7a5\uc18c\ub97c\n\uad6c\ub3c5\ud560\uae4c\uc694?\n\nAI \u00b7 \uba38\uc2e0\ub7ec\ub2dd\uc758 \uc800\uc7a5\uc18c\uc785\ub2c8\ub2e4.\n\nthu-maic/openmaic\n\uba40\ud2f0 \uc5d0\uc774\uc804\ud2b8 \ud559\uc2b5 \uc11c\ube44\uc2a4\nvolcengine/openviking\nAI \uc5d0\uc774\uc804\ud2b8\uc6a9 \ucee8\ud14d\uc2a4\ud2b8 \ub370\uc774\ud130\ubca0\uc774\uc2a4\nml-explore/mlx\nApple Silicon\uc6a9 \ubc30\uc5f4\u00b7\uba38\uc2e0\ub7ec\ub2dd \ud504\ub808\uc784\uc6cc\ud06c\nmlc-ai/web-llm\n\ube0c\ub77c\uc6b0\uc800 LLM \ucd94\ub860 \uc5d4\uc9c4\ncactus-compute/ne"
+    },
+    {
+      "variant": "reference",
+      "viewport": 390,
+      "screen": "level",
+      "x": 0,
+      "y": 86,
+      "width": 390,
+      "height": 1261.28125,
+      "text": "\u2039\n\u00d7\nSTEP 03 / 04\n\uc624\ud508 \uc18c\uc2a4 \uae30\uc5ec\ub294\n\uc5bc\ub9c8\ub098 \ud574 \ubcf4\uc168\uc5b4\uc694?\n\n\uacbd\ud5d8\uc5d0 \ub9de\ucdb0 \ub09c\uc774\ub3c4\ub97c \ucd94\ucc9c\ud569\ub2c8\ub2e4. \ucd94\ucc9c\uc740 \uc544\ub798\uc5d0\uc11c \uc9c1\uc811 \ubc14\uafc0 \uc218 \uc788\uc2b5\ub2c8\ub2e4.\n\n\uc624\ud508 \uc18c\uc2a4 \uae30\uc5ec\uac00 \ucc98\uc74c\uc785\ub2c8\ub2e4\n\ud504\ub85c\uc81d\ud2b8 \uac1c\ubc1c \uacbd\ud5d8\uc774 \uc788\uc2b5\ub2c8\ub2e4\n\uc624\ud508 \uc18c\uc2a4 \uae30\uc5ec \uacbd\ud5d8\uc774 \uc788\uc2b5\ub2c8\ub2e4\nLv.1 \uc26c\uc6c0\n0\nLv.2 \ubcf4\ud1b5\n4\nLv.3 \uc5b4\ub824\uc6c0\n0\n4 / 4 issues\nISSUE\n#1438\nOUTPUT\nLV.2\nREPOSITORY\nTHU-MAI"
+    },
+    {
+      "variant": "reference",
+      "viewport": 390,
+      "screen": "mail",
+      "x": 0,
+      "y": 86,
+      "width": 390,
+      "height": 843,
+      "text": "\u2039\n\u00d7\nSTEP 04 / 04\n\uc0c8 \uc774\uc288\ub97c \uba54\uc77c\ub85c\n\ubc1b\uc544 \ubcfc\uae4c\uc694?\n\n\uad6c\ub3c5\ud55c \uc800\uc7a5\uc18c 2\uacf3\uc5d0\uc11c Lv.2 \ubcf4\ud1b5 \uc774\uc288\uac00 \uc0dd\uae30\uba74 \ubcf4\ub0b4 \ub4dc\ub9bd\ub2c8\ub2e4.\n\n1\n2\n3\n\ud558\ub8e8 \ucd5c\ub300 3\uac1c, \uc870\uac74\uc5d0 \ub9de\ub294 \uc774\uc288\uac00 \uc5c6\uc73c\uba74 \ubcf4\ub0b4\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4\n\uc54c\ub9bc \uc774\uba54\uc77c\n\uc120\ud0dd\ud55c \uc870\uac74\uc758 \uc774\uc288\ub97c \uc774\uba54\uc77c\ub85c \ubc1b\ub294 \ub370 \ub3d9\uc758\ud569\ub2c8\ub2e4.\n\uc54c\ub9bc\ubc1b\uae30\n\uc54c\ub9bc \uc5c6\uc774 \uad6c\ub3c5\ud558\uae30"
+    },
+    {
+      "variant": "reference",
+      "viewport": 390,
+      "screen": "subs",
+      "x": 0,
+      "y": 86,
+      "width": 390,
+      "height": 925.234375,
+      "text": "MY SUBSCRIPTIONS\n\ub0b4 \uad6c\ub3c5\n2 REPOS / LV.2 / MAIL ON\n\ucc98\uc74c\ubd80\ud130 \ub2e4\uc2dc \uc124\uc815\nopenmaic\nopenviking\nthu-maic/openmaic\n\n\uba40\ud2f0 \uc5d0\uc774\uc804\ud2b8 \ud559\uc2b5 \uc11c\ube44\uc2a4\n\n\uad6c\ub3c5 \ud574\uc81c\nISSUES\n2\nTOPICS\nAI \u00b7 \uba38\uc2e0\ub7ec\ub2dd\n\uc5d0\uc774\uc804\ud2b8\nMATCH LV.2\nLv.1 \uc26c\uc6c0\n0\nLv.2 \ubcf4\ud1b5\n2\nLv.3 \uc5b4\ub824\uc6c0\n0\nLv.2 \ubcf4\ud1b5\n#1438\n[Bug]: Docker:"
+    },
+    {
+      "variant": "reference",
+      "viewport": 390,
+      "screen": "detail",
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 900,
+      "text": "\u00d7\nREPOSITORY\nopenmaic\nthu-maic/openmaic\n\uba40\ud2f0 \uc5d0\uc774\uc804\ud2b8 \ud559\uc2b5 \uc11c\ube44\uc2a4\nAI \u00b7 \uba38\uc2e0\ub7ec\ub2dd\n\uc5d0\uc774\uc804\ud2b8\n\uad6c\ub3c5 \uc911 \u00b7 \ub0b4 \uad6c\ub3c5 \ubcf4\uae30\nGitHub \u2197\nISSUES\n2\nTOPICS\n2\nLv.1 \uc26c\uc6c0\n0\nLv.2 \ubcf4\ud1b5\n2\nLv.3 \uc5b4\ub824\uc6c0\n0\n\uc804\uccb4\n2\n\uc26c\uc6c0\n0\n\ubcf4\ud1b5\n2\n\uc5b4\ub824\uc6c0\n0\nLv.2 \ubcf4\ud1b5\n#1438\n[Bug]: Docker: named volume /app/data is c"
+    },
+    {
+      "variant": "current",
+      "viewport": 390,
+      "screen": "explore",
+      "x": 0,
+      "y": 98,
+      "width": 390,
+      "height": 8693.5,
+      "text": "\ucd94\ucc9c\uc21c\n\ub808\ud3ec \uc774\ub984\uc21c\n\uc804\uccb4\n25\nAI\n+7 \ub354\ubcf4\uae30\nREPOSITORIES / 25\nGitHub\uc5d0\uc11c \ub2e4\ub978 \uc800\uc7a5\uc18c \ucc3e\uae30 \u2197\n\ub0b4 \uad6c\ub3c5 \ubcf4\uae30\n\ub85c\uadf8\uc544\uc6c3\n\uad6c\ub3c5\ub41c \ub808\ud3ec 5\n\n\ub2e4\ub978 \uc0ac\uc6a9\uc790\uac00 \uad6c\ub3c5\ud55c \uc800\uc7a5\uc18c\uc785\ub2c8\ub2e4.\n\nopenmaic\n2 issues\nthu-maic/openmaic\n\uba40\ud2f0 \uc5d0\uc774\uc804\ud2b8 \ud559\uc2b5 \uc11c\ube44\uc2a4\nLv.2 \ubcf4\ud1b5 2\nopenviking\n2 issues\nvolcengine/openviking\nAI \uc5d0\uc774\uc804\ud2b8"
+    },
+    {
+      "variant": "current",
+      "viewport": 390,
+      "screen": "topics",
+      "x": 0,
+      "y": 86,
+      "width": 390,
+      "height": 899.71875,
+      "text": "\u00d7\nSTEP 01 / 04\n\uc5b4\ub5a4 \ubd84\uc57c\uc758 \uc774\uc288\uac00\n\uad81\uae08\ud558\uc138\uc694?\n\n\uace0\ub978 \ubd84\uc57c\uc758 \uc800\uc7a5\uc18c\ub97c \ub2e4\uc74c \ud654\uba74\uc5d0\uc11c \ubcf4\uc5ec \ub4dc\ub9bd\ub2c8\ub2e4. \uc22b\uc790\ub294 \ubd84\uc57c\ubcc4 \uc800\uc7a5\uc18c \uc218\uc785\ub2c8\ub2e4.\n\nAI \u00b7 \uba38\uc2e0\ub7ec\ub2dd\n7\n\uc5d0\uc774\uc804\ud2b8\n3\n\uac80\uc0c9 \u00b7 \uc9c0\uc2dd\n3\n\uac1c\ubc1c \ub3c4\uad6c\n4\n\uc6f9 \ud504\ub808\uc784\uc6cc\ud06c\n6\nUI \u00b7 \ub514\uc790\uc778\n2\n\ubc31\uc5d4\ub4dc \u00b7 API\n2\n\ubcf4\uc548 \u00b7 \uc778\uc99d\n2\n\ub370\uc774\ud130\ubca0\uc774\uc2a4\n1\n\uc5d0\ub514\ud130 \u00b7 \ud130\ubbf8\ub110\n1\n\ub370\uc2a4\ud06c\ud1b1 \uc571\n4\n\ubaa8\ub2c8\ud130\ub9c1\n2\n\uc778\ud504\ub77c\n3\n\uc0dd\uc0b0\uc131\n2\n\ubbf8\ub514\uc5b4\n2\n\ubaa8\ubc14\uc77c"
+    },
+    {
+      "variant": "current",
+      "viewport": 390,
+      "screen": "repos",
+      "x": 0,
+      "y": 86,
+      "width": 390,
+      "height": 883.71875,
+      "text": "\u2039\n\u00d7\nSTEP 02 / 04\n\uc5b4\ub5a4 \uc800\uc7a5\uc18c\ub97c\n\uad6c\ub3c5\ud560\uae4c\uc694?\n\nAI \u00b7 \uba38\uc2e0\ub7ec\ub2dd\uc758 \uc800\uc7a5\uc18c\uc785\ub2c8\ub2e4.\n\nthu-maic/openmaic\n\uba40\ud2f0 \uc5d0\uc774\uc804\ud2b8 \ud559\uc2b5 \uc11c\ube44\uc2a4\nvolcengine/openviking\nAI \uc5d0\uc774\uc804\ud2b8\uc6a9 \ucee8\ud14d\uc2a4\ud2b8 \ub370\uc774\ud130\ubca0\uc774\uc2a4\nml-explore/mlx\nApple Silicon\uc6a9 \ubc30\uc5f4\u00b7\uba38\uc2e0\ub7ec\ub2dd \ud504\ub808\uc784\uc6cc\ud06c\nmlc-ai/web-llm\n\ube0c\ub77c\uc6b0\uc800 LLM \ucd94\ub860 \uc5d4\uc9c4\ncactus-compute/ne"
+    },
+    {
+      "variant": "current",
+      "viewport": 390,
+      "screen": "level",
+      "x": 0,
+      "y": 86,
+      "width": 390,
+      "height": 1261.28125,
+      "text": "\u2039\n\u00d7\nSTEP 03 / 04\n\uc624\ud508 \uc18c\uc2a4 \uae30\uc5ec\ub294\n\uc5bc\ub9c8\ub098 \ud574 \ubcf4\uc168\uc5b4\uc694?\n\n\uacbd\ud5d8\uc5d0 \ub9de\ucdb0 \ub09c\uc774\ub3c4\ub97c \ucd94\ucc9c\ud569\ub2c8\ub2e4. \ucd94\ucc9c\uc740 \uc544\ub798\uc5d0\uc11c \uc9c1\uc811 \ubc14\uafc0 \uc218 \uc788\uc2b5\ub2c8\ub2e4.\n\n\uc624\ud508 \uc18c\uc2a4 \uae30\uc5ec\uac00 \ucc98\uc74c\uc785\ub2c8\ub2e4\n\ud504\ub85c\uc81d\ud2b8 \uac1c\ubc1c \uacbd\ud5d8\uc774 \uc788\uc2b5\ub2c8\ub2e4\n\uc624\ud508 \uc18c\uc2a4 \uae30\uc5ec \uacbd\ud5d8\uc774 \uc788\uc2b5\ub2c8\ub2e4\nLv.1 \uc26c\uc6c0\n0\nLv.2 \ubcf4\ud1b5\n4\nLv.3 \uc5b4\ub824\uc6c0\n0\n4 / 4 issues\nISSUE\n#1438\nOUTPUT\nLV.2\nREPOSITORY\nTHU-MAI"
+    },
+    {
+      "variant": "current",
+      "viewport": 390,
+      "screen": "mail",
+      "x": 0,
+      "y": 86,
+      "width": 390,
+      "height": 843,
+      "text": "\u2039\n\u00d7\nSTEP 04 / 04\n\uc0c8 \uc774\uc288\ub97c \uba54\uc77c\ub85c\n\ubc1b\uc544 \ubcfc\uae4c\uc694?\n\n\uad6c\ub3c5\ud55c \uc800\uc7a5\uc18c 2\uacf3\uc5d0\uc11c Lv.2 \ubcf4\ud1b5 \uc774\uc288\uac00 \uc0dd\uae30\uba74 \ubcf4\ub0b4 \ub4dc\ub9bd\ub2c8\ub2e4.\n\n1\n2\n3\n\ud558\ub8e8 \ucd5c\ub300 3\uac1c, \uc870\uac74\uc5d0 \ub9de\ub294 \uc774\uc288\uac00 \uc5c6\uc73c\uba74 \ubcf4\ub0b4\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4\n\uc54c\ub9bc \uc774\uba54\uc77c\n\uc120\ud0dd\ud55c \uc870\uac74\uc758 \uc774\uc288\ub97c \uc774\uba54\uc77c\ub85c \ubc1b\ub294 \ub370 \ub3d9\uc758\ud569\ub2c8\ub2e4.\n\uc54c\ub9bc\ubc1b\uae30\n\uc54c\ub9bc \uc5c6\uc774 \uad6c\ub3c5\ud558\uae30"
+    },
+    {
+      "variant": "current",
+      "viewport": 390,
+      "screen": "subs",
+      "x": 0,
+      "y": 86,
+      "width": 390,
+      "height": 925.234375,
+      "text": "MY SUBSCRIPTIONS\n\ub0b4 \uad6c\ub3c5\n2 REPOS / LV.2 / MAIL ON\n\ucc98\uc74c\ubd80\ud130 \ub2e4\uc2dc \uc124\uc815\nopenmaic\nopenviking\nthu-maic/openmaic\n\n\uba40\ud2f0 \uc5d0\uc774\uc804\ud2b8 \ud559\uc2b5 \uc11c\ube44\uc2a4\n\n\uad6c\ub3c5 \ud574\uc81c\nISSUES\n2\nTOPICS\nAI \u00b7 \uba38\uc2e0\ub7ec\ub2dd\n\uc5d0\uc774\uc804\ud2b8\nMATCH LV.2\nLv.1 \uc26c\uc6c0\n0\nLv.2 \ubcf4\ud1b5\n2\nLv.3 \uc5b4\ub824\uc6c0\n0\nLv.2 \ubcf4\ud1b5\n#1438\n[Bug]: Docker:"
+    },
+    {
+      "variant": "current",
+      "viewport": 390,
+      "screen": "detail",
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 900,
+      "text": "\u00d7\nREPOSITORY\nopenmaic\nthu-maic/openmaic\n\uba40\ud2f0 \uc5d0\uc774\uc804\ud2b8 \ud559\uc2b5 \uc11c\ube44\uc2a4\nAI \u00b7 \uba38\uc2e0\ub7ec\ub2dd\n\uc5d0\uc774\uc804\ud2b8\n\uad6c\ub3c5 \uc911 \u00b7 \ub0b4 \uad6c\ub3c5 \ubcf4\uae30\nGitHub \u2197\nISSUES\n2\nTOPICS\n2\nLv.1 \uc26c\uc6c0\n0\nLv.2 \ubcf4\ud1b5\n2\nLv.3 \uc5b4\ub824\uc6c0\n0\n\uc804\uccb4\n2\nLv.1 \uc26c\uc6c0\n0\nLv.2 \ubcf4\ud1b5\n2\nLv.3 \uc5b4\ub824\uc6c0\n0\nLv.2 \ubcf4\ud1b5\n#1438\n[Bug]: Docker: named volume"
+    }
+  ],
+  "unchanged_body_pixel_comparison": [
+    {
+      "viewport": 1440,
+      "screen": "topics",
+      "region": [
+        72,
+        0,
+        1080,
+        900
+      ],
+      "different_pixels": 0
+    },
+    {
+      "viewport": 1440,
+      "screen": "repos",
+      "region": [
+        72,
+        0,
+        1080,
+        900
+      ],
+      "different_pixels": 0
+    },
+    {
+      "viewport": 1440,
+      "screen": "level",
+      "region": [
+        72,
+        0,
+        1080,
+        900
+      ],
+      "different_pixels": 0
+    },
+    {
+      "viewport": 1440,
+      "screen": "mail",
+      "region": [
+        72,
+        0,
+        1080,
+        900
+      ],
+      "different_pixels": 0
+    },
+    {
+      "viewport": 1440,
+      "screen": "subs",
+      "region": [
+        72,
+        0,
+        1080,
+        900
+      ],
+      "different_pixels": 0
+    },
+    {
+      "viewport": 390,
+      "screen": "topics",
+      "region": [
+        0,
+        86,
+        390,
+        900
+      ],
+      "different_pixels": 0
+    },
+    {
+      "viewport": 390,
+      "screen": "repos",
+      "region": [
+        0,
+        86,
+        390,
+        900
+      ],
+      "different_pixels": 0
+    },
+    {
+      "viewport": 390,
+      "screen": "level",
+      "region": [
+        0,
+        86,
+        390,
+        900
+      ],
+      "different_pixels": 0
+    },
+    {
+      "viewport": 390,
+      "screen": "mail",
+      "region": [
+        0,
+        86,
+        390,
+        900
+      ],
+      "different_pixels": 0
+    },
+    {
+      "viewport": 390,
+      "screen": "subs",
+      "region": [
+        0,
+        86,
+        390,
+        900
+      ],
+      "different_pixels": 0
+    }
+  ]
+}

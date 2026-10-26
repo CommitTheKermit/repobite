@@ -12,62 +12,17 @@ import sys
 import tempfile
 import threading
 import uuid
+from urllib.parse import urlsplit
 
+from api.account import handle_account
+from api.email_unsubscribe import handle_unsubscribe
+from api.contributions import handle_contributions
 import community
 import home_status
 import radar
+from public_feed import public_items
 
 MAX_REPOS = 30
-REPO_CATALOG = {
-    "THU-MAIC/OpenMAIC": ("멀티 에이전트 학습 서비스", ("ai-ml", "agents-automation")),
-    "volcengine/OpenViking": ("AI 에이전트용 컨텍스트 데이터베이스", ("ai-ml", "search-knowledge")),
-    "github/github-mcp-server": ("GitHub 공식 MCP 서버", ("agents-automation", "dev-tools")),
-    "ml-explore/mlx": ("Apple Silicon용 배열·머신러닝 프레임워크", ("ai-ml",)),
-    "mlc-ai/web-llm": ("브라우저 LLM 추론 엔진", ("ai-ml", "web-framework")),
-    "cactus-compute/needle": ("소형 기기용 파운데이션 모델", ("ai-ml",)),
-    "vbenjs/vue-vben-admin": ("Vue 관리자 화면 템플릿", ("web-framework", "ui-design-system")),
-    "withastro/astro": ("콘텐츠 중심 웹 프레임워크", ("web-framework",)),
-    "unovue/reka-ui": ("Vue용 접근성 UI 프리미티브", ("web-framework", "ui-design-system")),
-    "honojs/hono": ("웹 표준 기반 서버 프레임워크", ("web-framework", "backend-api")),
-    "better-auth/better-auth": ("인증 프레임워크", ("web-framework", "security-identity")),
-    "dragonflydb/dragonfly": ("인메모리 데이터베이스", ("database", "backend-api")),
-    "asciimoo/hister": ("개인 검색 엔진", ("search-knowledge",)),
-    "semantica-agi/semantica": ("AI 컨텍스트 그래프 인프라", ("ai-ml", "search-knowledge")),
-    "ghostty-org/ghostty": ("GPU 가속 터미널", ("ide-terminal", "desktop-app")),
-    "lightpanda-io/browser": ("자동화용 헤드리스 브라우저", ("dev-tools",)),
-    "neurosnap/zmx": ("터미널 세션 연결·분리 도구", ("ide-terminal", "dev-tools")),
-    "henrygd/beszel": ("경량 서버 모니터링", ("observability", "infra-cloud")),
-    "superradcompany/microsandbox": ("로컬 우선 microVM 런타임", ("infra-cloud", "dev-tools")),
-    "Tencent/AI-Infra-Guard": ("AI 보안 스캔 플랫폼", ("ai-ml", "security-identity")),
-    "glanceapp/glance": ("셀프호스팅 피드 대시보드", ("observability", "infra-cloud")),
-    "gtsteffaniak/filebrowser": ("웹 파일 관리자", ("dev-tools", "productivity")),
-    "bookorbit/bookorbit": ("독서·라이브러리 관리 서비스", ("productivity", "desktop-app")),
-    "AprilNEA/OpenLogi": ("Logitech 장치 설정 앱", ("desktop-app",)),
-    "OpenWhispr/openwhispr": ("로컬·클라우드 음성 받아쓰기 앱", ("media-creative", "desktop-app")),
-    "TNT-Likely/BeeCount": ("크로스플랫폼 가계부", ("productivity", "mobile")),
-    "debpalash/VoiceStudio": ("음성 생성·편집 도구", ("media-creative", "desktop-app")),
-    "tt-a1i/archify": ("아키텍처 다이어그램 에이전트 스킬", ("agents-automation", "dev-tools")),
-}
-
-
-def public_items(issues, rows):
-    grades = {radar.issue_key(row): row for row in rows}
-    items = []
-    for issue in issues:
-        row = grades.get(radar.issue_key(issue), {})
-        if any(row.get(key) != issue.get(key) for key in ("title", "body")):
-            row = {}
-        description, categories = REPO_CATALOG.get(issue["repo"], ("카테고리 미정 레포지토리", ()))
-        items.append({"repo": issue["repo"], "number": issue["number"],
-                      "title": issue["title"], "url": issue["url"],
-                      "created_at": issue["created_at"], "user": issue.get("user", ""),
-                      "description": description,
-                      "repository_image": issue.get("repository_image", ""),
-                      "categories": list(categories), "grade": row.get("grade"),
-                      "error": row.get("error"), "model": row.get("model"),
-                      "freshness": row.get("freshness")})
-    return items
-
 
 def stop_process(process):
     if os.name == "nt":
@@ -276,8 +231,27 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         if not self.local_request():
             return
-        if self.path == "/":
+        if urlsplit(self.path).path == "/api/account":
+            handle_account(self)
+        elif urlsplit(self.path).path == "/api/email_unsubscribe":
+            handle_unsubscribe(self)
+        elif urlsplit(self.path).path == "/api/contributions":
+            handle_contributions(self)
+        elif self.path == "/":
             self.reply(200, (radar.ROOT / "web.html").read_bytes(), "text/html; charset=utf-8")
+        elif self.path in {'/onboarding-topics.html', '/onboarding-notifications.html', '/subscriptions.html', '/onboarding-repositories.html', '/onboarding-difficulty.html'}:
+            self.reply(200, (radar.ROOT / self.path.lstrip("/")).read_bytes(), "text/html; charset=utf-8")
+        elif self.path in {'/subscription-tokens.css', '/subscription-components.css'}:
+            self.reply(200, (radar.ROOT / self.path.lstrip("/")).read_bytes(), "text/css; charset=utf-8")
+        elif self.path in {"/account-ui.mjs", "/contribution-ui.mjs", "/repository-autocomplete.mjs", "/subscription-client.mjs", "/subscription-pages.mjs"}:
+            self.reply(200, (radar.ROOT / self.path.lstrip("/")).read_bytes(), "text/javascript; charset=utf-8")
+        elif self.path in {"/repobite.css", "/repobite-app.mjs", "/repobite-dither.js", "/repobite-icons.mjs", "/repository-search-dialog.mjs", "/loading-indicator.mjs"}:
+            kind = "text/css" if self.path.endswith(".css") else "text/javascript"
+            self.reply(200, (radar.ROOT / self.path.lstrip("/")).read_bytes(), kind + "; charset=utf-8")
+        elif self.path == '/assets/fonts/pretendardvariable.css':
+            self.reply(200, (radar.ROOT / self.path.lstrip('/')).read_bytes(), 'text/css; charset=utf-8')
+        elif self.path in {"/assets/fonts/Pretendard-Regular.woff2", "/assets/fonts/VT323-Regular.ttf"} | {f'/assets/fonts/PretendardVariable.subset.{n}.woff2' for n in range(92)}:
+            self.reply(200, (radar.ROOT / self.path.lstrip("/")).read_bytes(), "font/woff2" if self.path.endswith(".woff2") else "font/ttf")
         elif self.path == "/api/repos":
             try:
                 self.reply(200, community.feed())
@@ -292,24 +266,22 @@ class Handler(BaseHTTPRequestHandler):
             self.reply(404, {"error": "페이지가 없습니다."})
 
     def do_POST(self):
+        if urlsplit(self.path).path == "/api/email_unsubscribe":
+            if self.local_request():
+                handle_unsubscribe(self)
+            return
+        if urlsplit(self.path).path == "/api/account":
+            if self.local_request():
+                handle_account(self)
+            return
+        if urlsplit(self.path).path == "/api/contributions":
+            if self.local_request():
+                handle_contributions(self)
+            return
         if not self.local_request(mutation=True):
             return
         if self.path == "/api/repos":
-            try:
-                length = int(self.headers.get("Content-Length", "0"))
-                if not 0 < length <= 1024:
-                    raise ValueError("입력이 너무 깁니다.")
-                payload = json.loads(self.rfile.read(length))
-                if not isinstance(payload, dict):
-                    raise ValueError("레포 주소를 입력하세요.")
-                result = community.register(payload.get("repo"))
-                self.reply(201 if result["created"] else 200, result)
-            except ValueError:
-                self.reply(400, {"error": "공개 GitHub 레포 주소와 이슈 기능 활성화 여부를 확인하세요."})
-            except OverflowError as error:
-                self.reply(429, {"error": str(error)})
-            except (OSError, RuntimeError, KeyError, TypeError):
-                self.reply(503, {"error": "등록하지 못했습니다. 잠시 후 다시 시도하세요."})
+            self.reply(405, {"error": "지원하지 않는 요청입니다."})
             return
         if self.path != "/api/run":
             self.reply(404, {"error": "작업 경로가 없습니다."})
@@ -327,6 +299,15 @@ class Handler(BaseHTTPRequestHandler):
             self.reply(409, {"error": str(error)})
 
 
+    def do_DELETE(self):
+        if not self.local_request():
+            return
+        if urlsplit(self.path).path == "/api/account":
+            handle_account(self)
+        else:
+            self.reply(404, {"error": "페이지가 없습니다."})
+
+
 def make_server(port=8765, root=radar.ROOT):
     server = ThreadingHTTPServer(("127.0.0.1", port), Handler)
     server.app = Application(root)
@@ -339,10 +320,17 @@ if __name__ == "__main__":
     parser.add_argument("--status-port", type=int, help="상태 조회 전용 loopback 포트")
     args = parser.parse_args()
     status_server = None
+    collect_server = None
     if args.status_port:
         status_server = home_status.make_server(
             args.status_port, radar.ROOT, os.environ.get("HOME_STATUS_HOST", ""))
         threading.Thread(target=status_server.serve_forever, daemon=True).start()
+    if os.environ.get("REPOBITE_COLLECT_SECRET"):
+        from collection_server import Handler as CollectionHandler
+        collect_server = ThreadingHTTPServer(("127.0.0.1", 8768), CollectionHandler)
+        threading.Thread(target=collect_server.serve_forever, daemon=True).start()
+        from collection_server import run_pending
+        threading.Thread(target=run_pending, daemon=True).start()
     with make_server(args.port) as server:
         print(f"RepoBite: http://127.0.0.1:{server.server_port}", flush=True)
         try:
@@ -351,6 +339,9 @@ if __name__ == "__main__":
             pass
         finally:
             server.app.stop()
+            if collect_server:
+                collect_server.shutdown()
+                collect_server.server_close()
             if status_server:
                 status_server.shutdown()
                 status_server.server_close()

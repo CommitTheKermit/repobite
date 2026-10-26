@@ -1,0 +1,14 @@
+{
+  "base": "https://repobite.vercel.app",
+  "errors": [],
+  "csp": [],
+  "fontFiles": 14,
+  "githubRequests": 1,
+  "widths": [
+    1440,
+    1000,
+    390,
+    320
+  ],
+  "result": "passed"
+}

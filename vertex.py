@@ -5,6 +5,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 import time
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
@@ -12,6 +13,40 @@ from urllib.request import Request, urlopen
 
 DEFAULT_MODEL = "gemini-3.1-flash-lite"
 DEFAULT_LOCATION = "global"
+
+
+class VertexHTTPError(HTTPError):
+    """HTTP 진단만 보관한다. 응답 원문, 요청 URL과 인증 헤더는 보관하지 않는다."""
+
+    def __init__(self, error, attempts):
+        causes = {400: "요청 형식 또는 모델 입력 조건 오류", 401: "인증 실패",
+                  403: "권한 또는 API 사용 설정 오류", 404: "모델 또는 리소스를 찾을 수 없음",
+                  408: "요청 시간 초과", 413: "입력 크기 초과",
+                  429: "요청 한도 또는 처리 용량 초과"}
+        cause = causes.get(error.code, "서비스 처리 오류" if error.code >= 500 else "HTTP 요청 실패")
+        details = {"http_status": error.code, "cause": cause, "attempts": attempts}
+        try:
+            payload = json.loads(error.read(8192)).get("error", {})
+            # API message나 metadata는 입력과 인증값을 반사할 수 있어 기록하지 않는다.
+            status = payload.get("status")
+            if isinstance(status, str) and re.fullmatch(r"[A-Z][A-Z0-9_]{0,79}", status):
+                details["api_status"] = status
+            for item in payload.get("details", []):
+                if not isinstance(item, dict) or item.get("@type") != "type.googleapis.com/google.rpc.ErrorInfo":
+                    continue
+                reason = item.get("reason")
+                if isinstance(reason, str) and re.fullmatch(r"[A-Z][A-Z0-9_]{0,79}", reason):
+                    details["reason"] = reason
+                    break
+        except (OSError, ValueError, TypeError, AttributeError):
+            pass
+        finally:
+            error.close()
+        self.diagnostics = details
+        super().__init__(None, error.code, cause, {}, None)
+
+    def log_message(self):
+        return " ".join(f"{key}={value}" for key, value in self.diagnostics.items())
 
 
 def _gcloud():
@@ -93,9 +128,13 @@ def generate_json(prompt, schema, model=DEFAULT_MODEL, open_url=urlopen, sleep=t
                 payload = json.load(response)
             break
         except HTTPError as error:
-            if error.code not in {429, 500, 502, 503, 504} or delay is None:
-                raise
-            retry_after = error.headers.get("Retry-After")
+            retry_after = (error.headers or {}).get("Retry-After")
+            failure = VertexHTTPError(error, attempt + 1)
+            retry = error.code in {429, 500, 502, 503, 504} and delay is not None
+            print(f"Vertex AI HTTP 실패: {failure.log_message()} retry={str(retry).lower()}",
+                  file=sys.stderr)
+            if not retry:
+                raise failure from None
             try:
                 delay = max(delay, min(float(retry_after), 30))
             except (TypeError, ValueError):

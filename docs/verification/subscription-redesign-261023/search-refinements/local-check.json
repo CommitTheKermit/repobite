@@ -1,0 +1,402 @@
+{
+  "base": "http://127.0.0.1:18765",
+  "errors": [],
+  "checks": [
+    {
+      "width": 1440,
+      "scrollWidth": 1440,
+      "heading": [
+        {
+          "text": "REPOSITORIES / 28",
+          "rect": {
+            "x": 104,
+            "y": 147.5,
+            "width": 150.3125,
+            "height": 13,
+            "top": 147.5,
+            "right": 254.3125,
+            "bottom": 160.5,
+            "left": 104
+          }
+        },
+        {
+          "text": "GitHub에서 다른 저장소 찾기 ↗",
+          "rect": {
+            "x": 274.3125,
+            "y": 128,
+            "width": 207.5625,
+            "height": 52,
+            "top": 128,
+            "right": 481.875,
+            "bottom": 180,
+            "left": 274.3125
+          }
+        }
+      ],
+      "nav": [
+        {
+          "label": "RepoBite 메인으로",
+          "rect": {
+            "x": 5.5,
+            "y": 20,
+            "width": 60,
+            "height": 60,
+            "top": 20,
+            "right": 65.5,
+            "bottom": 80,
+            "left": 5.5
+          }
+        },
+        {
+          "label": "탐색",
+          "rect": {
+            "x": 3.5,
+            "y": 100,
+            "width": 64,
+            "height": 69,
+            "top": 100,
+            "right": 67.5,
+            "bottom": 169,
+            "left": 3.5
+          }
+        },
+        {
+          "label": "내 구독",
+          "rect": {
+            "x": 3.5,
+            "y": 181,
+            "width": 64,
+            "height": 69,
+            "top": 181,
+            "right": 67.5,
+            "bottom": 250,
+            "left": 3.5
+          }
+        },
+        {
+          "label": "GitHub에서 다른 저장소 찾기",
+          "rect": {
+            "x": 7.5,
+            "y": 262,
+            "width": 56,
+            "height": 63,
+            "top": 262,
+            "right": 63.5,
+            "bottom": 325,
+            "left": 7.5
+          }
+        },
+        {
+          "label": "수집된 저장소 검색",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0,
+            "top": 0,
+            "right": 0,
+            "bottom": 0,
+            "left": 0
+          }
+        }
+      ]
+    },
+    {
+      "width": 1000,
+      "scrollWidth": 1000,
+      "heading": [
+        {
+          "text": "REPOSITORIES / 28",
+          "rect": {
+            "x": 104,
+            "y": 147.5,
+            "width": 150.3125,
+            "height": 13,
+            "top": 147.5,
+            "right": 254.3125,
+            "bottom": 160.5,
+            "left": 104
+          }
+        },
+        {
+          "text": "GitHub에서 다른 저장소 찾기 ↗",
+          "rect": {
+            "x": 274.3125,
+            "y": 128,
+            "width": 207.5625,
+            "height": 52,
+            "top": 128,
+            "right": 481.875,
+            "bottom": 180,
+            "left": 274.3125
+          }
+        }
+      ],
+      "nav": [
+        {
+          "label": "RepoBite 메인으로",
+          "rect": {
+            "x": 5.5,
+            "y": 20,
+            "width": 60,
+            "height": 60,
+            "top": 20,
+            "right": 65.5,
+            "bottom": 80,
+            "left": 5.5
+          }
+        },
+        {
+          "label": "탐색",
+          "rect": {
+            "x": 3.5,
+            "y": 100,
+            "width": 64,
+            "height": 69,
+            "top": 100,
+            "right": 67.5,
+            "bottom": 169,
+            "left": 3.5
+          }
+        },
+        {
+          "label": "내 구독",
+          "rect": {
+            "x": 3.5,
+            "y": 181,
+            "width": 64,
+            "height": 69,
+            "top": 181,
+            "right": 67.5,
+            "bottom": 250,
+            "left": 3.5
+          }
+        },
+        {
+          "label": "GitHub에서 다른 저장소 찾기",
+          "rect": {
+            "x": 7.5,
+            "y": 262,
+            "width": 56,
+            "height": 63,
+            "top": 262,
+            "right": 63.5,
+            "bottom": 325,
+            "left": 7.5
+          }
+        },
+        {
+          "label": "수집된 저장소 검색",
+          "rect": {
+            "x": 15.5,
+            "y": 337,
+            "width": 40,
+            "height": 40,
+            "top": 337,
+            "right": 55.5,
+            "bottom": 377,
+            "left": 15.5
+          }
+        }
+      ]
+    },
+    {
+      "width": 390,
+      "scrollWidth": 390,
+      "heading": [
+        {
+          "text": "REPOSITORIES / 28",
+          "rect": {
+            "x": 16,
+            "y": 238.140625,
+            "width": 127.328125,
+            "height": 11.703125,
+            "top": 238.140625,
+            "right": 143.328125,
+            "bottom": 249.84375,
+            "left": 16
+          }
+        },
+        {
+          "text": "GitHub에서 다른 저장소 찾기 ↗",
+          "rect": {
+            "x": 201.96875,
+            "y": 218,
+            "width": 172.03125,
+            "height": 52,
+            "top": 218,
+            "right": 374,
+            "bottom": 270,
+            "left": 201.96875
+          }
+        }
+      ],
+      "nav": [
+        {
+          "label": "RepoBite 메인으로",
+          "rect": {
+            "x": 16,
+            "y": 12.5,
+            "width": 60,
+            "height": 60,
+            "top": 12.5,
+            "right": 76,
+            "bottom": 72.5,
+            "left": 16
+          }
+        },
+        {
+          "label": "탐색",
+          "rect": {
+            "x": 92,
+            "y": 8,
+            "width": 64,
+            "height": 69,
+            "top": 8,
+            "right": 156,
+            "bottom": 77,
+            "left": 92
+          }
+        },
+        {
+          "label": "내 구독",
+          "rect": {
+            "x": 164,
+            "y": 8,
+            "width": 64,
+            "height": 69,
+            "top": 8,
+            "right": 228,
+            "bottom": 77,
+            "left": 164
+          }
+        },
+        {
+          "label": "GitHub에서 다른 저장소 찾기",
+          "rect": {
+            "x": 236,
+            "y": 11,
+            "width": 56,
+            "height": 63,
+            "top": 11,
+            "right": 292,
+            "bottom": 74,
+            "left": 236
+          }
+        },
+        {
+          "label": "수집된 저장소 검색",
+          "rect": {
+            "x": 334,
+            "y": 22.5,
+            "width": 40,
+            "height": 40,
+            "top": 22.5,
+            "right": 374,
+            "bottom": 62.5,
+            "left": 334
+          }
+        }
+      ]
+    },
+    {
+      "width": 320,
+      "scrollWidth": 320,
+      "heading": [
+        {
+          "text": "REPOSITORIES / 28",
+          "rect": {
+            "x": 16,
+            "y": 239.203125,
+            "width": 104.46875,
+            "height": 9.59375,
+            "top": 239.203125,
+            "right": 120.46875,
+            "bottom": 248.796875,
+            "left": 16
+          }
+        },
+        {
+          "text": "GitHub에서 다른 저장소 찾기 ↗",
+          "rect": {
+            "x": 161.296875,
+            "y": 218,
+            "width": 142.703125,
+            "height": 52,
+            "top": 218,
+            "right": 304,
+            "bottom": 270,
+            "left": 161.296875
+          }
+        }
+      ],
+      "nav": [
+        {
+          "label": "RepoBite 메인으로",
+          "rect": {
+            "x": 12,
+            "y": 12.5,
+            "width": 60,
+            "height": 60,
+            "top": 12.5,
+            "right": 72,
+            "bottom": 72.5,
+            "left": 12
+          }
+        },
+        {
+          "label": "탐색",
+          "rect": {
+            "x": 80,
+            "y": 8,
+            "width": 48,
+            "height": 69,
+            "top": 8,
+            "right": 128,
+            "bottom": 77,
+            "left": 80
+          }
+        },
+        {
+          "label": "내 구독",
+          "rect": {
+            "x": 134,
+            "y": 8,
+            "width": 48,
+            "height": 69,
+            "top": 8,
+            "right": 182,
+            "bottom": 77,
+            "left": 134
+          }
+        },
+        {
+          "label": "GitHub에서 다른 저장소 찾기",
+          "rect": {
+            "x": 188,
+            "y": 11,
+            "width": 48,
+            "height": 63,
+            "top": 11,
+            "right": 236,
+            "bottom": 74,
+            "left": 188
+          }
+        },
+        {
+          "label": "수집된 저장소 검색",
+          "rect": {
+            "x": 268,
+            "y": 22.5,
+            "width": 40,
+            "height": 40,
+            "top": 22.5,
+            "right": 308,
+            "bottom": 62.5,
+            "left": 268
+          }
+        }
+      ]
+    }
+  ]
+}

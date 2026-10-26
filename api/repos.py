@@ -27,23 +27,7 @@ class handler(BaseHTTPRequestHandler):
             self.reply(503, {"error": "공용 목록을 불러오지 못했습니다. 잠시 후 다시 시도하세요."})
 
     def do_POST(self):
-        if (self.headers.get("Origin") != "https://repobite.vercel.app"
-                or self.headers.get_content_type() != "application/json"):
-            self.reply(403, {"error": "RepoBite 화면에서 등록하세요."})
-            return
-        try:
-            length = int(self.headers.get("Content-Length", "0"))
-            if not 0 < length <= 1024:
-                raise ValueError("입력이 너무 깁니다.")
-            payload = json.loads(self.rfile.read(length))
-            if not isinstance(payload, dict):
-                raise ValueError("레포 주소를 입력하세요.")
-            result = community.register(payload.get("repo"))
-            self.reply(201 if result["created"] else 200, result)
-        except ValueError as error:
-            self.reply(400, {"error": str(error) if not isinstance(error, json.JSONDecodeError)
-                             else "입력 형식을 확인하세요."})
-        except OverflowError as error:
-            self.reply(429, {"error": str(error)})
-        except (OSError, RuntimeError, KeyError, TypeError):
-            self.reply(503, {"error": "등록하지 못했습니다. 잠시 후 다시 시도하세요."})
+        self.send_response(405)
+        self.send_header("Allow", "GET")
+        self.send_header("Content-Length", "0")
+        self.end_headers()

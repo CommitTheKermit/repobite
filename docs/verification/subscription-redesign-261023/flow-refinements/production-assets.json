@@ -1,0 +1,32 @@
+[
+  {
+    "path": "/",
+    "status": 200,
+    "sha256": "517e6e9a80aedd063b5b12f4e169d68ea54716b78503874df8c608920f251bbb",
+    "local_matches": true
+  },
+  {
+    "path": "/repobite-app.mjs",
+    "status": 200,
+    "sha256": "b1739dd89eb0f92a02dd3124e4e4dd222d840ce74ed1f10e7f27dcb237f03c10",
+    "local_matches": true
+  },
+  {
+    "path": "/repobite.css",
+    "status": 200,
+    "sha256": "189ae7ca50dc564ef6aad01a2c234dc501a1e70323fae50cd7b45cbfb916111b",
+    "local_matches": true
+  },
+  {
+    "path": "/repository-search-dialog.mjs",
+    "status": 200,
+    "sha256": "01e2e35312e046e1da2180c6ee1b4c8d8fc0df0b61959c0fd07fa9867dbfc4cd",
+    "local_matches": true
+  },
+  {
+    "path": "/data.json",
+    "status": 200,
+    "sha256": "286d2818b03312140535e62d56c1bb693ba310a3dfc39046cd8929e88e2a7957",
+    "local_matches": true
+  }
+]
