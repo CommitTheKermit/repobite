@@ -7,6 +7,15 @@ $WebTask = Get-ScheduledTask -TaskName 'repobite-web'
 $CurrentIdentity = [Security.Principal.WindowsIdentity]::GetCurrent()
 $TaskIdentity = [Security.Principal.NTAccount]::new($WebTask.Principal.UserId).Translate([Security.Principal.SecurityIdentifier])
 if ($TaskIdentity.Value -ne $CurrentIdentity.User.Value) { throw '웹 예약 작업과 같은 Windows 계정으로 실행하세요.' }
+# 공개키 SSH 세션은 Windows 사용자 DPAPI에 접근하지 못할 수 있다.
+# 실제 키를 입력받기 전에 확인하며 기계 전체 암호화로 보호 범위를 낮추지 않는다.
+Add-Type -AssemblyName System.Security
+try {
+    $Probe = [Security.Cryptography.ProtectedData]::Protect([byte[]](1, 2, 3), $null, [Security.Cryptography.DataProtectionScope]::CurrentUser)
+    $null = [Security.Cryptography.ProtectedData]::Unprotect($Probe, $null, [Security.Cryptography.DataProtectionScope]::CurrentUser)
+} catch {
+    throw '현재 SSH 인증으로 사용자 암호화 저장소에 접근할 수 없습니다. SSH 비밀번호 인증 또는 서버 콘솔에서 실행하세요. 아직 API 키를 받거나 저장하지 않았습니다.'
+}
 $Directory = Join-Path $env:LOCALAPPDATA 'RepoBite'
 $null = New-Item -ItemType Directory -Force -Path $Directory
 $KeyPath = Join-Path $Directory 'resend-key.clixml'
